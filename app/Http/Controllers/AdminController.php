@@ -165,7 +165,7 @@ public function update_trip(Request $request, $id)
 
    
 
-    return redirect()->route('agents.index')->with('success', 'Agent updated successfully.');
+    return redirect()->route('trips.index')->with('success', 'Trip updated successfully.');
 }
 
 
@@ -174,7 +174,7 @@ public function destroy_trip($id)
     $trip = Trip::findOrFail($id);
     $trip->delete();
 
-    return redirect()->route('agents.index')->with('success', 'Agent deleted successfully.');
+    return redirect()->route('trips.index')->with('success', 'Trip deleted successfully.');
 }
 
 }

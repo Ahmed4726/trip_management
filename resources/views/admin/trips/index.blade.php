@@ -121,32 +121,30 @@
 
 <script>
     $(document).ready(function() {
-    // Trigger edit modal dynamically
-    $('[id^=editTripModal]').on('show.bs.modal', function (event) {
-        var button = $(event.relatedTarget);
+  $('#editTripModal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget);
 
-        // Get data attributes from the Edit button
-        var id = button.data('id');
-        var boat = button.data('boat');
-        var guests = button.data('guests');
-        var price = button.data('price');
-        var startDate = button.data('start_date');
-        var endDate = button.data('end_date');
-        var agentId = button.data('agent_id');
+    // Get data attributes from the Edit button
+    var id = button.data('id');
+    var boat = button.data('boat');
+    var guests = button.data('guests');
+    var price = button.data('price');
+    var startDate = button.data('start_date');
+    var endDate = button.data('end_date');
+    var agentId = button.data('agent_id');
 
-        // Fill the form fields inside the modal
-        var modal = $(this);
-        modal.find('input[name="boat"]').val(boat);
-        modal.find('input[name="guests"]').val(guests);
-        modal.find('input[name="price"]').val(price);
-        modal.find('input[name="start_date"]').val(startDate);
-        modal.find('input[name="end_date"]').val(endDate);
-        modal.find('select[name="agent_id"]').val(agentId);
+    // Fill the form inside the modal
+    var modal = $(this);
+    modal.find('#edit-trip-boat').val(boat);
+    modal.find('#edit-trip-guests').val(guests);
+    modal.find('#edit-trip-price').val(price);
+    modal.find('#edit-trip-start-date').val(startDate);
+    modal.find('#edit-trip-end-date').val(endDate);
+    modal.find('#edit-trip-agent-id').val(agentId);
 
-        // Update the form action
-        modal.find('form').attr('action', '/admin/trips/' + id);
-
-          });
+    // Set form action
+    modal.find('#editTripForm').attr('action', '/trips/' + id);
+  });
 });
     setTimeout(function () {
         let message = document.getElementById('success-message');

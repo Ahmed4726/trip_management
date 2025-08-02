@@ -24,7 +24,7 @@
                         <input type="text" name="boat" id="boat" class="form-control" placeholder="Enter boat name" required>
                     </div>
 
-                    <div class="col-md-6">
+                                    <div class="col-md-6">
                         <label for="start_date" class="form-label">Start Date</label>
                         <input type="date" name="start_date" id="start_date" class="form-control" required>
                     </div>
@@ -63,4 +63,16 @@
     </div>
 </div>
 </div>
+<script>
+     document.addEventListener('DOMContentLoaded', function () {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById("start_date").setAttribute("min", today);
+        document.getElementById("end_date").setAttribute("min", today);
+    });
+    document.getElementById("start_date").addEventListener("change", function () {
+    const selectedStart = this.value;
+    document.getElementById("end_date").setAttribute("min", selectedStart);
+});
+
+</script>
 @endsection
