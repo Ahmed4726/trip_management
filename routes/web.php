@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
@@ -47,6 +48,28 @@ Route::middleware('auth')->group(function () {
     // Roles & Permissions
     Route::get('/roles-permissions', [RolePermissionController::class, 'index'])->name('roles.permissions.index');
     Route::post('/roles-permissions/{role}', [RolePermissionController::class, 'update'])->name('roles.permissions.update');
+
+     // Manage Users
+    Route::get('/users', [AdminController::class, 'index'])->name('users.index');
+    Route::get('/create-user', [AdminController::class, 'create'])->name('users.create');
+    Route::post('/store-user', [AdminController::class, 'store'])->name('users.store');
+     Route::post('users/{id}', [AdminController::class, 'update'])->name('users.update');
+    Route::delete('users/{id}', [AdminController::class, 'destroy'])->name('users.destroy');
+
+
+    //Manage Agents
+    Route::get('/agents', [AdminController::class, 'index_agent'])->name('agents.index');
+    Route::get('/create-agent', [AdminController::class, 'create_agent'])->name('agents.create');
+    Route::post('/store-agent', [AdminController::class, 'store_agent'])->name('agent.store');
+     Route::post('agents/{id}', [AdminController::class, 'update_agent'])->name('agents.update');
+    Route::delete('agents/{id}', [AdminController::class, 'destroy_agent'])->name('agents.destroy');
+
+     //Manage Agents
+    Route::get('/trips', [AdminController::class, 'trip_index'])->name('trips.index');
+    Route::get('/create-trip', [AdminController::class, 'create_trip'])->name('trips.create');
+    Route::post('/store-trip', [AdminController::class, 'store_trip'])->name('trips.store');
+     Route::post('trips/{id}', [AdminController::class, 'update_trip'])->name('trips.update');
+    Route::delete('trips/{id}', [AdminController::class, 'destroy_trip'])->name('trips.destroy');
 
 });
 

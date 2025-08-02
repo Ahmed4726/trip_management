@@ -84,9 +84,9 @@
     <li class="{{ Request::is('login') ? 'active' : '' }}">
         <a href="/login" class="nav-link">Login</a>
     </li>
-    <li class="{{ Request::is('register') ? 'active' : '' }}">
+    <!-- <li class="{{ Request::is('register') ? 'active' : '' }}">
         <a href="/register" class="nav-link">Register</a>
-    </li>
+    </li> -->
 @endguest
 
 @auth
@@ -96,6 +96,10 @@
             <i class="fas fa-user"></i> {{-- User Icon --}}
         </a>
         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="userDropdown">
+            <a class="dropdown-item" href="{{ route('dashboard') }}">
+                Dashboard
+            </a>
+
             <a class="dropdown-item" href="{{ route('logout') }}"
                onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                 Logout
@@ -107,6 +111,7 @@
         </div>
     </li>
 @endauth
+
 
 </ul>
 

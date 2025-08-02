@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="content-wrapper">
-    <div class="container mt-5">
+    <div class="container pt-3">
         <h2 class="mb-4">Roles & Permissions</h2>
 
         @if(session('success'))

@@ -1,15 +1,17 @@
 @extends('layouts.admin')
 @section('content')
 <div class="content-wrapper">
-    <div class="container mt-5">
+    <div class="container pt-3">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="h4">Roles</h2>
             <a href="{{ route('roles.create') }}" class="btn btn-primary">Create</a>
         </div>
 
         @if(session('success'))
-            <div class="alert alert-success">{{ session('success') }}</div>
-        @endif
+    <div class="alert alert-success" id="success-message">
+        {{ session('success') }}
+    </div>
+@endif
 
         <div class="card">
             <div class="card-body">
@@ -104,6 +106,14 @@ $(document).ready(function() {
     modal.find('#editRoleForm').attr('action', '/roles/' + id);
   });
 });
+
+    setTimeout(function() {
+        let message = document.getElementById('success-message');
+        if (message) {
+            message.style.display = 'none';
+        }
+    }, 2000); // 3000 milliseconds = 3 seconds
+
 </script>
 
 @endsection

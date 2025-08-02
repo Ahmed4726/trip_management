@@ -1,7 +1,7 @@
 @extends('layouts.admin')
 @section('content')
 <div class="content-wrapper">
-<div class="container mt-5">
+<div class="container pt-3">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="h4">Create Permissions</h2>
         <a href="{{ route('permissions.index') }}" class="btn btn-secondary">Back</a>
