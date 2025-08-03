@@ -6,6 +6,7 @@ use Spatie\Permission\Models\Role;
 use App\Models\User;
 use App\Models\Agent;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
 class AdminController extends Controller
@@ -70,7 +71,7 @@ public function destroy($id)
 // Agents
    public function index_agent()  
     {
-        $agents = Agent::all();
+       $agents = Agent::with('trips')->get();
         return view('admin.agents.index',compact('agents'));
     }
 
@@ -83,12 +84,14 @@ public function destroy($id)
 {
  
 
-    $user = Agent::create([
-        'first_name' => $request->first_name,
-        'last_name'  => $request->last_name,
-    ]);
+  $agent = Agent::create([
+    'first_name' => $request->first_name,
+    'last_name'  => $request->last_name,
+    'email'      => $request->email,
+    'phone'      => $request->phone,
+    'commission' => $request->commission,
+]);
 
-    
 
     return redirect()->route('agents.index')->with('success', 'Agent created successfully.');
 }
@@ -100,8 +103,11 @@ public function update_agent(Request $request, $id)
  
 
     $agent->update([
-        'first_name' => $request->first_name,
-        'last_name'  => $request->last_name
+         'first_name' => $request->first_name,
+    'last_name'  => $request->last_name,
+    'email'      => $request->email,
+    'phone'      => $request->phone,
+    'commission' => $request->commission,
     ]);
 
    
@@ -124,42 +130,62 @@ public function destroy_agent($id)
     {
         $trips = Trip::all();
         $agents = Agent::all();
-        return view('admin.trips.index',compact('trips','agents'));
+$tripTypes = Trip::select('trip_type')->distinct()->pluck('trip_type');
+        return view('admin.trips.index',compact('trips','agents', 'tripTypes'));
     }
 
      public function create_trip()  
     {
          $agents = Agent::all();
+         
         return view('admin.trips.create',compact('agents'));
     }
 
 public function store_trip(Request $request)
 {
-  
+    $token = Str::uuid(); // or Str::random(32)
+    $formUrl = route('guest.form', ['token' => $token]); // generate full URL
+
     Trip::create([
-        'start_date' => $request->start_date,
-        'end_date'   => $request->end_date,
-        'guests'     => $request->guests,
-        'price'      => $request->price,
-        'boat'       => $request->boat,
-        'agent_id'   => $request->agent_id,
+        'title'            => $request->title,
+        'region'           => $request->region,
+        'status'           => $request->status,
+        'trip_type'        => $request->trip_type,
+        'leading_guest_id' => $request->leading_guest_id,
+        'notes'            => $request->notes,
+        'start_date'       => $request->start_date,
+        'end_date'         => $request->end_date,
+        'guests'           => $request->guests,
+        'price'            => $request->price,
+        'boat'             => $request->boat,
+        'agent_id'         => $request->agent_id,
+        'guest_form_token' => $token,
+        'guest_form_url'   => $formUrl,
     ]);
 
-    return redirect()->route('trips.index')->with('success', 'Trip created successfully.');
+    return redirect()->route('trips.index')->with('success', 'Trip created successfully. Share this link with guests: ' . $formUrl);
 }
+
 
 public function update_trip(Request $request, $id)
 {
     $trip = Trip::findOrFail($id);
 
-    $trip->update([
-        'start_date' => $request->start_date,
-        'end_date'   => $request->end_date,
-        'guests'     => $request->guests,
-        'price'      => $request->price,
-        'boat'       => $request->boat,
-        'agent_id'   => $request->agent_id,
-    ]);
+   $trip->update([
+    'title'            => $request->title,
+    'region'           => $request->region,
+    'status'           => $request->status,
+    'trip_type'        => $request->trip_type,
+    'leading_guest_id' => $request->leading_guest_id,
+    'notes'            => $request->notes,
+    'start_date'       => $request->start_date,
+    'end_date'         => $request->end_date,
+    'guests'           => $request->guests,
+    'price'            => $request->price,
+    'boat'             => $request->boat,
+    'agent_id'         => $request->agent_id,
+]);
+
 
 
     return redirect()->route('trips.index')->with('success', 'Trip updated successfully.');

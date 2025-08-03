@@ -9,6 +9,9 @@ class Agent extends Model
     protected $fillable = [
         'first_name',
         'last_name',
+        'email',
+        'commission',
+        'phone'
     ];
 
     public function trips()

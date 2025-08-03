@@ -31,7 +31,7 @@
 
      <div class="col-md-6">
         <label for="status" class="form-label">Trip type</label>
-        <select name="status" id="status" class="form-control" required>
+        <select name="trip_type" id="status" class="form-control" required>
             <option value="">Select Type</option>
             <option value="private">Private (1 group charter)</option>
             <option value="open">Open (multiple guests)</option>
@@ -47,16 +47,42 @@
         </select>
     </div>
 
-   <div class="col-md-6">
-        <label for="boat" class="form-label">Boat</label>
-        <select name="boat" id="boat" class="form-control" required>
-            <option value="">Select boat</option>
-            <option value="Sea Breeze">Sea Breeze</option>
-            <option value="Ocean Voyager">Ocean Voyager</option>
-            <option value="Coral Queen">Coral Queen</option>
-            <option value="Island Explorer">Island Explorer</option>
-        </select>
-    </div>
+ <div class="col-md-6">
+    <label for="boat" class="form-label">Boat</label>
+    <select name="boat" id="boat" class="form-control" required>
+        <option value="">Select boat</option>
+        <optgroup label="Samara 1 (5 rooms)">
+            <option value="Rinca">Rinca</option>
+            <option value="Komodo">Komodo</option>
+            <option value="Padar">Padar</option>
+            <option value="Kanawa">Kanawa</option>
+            <option value="Kelor">Kelor</option>
+        </optgroup>
+          <optgroup label="Samara 1 (4 rooms)">
+            <option value="Room1">Room1</option>
+            <option value="Room2">Room2</option>
+            <option value="Room3">Room3</option>
+            <option value="Room4">Room4</option>
+            
+        </optgroup>
+          <optgroup label="Mischief (5 rooms)">
+            <option value="Room1">Room1</option>
+            <option value="Room2">Room2</option>
+            <option value="Room3">Room3</option>
+            <option value="Room4">Room4</option>
+            <option value="Room5">Room5</option>
+        </optgroup>
+          <optgroup label="Samara (6 rooms)">
+            <option value="Room1">Room1</option>
+            <option value="Room2">Room2</option>
+            <option value="Room3">Room3</option>
+            <option value="Room4">Room4</option>
+            <option value="Room5">Room5</option>
+            <option value="Room6">Room6</option>
+        </optgroup>
+    </select>
+</div>
+
 
 
     <div class="col-md-6">

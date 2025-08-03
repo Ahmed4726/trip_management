@@ -18,6 +18,8 @@ return new class extends Migration
             $table->enum('trip_type', ['private', 'open'])->default('private');
             $table->unsignedBigInteger('leading_guest_id')->nullable(); // no FK for now
             $table->text('notes')->nullable();
+                $table->string('guest_form_token')->nullable();
+    $table->string('guest_form_url')->nullable();
         });
     }
 

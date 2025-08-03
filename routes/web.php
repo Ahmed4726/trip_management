@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\GuestController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RoleController;
@@ -64,12 +65,15 @@ Route::middleware('auth')->group(function () {
     Route::post('agents/{id}', [AdminController::class, 'update_agent'])->name('agents.update');
     Route::delete('agents/{id}', [AdminController::class, 'destroy_agent'])->name('agents.destroy');
 
-     //Manage Agents
+     //Manage Trips
     Route::get('/trips', [AdminController::class, 'trip_index'])->name('trips.index');
     Route::get('/create-trip', [AdminController::class, 'create_trip'])->name('trips.create');
     Route::post('/store-trip', [AdminController::class, 'store_trip'])->name('trips.store');
     Route::post('trips/{id}', [AdminController::class, 'update_trip'])->name('trips.update');
     Route::delete('trips/{id}', [AdminController::class, 'destroy_trip'])->name('trips.destroy');
+    Route::get('/guest/form/{token}', [GuestController::class, 'show'])->name('guest.form');
+    Route::post('/guest/form/{token}', [GuestController::class, 'submit'])->name('guest.form.submit');
+
 
      //Manage Finances
     Route::get('/finances', [AdminController::class, 'finance_index'])->name('finances.index');

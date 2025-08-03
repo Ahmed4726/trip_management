@@ -20,8 +20,11 @@
                         <thead class="table-light text-uppercase small">
                             <tr>
                                 <th>#</th>
-                                <th>First name</th>
-                                 <th>Last name</th>
+                                <th>Name</th>
+                                 <th>Email</th>
+                                 <th>Phone/Whatsapp</th>
+                                 <th>Commission/%</th>
+                                 <th>Assigned trips</th>
                                 <th class="text-center">Actions</th>
                             </tr>
                         </thead>
@@ -29,21 +32,40 @@
                             @foreach($agents as $index => $agent)
                             <tr>
                                 <td>{{ $index + 1 }}</td>
-                                <td>{{ $agent->first_name }}</td>
-                                <td>{{ $agent->last_name }}</td>
-                            
+                                <td>{{ $agent->first_name }} {{ $agent->last_name }}</td>
+                                 <td>{{ $agent->email }}</td>
+        
+      <td>{{ $agent->phone }}</td>
+        <td>{{ $agent->commission }}</td>
+       
+                         <td>
+            @if($agent->trips->count())
+                <ul class="list-styled">
+                    @foreach($agent->trips as $trip)
+                        <li>{{ $trip->title }}</li>
+                    @endforeach
+                </ul>
+                 <!-- {{ $agent->trips->pluck('title')->implode(', ') }} -->
+            @else
+                <span class="text-muted">No trips</span>
+            @endif
+        </td>     
                                 <td class="text-center">
                                     <!-- Trigger Modal -->
                                     <button type="button"
-                                    class="btn btn-sm btn-primary"
-                                    data-toggle="modal"
-                                    data-target="#editUserModal{{ $agent->id }}"
-                                    data-id="{{ $agent->id }}"
-                                    data-first_name="{{ $agent->first_name }}"
-                                    data-last_name="{{ $agent->last_name }}"
-                                    >
-                                Edit
-                            </button>
+    class="btn btn-sm btn-primary"
+    data-toggle="modal"
+    data-target="#editUserModal{{ $agent->id }}"
+    data-id="{{ $agent->id }}"
+    data-first_name="{{ $agent->first_name }}"
+    data-last_name="{{ $agent->last_name }}"
+    data-email="{{ $agent->email }}"
+    data-commission="{{ $agent->commission }}"
+    data-phone="{{ $agent->phone }}"
+>
+    Edit
+</button>
+
 
 
         <!-- Delete Form -->
@@ -55,7 +77,7 @@
     </td>
 </tr>
 
-<!-- Edit User Modal -->
+<!-- Edit Agent Modal -->
 <div class="modal fade" id="editUserModal{{ $agent->id }}" tabindex="-1" aria-labelledby="editUserModalLabel{{ $agent->id }}" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -65,7 +87,6 @@
 
                 <div class="modal-header">
                     <h5 class="modal-title" id="editUserModalLabel{{ $agent->id }}">Edit Agent</h5>
-                    <!-- <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button> -->
                 </div>
 
                 <div class="modal-body">
@@ -73,11 +94,26 @@
                         <label>First Name</label>
                         <input type="text" name="first_name" class="form-control" value="{{ $agent->first_name }}" required>
                     </div>
+
                     <div class="mb-3">
                         <label>Last Name</label>
                         <input type="text" name="last_name" class="form-control" value="{{ $agent->last_name }}" required>
                     </div>
-                    
+
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <input type="email" name="email" class="form-control" value="{{ $agent->email }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Phone / WhatsApp</label>
+                        <input type="text" name="phone" class="form-control" value="{{ $agent->phone }}" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Commission (%)</label>
+                        <input type="number" name="commission" class="form-control" value="{{ $agent->commission }}" required>
+                    </div>
                 </div>
 
                 <div class="modal-footer">
@@ -88,6 +124,7 @@
         </div>
     </div>
 </div>
+
 @endforeach
 </tbody>
 
@@ -109,23 +146,28 @@
 $(document).ready(function() {
   $('#editUserModal{{ $agent->id }}').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);
-    
+
     // Get data attributes from the Edit button
     var id = button.data('id');
     var firstName = button.data('first_name');
     var lastName = button.data('last_name');
-
+    var email = button.data('email');
+    var phone = button.data('phone');
+    var commission = button.data('commission');
 
     // Fill the form inside the modal
     var modal = $(this);
-    modal.find('#edit-user-first-name').val(firstName);
-    modal.find('#edit-user-last-name').val(lastName);
-   
-    
+    modal.find('input[name="first_name"]').val(firstName);
+    modal.find('input[name="last_name"]').val(lastName);
+    modal.find('input[name="email"]').val(email);
+    modal.find('input[name="phone"]').val(phone);
+    modal.find('input[name="commission"]').val(commission);
+
     // Set form action
-    modal.find('#editUserForm').attr('action', '/users/' + id);
+    modal.find('form').attr('action', '/agents/' + id);
   });
 });
+
 
 
 setTimeout(function() {

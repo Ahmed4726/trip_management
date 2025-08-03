@@ -19,6 +19,8 @@ class Trip extends Model
         'price',
         'boat',
         'agent_id',
+        'guest_form_token',
+        'guest_form_url',
     ];
 
     public function agent()
