@@ -33,15 +33,15 @@
                                 <th>Title</th>
                                 <th>Region</th>
                                 <th>Status</th>
-                                <th>Trip Type</th>
-                                <th>Leading Guest ID</th>
-                                <th>Boat</th>
-                                <th>Guests</th>
+                                <!-- <th>Trip Type</th> -->
+                                <th>Leading Guest</th>
+                                <!-- <th>Boat</th>
+                                <th>Guests</th> -->
                                 <th>Agent Name</th>
                                 <th>Start Date</th>
                                 <th>End Date</th>
                                 <th>Price</th>
-                                <th>Link/UUID</th>
+                                <th class="col-2">Link/UUID</th>
                                 <th class="text-center">Actions</th>
                             </tr>
                         </thead>
@@ -52,23 +52,30 @@
                                 <td>{{ $trip->title }}</td>
                                 <td>{{ $trip->region }}</td>
                                 <td>{{ $trip->status }}</td>
-                                <td>{{ $trip->trip_type }}</td>
+                                <!-- <td>{{ $trip->trip_type }}</td> -->
                                 <td>{{ $trip->leading_guest_id }}</td>
-                                <td>{{ $trip->boat }}</td>
-                                <td>{{ $trip->guests }}</td>
-                                <td>{{ $trip->agent ? $trip->agent->first_name . ' ' . $trip->agent->last_name : '-' }}</td>
-                                <td>{{ $trip->start_date }}</td>
-                                <td>{{ $trip->end_date }}</td>
+                                <!-- <td>{{ $trip->boat }}</td>
+                                <td>{{ $trip->guests }}</td> -->
+                                <td class="">{{ $trip->agent ? $trip->agent->first_name . ' ' . $trip->agent->last_name : '-' }}</td>
+                               <td class="w-25">{{ $trip->start_date }}</td>
+
+                                <td class="w-25">{{ $trip->end_date }}</td>
                                 <td>${{ $trip->price }}</td>
 <td>
-    <span id="linkText{{ $trip->id }}" onclick="copyText('{{ $trip->id }}')" style="cursor: pointer; color: blue; text-decoration: underline;">
-        {{ $trip->guest_form_url }}
-    </span>
+    <button onclick="copyText('{{ $trip->id }}')" class="btn btn-sm btn-outline-primary ">
+        Copy Link
+    </button>
+    <span id="linkText{{ $trip->id }}" class="d-none">{{ $trip->guest_form_url }}</span>
 </td>
+
 
 
                       <td class="text-center">
     <div class="d-flex justify-content-center">
+          <!-- View Button -->
+        <a href="{{ route('trips.show', $trip->id) }}" class="btn btn-sm btn-success mx-2">
+            View
+        </a>
         <!-- Edit Button -->
         <button type="button"
             class="btn btn-sm btn-primary mx-2"

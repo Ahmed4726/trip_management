@@ -73,6 +73,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/create-trip', [AdminController::class, 'create_trip'])->name('trips.create');
     Route::post('/store-trip', [AdminController::class, 'store_trip'])->name('trips.store');
     Route::post('trips/{id}', [AdminController::class, 'update_trip'])->name('trips.update');
+    Route::get('/trips/{id}', [AdminController::class, 'show'])->name('trips.show');
     Route::delete('trips/{id}', [AdminController::class, 'destroy_trip'])->name('trips.destroy');
    
 

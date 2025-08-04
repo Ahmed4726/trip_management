@@ -137,7 +137,7 @@ public function destroy_agent($id)
     {
         $trips = Trip::all();
         $agents = Agent::all();
-$tripTypes = Trip::select('trip_type')->distinct()->pluck('trip_type');
+        $tripTypes = Trip::select('trip_type')->distinct()->pluck('trip_type');
         return view('admin.trips.index',compact('trips','agents', 'tripTypes'));
     }
 
@@ -196,6 +196,12 @@ public function update_trip(Request $request, $id)
 
 
     return redirect()->route('trips.index')->with('success', 'Trip updated successfully.');
+}
+
+public function show($id)
+{
+    $trip = Trip::findOrFail($id);
+    return view('admin.trips.detail', compact('trip'));
 }
 
 
