@@ -7,25 +7,82 @@
             <a href="{{ route('trips.create') }}" class="btn btn-primary">Create Trip</a>
         </div>
 
-    @if (session('success'))
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: (session('success')),
-                timer: 3000,
-                showConfirmButton: false
-            });
-        });
-    </script>
-@endif
+        @if(session('success'))
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-
-
+            <script>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: '{{ session('success') }}',
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'OK'
+                });
+            </script>
+        @endif
+{{--  --}}
         <div class="card">
             <div class="card-body">
                 <div class="table-responsive">
+                    <div class="row mb-4">
+                        <div class="col-md-2">
+                            <label>Boat</label>
+                            <select id="filterBoat" class="form-control">
+                            <option value="">Select boat</option>
+                            <optgroup label="Samara 1 (5 rooms)">
+                                <option value="Rinca">Rinca</option>
+                                <option value="Komodo">Komodo</option>
+                                <option value="Padar">Padar</option>
+                                <option value="Kanawa">Kanawa</option>
+                                <option value="Kelor">Kelor</option>
+                            </optgroup>
+                            <optgroup label="Samara 1 (4 rooms)">
+                                <option value="Room1">Room1</option>
+                                <option value="Room2">Room2</option>
+                                <option value="Room3">Room3</option>
+                                <option value="Room4">Room4</option>
+
+                            </optgroup>
+                            <optgroup label="Mischief (5 rooms)">
+                                <option value="Room1">Room1</option>
+                                <option value="Room2">Room2</option>
+                                <option value="Room3">Room3</option>
+                                <option value="Room4">Room4</option>
+                                <option value="Room5">Room5</option>
+                            </optgroup>
+                            <optgroup label="Samara (6 rooms)">
+                                <option value="Room1">Room1</option>
+                                <option value="Room2">Room2</option>
+                                <option value="Room3">Room3</option>
+                                <option value="Room4">Room4</option>
+                                <option value="Room5">Room5</option>
+                                <option value="Room6">Room6</option>
+                            </optgroup>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Region</label>
+                            <input type="text" id="filterRegion" class="form-control">
+                        </div>
+                        <div class="col-md-2">
+                            <label>Status</label>
+                            <select id="filterStatus" class="form-control">
+                                <option value="">Select status</option>
+                                <option value="Available">Available</option>
+                                <option value="On Hold">On Hold</option>
+                                <option value="Booked">Booked</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label>Start Date</label>
+                            <input type="date" id="filterStartDate" class="form-control">
+                        </div>
+                        <div class="col-md-2">
+                            <label>End Date</label>
+                            <input type="date" id="filterEndDate" class="form-control">
+                        </div>
+                    </div>
+
                     <table class="table table-bordered table-striped align-middle">
                         <thead class="table-light text-uppercase small">
                             <tr>
@@ -45,7 +102,7 @@
                                 <th class="text-center">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="tripTableBody">
                             @foreach($trips as $index => $trip)
                             <tr>
                                 <td>{{ $index + 1 }}</td>
@@ -84,14 +141,14 @@
             Edit
         </button>
 
-        <!-- Delete Form -->
-        <form action="{{ route('trips.destroy', $trip->id) }}" method="POST">
-            @csrf
-            @method('DELETE')
-            <button onclick="return confirm('Are you sure?')" class="btn btn-sm btn-danger">Delete</button>
-        </form>
-    </div>
-</td>
+                                        <!-- Delete Form -->
+                                        <form action="{{ route('trips.destroy', $trip->id) }}" method="POST">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button onclick="return confirm('Are you sure?')" class="btn btn-sm btn-danger">Delete</button>
+                                        </form>
+                                    </div>
+                                </td>
 
                             </tr>
 
@@ -115,19 +172,21 @@
                                                     <input type="text" name="region" class="form-control" value="{{ $trip->region }}">
                                                 </div>
                                                 <div class="mb-3">
-                                                    <label>Status</label>
-                                                    <input type="text" name="status" class="form-control" value="{{ $trip->status }}">
+                                                        <label for="status" class="form-label">Status</label>
+                                                        <select name="status" id="status" class="form-control" required>
+                                                            <option value="">Select Status</option>
+                                                            <option value="Available" {{ $trip->status == 'Available' ? 'selected' : '' }}>Available</option>
+                                                            <option value="On Hold" {{ $trip->status == 'On Hold' ? 'selected' : '' }}>On Hold</option>
+                                                            <option value="Booked" {{ $trip->status == 'Booked' ? 'selected' : '' }}>Booked</option>
+                                                        </select>
                                                 </div>
                                                 <div class="mb-3">
-                                                    <label for="trip_type">Trip Type</label>
-                                                    <select name="trip_type" class="form-control" id="trip_type">
-                                                        @foreach ($tripTypes as $type)
-                                                    <option value="{{ $type }}" {{ $trip->trip_type == $type ? 'selected' : '' }}>
-                                                        {{ $type }}
-                                                    </option>
-                                                    @endforeach
-
-                                                    </select>
+                                                        <label for="trip_type" class="form-label">Trip Type</label>
+                                                        <select name="trip_type" id="trip_type" class="form-control" required>
+                                                            <option value="">Select Type</option>
+                                                            <option value="private" {{ $trip->trip_type == 'private' ? 'selected' : '' }}>Private (1 group charter)</option>
+                                                            <option value="open" {{ $trip->trip_type == 'open' ? 'selected' : '' }}>Open (multiple guests)</option>
+                                                        </select>
                                                 </div>
 
                                                 <div class="mb-3">
@@ -140,8 +199,41 @@
                                                 </div>
                                                 <div class="mb-3">
                                                     <label>Boat</label>
-                                                    <input type="text" name="boat" class="form-control" value="{{ $trip->boat }}" required>
-                                                </div>
+                                                        <div class="mb-3">
+                                                            <label>Boat</label>
+                                                            <select name="boat" class="form-control" required>
+                                                                <option value="">Select boat</option>
+                                                                <optgroup label="Samara 1 (5 rooms)">
+                                                                    <option value="Rinca" {{ $trip->boat == 'Rinca' ? 'selected' : '' }}>Rinca</option>
+                                                                    <option value="Komodo" {{ $trip->boat == 'Komodo' ? 'selected' : '' }}>Komodo</option>
+                                                                    <option value="Padar" {{ $trip->boat == 'Padar' ? 'selected' : '' }}>Padar</option>
+                                                                    <option value="Kanawa" {{ $trip->boat == 'Kanawa' ? 'selected' : '' }}>Kanawa</option>
+                                                                    <option value="Kelor" {{ $trip->boat == 'Kelor' ? 'selected' : '' }}>Kelor</option>
+                                                                </optgroup>
+                                                                <optgroup label="Samara 1 (4 rooms)">
+                                                                    <option value="Room1" {{ $trip->boat == 'Room1' ? 'selected' : '' }}>Room1</option>
+                                                                    <option value="Room2" {{ $trip->boat == 'Room2' ? 'selected' : '' }}>Room2</option>
+                                                                    <option value="Room3" {{ $trip->boat == 'Room3' ? 'selected' : '' }}>Room3</option>
+                                                                    <option value="Room4" {{ $trip->boat == 'Room4' ? 'selected' : '' }}>Room4</option>
+                                                                </optgroup>
+                                                                <optgroup label="Mischief (5 rooms)">
+                                                                    <option value="Room1" {{ $trip->boat == 'Room1' ? 'selected' : '' }}>Room1</option>
+                                                                    <option value="Room2" {{ $trip->boat == 'Room2' ? 'selected' : '' }}>Room2</option>
+                                                                    <option value="Room3" {{ $trip->boat == 'Room3' ? 'selected' : '' }}>Room3</option>
+                                                                    <option value="Room4" {{ $trip->boat == 'Room4' ? 'selected' : '' }}>Room4</option>
+                                                                    <option value="Room5" {{ $trip->boat == 'Room5' ? 'selected' : '' }}>Room5</option>
+                                                                </optgroup>
+                                                                <optgroup label="Samara (6 rooms)">
+                                                                    <option value="Room1" {{ $trip->boat == 'Room1' ? 'selected' : '' }}>Room1</option>
+                                                                    <option value="Room2" {{ $trip->boat == 'Room2' ? 'selected' : '' }}>Room2</option>
+                                                                    <option value="Room3" {{ $trip->boat == 'Room3' ? 'selected' : '' }}>Room3</option>
+                                                                    <option value="Room4" {{ $trip->boat == 'Room4' ? 'selected' : '' }}>Room4</option>
+                                                                    <option value="Room5" {{ $trip->boat == 'Room5' ? 'selected' : '' }}>Room5</option>
+                                                                    <option value="Room6" {{ $trip->boat == 'Room6' ? 'selected' : '' }}>Room6</option>
+                                                                </optgroup>
+                                                            </select>
+                                                        </div>
+                                                    </div>
                                                 <div class="mb-3">
                                                     <label>Guests</label>
                                                     <input type="number" name="guests" class="form-control" value="{{ $trip->guests }}" required>
@@ -168,11 +260,11 @@
                                                     <label>Price</label>
                                                     <input type="number" step="0.01" name="price" class="form-control" value="{{ $trip->price }}" required>
                                                 </div>
-                                                
+
                                             </div>
                                             <div class="modal-footer">
                                                 <button type="submit" class="btn btn-success">Update</button>
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                                             </div>
                                         </form>
                                     </div>
@@ -192,6 +284,28 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+  function fetchTrips() {
+    $.ajax({
+        url: "{{ route('trips.filter') }}",
+        method: "GET",
+        data: {
+            boat: $('#filterBoat').val(),
+            region: $('#filterRegion').val(),
+            status: $('#filterStatus').val(),
+            start_date: $('#filterStartDate').val(),
+            end_date: $('#filterEndDate').val(),
+        },
+        success: function (response) {
+            $('#tripTableBody').html(response.html);
+        },
+        error: function () {
+            alert('Something went wrong!');
+        }
+    });
+}
+
+$('#filterBoat, #filterRegion, #filterStatus, #filterStartDate, #filterEndDate').on('change', fetchTrips);
+
     $(document).ready(function() {
         $('.editTripModal').on('show.bs.modal', function (event) {
             var button = $(event.relatedTarget);
@@ -249,7 +363,12 @@
         document.execCommand('copy');
         document.body.removeChild(temp);
 
-        alert('Link copied!');
+            Swal.fire({
+            icon: 'success',
+            title: 'Link copied!',
+            showConfirmButton: false,
+            timer: 1500
+            });
     }
 </script>
 

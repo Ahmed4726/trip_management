@@ -7,11 +7,19 @@
             <a href="/create-user" class="btn btn-primary">Create User</a>
         </div>
 
-       @if(session('success'))
-    <div class="alert alert-success" id="success-message">
-        {{ session('success') }}
-    </div>
-@endif
+        @if(session('success'))
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+            <script>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: '{{ session('success') }}',
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'OK'
+                });
+            </script>
+        @endif
 
         <div class="card">
             <div class="card-body">
@@ -102,7 +110,7 @@
 
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-success">Update</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 </div>
             </form>
         </div>
@@ -113,7 +121,7 @@
 
                     </table>
 
-                   
+
                     <!-- /.modal -->
 
                 </div>
@@ -129,7 +137,7 @@
 $(document).ready(function() {
   $('#editUserModal{{ $user->id }}').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);
-    
+
     // Get data attributes from the Edit button
     var id = button.data('id');
     var firstName = button.data('first_name');
@@ -141,7 +149,7 @@ $(document).ready(function() {
     modal.find('#edit-user-first-name').val(firstName);
     modal.find('#edit-user-last-name').val(lastName);
     modal.find('#edit-user-email').val(email);
-    
+
     // Set form action
     modal.find('#editUserForm').attr('action', '/users/' + id);
   });
