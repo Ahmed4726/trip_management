@@ -94,6 +94,12 @@
         <p>Agents</p>
     </a>
 </li>
+   <li class="nav-item">
+    <a href="/agents" class="nav-link {{ request()->is('guests','') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-user-friends"></i>
+        <p>Guests</p>
+    </a>
+</li>
        <li class="nav-item">
     <a href="/finances" class="nav-link {{ request()->is('finances') ? 'active' : '' }}">
         <i class="nav-icon fas fa-credit-card"></i>

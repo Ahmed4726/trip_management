@@ -11,6 +11,13 @@ use Illuminate\Http\Request;
 
 class AdminController extends Controller
 {
+
+ public function dashboard()
+{
+    $agentsCount = Agent::count();
+    return view('dashboard', compact('agentsCount'));
+}
+
     public function index()
     {
          $users = User::all();

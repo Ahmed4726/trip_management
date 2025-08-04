@@ -20,11 +20,14 @@ Route::get('/trips',[HomeController::class, 'trips']);
 Route::get('/blog',[HomeController::class, 'blog']);
 Route::get('/contact',[HomeController::class, 'contact']);
 
+ Route::get('/guest/form/{token}', [GuestController::class, 'show'])->name('guest.form');
+    Route::post('/guest/form/{token}', [GuestController::class, 'submit'])->name('guest.form.submit');
 
+// web.php
+Route::get('/dashboard', [AdminController::class, 'dashboard'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -71,8 +74,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/store-trip', [AdminController::class, 'store_trip'])->name('trips.store');
     Route::post('trips/{id}', [AdminController::class, 'update_trip'])->name('trips.update');
     Route::delete('trips/{id}', [AdminController::class, 'destroy_trip'])->name('trips.destroy');
-    Route::get('/guest/form/{token}', [GuestController::class, 'show'])->name('guest.form');
-    Route::post('/guest/form/{token}', [GuestController::class, 'submit'])->name('guest.form.submit');
+   
 
 
      //Manage Finances
