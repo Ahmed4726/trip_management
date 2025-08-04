@@ -30,7 +30,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    
+
     //Permissions
     Route::get('/permissions/create', [PermissionController::class, 'create'])->name('permissions.create');
     Route::get('/permissions', [PermissionController::class, 'index'])->name('permissions.index');
@@ -64,8 +64,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/store-agent', [AdminController::class, 'store_agent'])->name('agent.store');
     Route::post('agents/{id}', [AdminController::class, 'update_agent'])->name('agents.update');
     Route::delete('agents/{id}', [AdminController::class, 'destroy_agent'])->name('agents.destroy');
+    Route::get('/agents/filter', [AdminController::class, 'filter_agent'])->name('agents.filter');
 
-     //Manage Trips
+
+    //Manage Trips
     Route::get('/trips', [AdminController::class, 'trip_index'])->name('trips.index');
     Route::get('/create-trip', [AdminController::class, 'create_trip'])->name('trips.create');
     Route::post('/store-trip', [AdminController::class, 'store_trip'])->name('trips.store');
@@ -73,9 +75,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('trips/{id}', [AdminController::class, 'destroy_trip'])->name('trips.destroy');
     Route::get('/guest/form/{token}', [GuestController::class, 'show'])->name('guest.form');
     Route::post('/guest/form/{token}', [GuestController::class, 'submit'])->name('guest.form.submit');
+    Route::get('/admin/trips/filter', [AdminController::class, 'filter'])->name('trips.filter');
 
 
-     //Manage Finances
+    //Manage Finances
     Route::get('/finances', [AdminController::class, 'finance_index'])->name('finances.index');
     Route::get('/create-finance', [AdminController::class, 'create_finance'])->name('finances.create');
     Route::post('/store-finance', [AdminController::class, 'store_finance'])->name('finances.store');

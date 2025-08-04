@@ -7,15 +7,34 @@
             <a href="{{ route('agents.create') }}" class="btn btn-primary">Create Agent</a>
         </div>
 
-            @if(session('success'))
-            <div class="alert alert-success" id="success-message">
-                {{ session('success') }}
-            </div>
-            @endif
+        @if(session('success'))
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+            <script>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: '{{ session('success') }}',
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'OK'
+                });
+            </script>
+        @endif
         <div class="card">
             <div class="card-body">
                 <div class="table-responsive">
+                    <div class="row mb-3">
+                    <div class="col-md-4">
+                        <input type="text" id="filterName" class="form-control" placeholder="Search by name">
+                    </div>
+                    <div class="col-md-4">
+                        <input type="text" id="filterEmail" class="form-control" placeholder="Search by email">
+                    </div>
+                    <div class="col-md-4">
+                        <button class="btn btn-primary" onclick="fetchAgents()">Filter</button>
+                    </div>
+                </div>
+
                     <table class="table table-bordered table-striped align-middle">
                         <thead class="table-light text-uppercase small">
                             <tr>
@@ -28,109 +47,101 @@
                                 <th class="text-center">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="agentTableBody">
                             @foreach($agents as $index => $agent)
                             <tr>
                                 <td>{{ $index + 1 }}</td>
                                 <td>{{ $agent->first_name }} {{ $agent->last_name }}</td>
                                  <td>{{ $agent->email }}</td>
-        
-      <td>{{ $agent->phone }}</td>
-        <td>{{ $agent->commission }}</td>
-       
-                         <td>
-            @if($agent->trips->count())
-                <ul class="list-styled">
-                    @foreach($agent->trips as $trip)
-                        <li>{{ $trip->title }}</li>
-                    @endforeach
-                </ul>
-                 <!-- {{ $agent->trips->pluck('title')->implode(', ') }} -->
-            @else
-                <span class="text-muted">No trips</span>
-            @endif
-        </td>     
+                                <td>{{ $agent->phone }}</td>
+                                <td>{{ $agent->commission }}</td>
+                                <td>@if($agent->trips->count())
+                                    <ul class="list-styled">
+                                        @foreach($agent->trips as $trip)
+                                            <li>{{ $trip->title }}</li>
+                                        @endforeach
+                                    </ul>
+                                        <!-- {{ $agent->trips->pluck('title')->implode(', ') }} -->
+                                    @else
+                                        <span class="text-muted">No trips</span>
+                                    @endif
+                                </td>
                                 <td class="text-center">
                                     <!-- Trigger Modal -->
-                                    <button type="button"
-    class="btn btn-sm btn-primary"
-    data-toggle="modal"
-    data-target="#editUserModal{{ $agent->id }}"
-    data-id="{{ $agent->id }}"
-    data-first_name="{{ $agent->first_name }}"
-    data-last_name="{{ $agent->last_name }}"
-    data-email="{{ $agent->email }}"
-    data-commission="{{ $agent->commission }}"
-    data-phone="{{ $agent->phone }}"
->
-    Edit
-</button>
+                                    <button type="button" class="btn btn-sm btn-primary" data-toggle="modal"
+                                                data-target="#editUserModal{{ $agent->id }}"
+                                                data-id="{{ $agent->id }}"
+                                                data-first_name="{{ $agent->first_name }}"
+                                                data-last_name="{{ $agent->last_name }}"
+                                                data-email="{{ $agent->email }}"
+                                                data-commission="{{ $agent->commission }}"
+                                                data-phone="{{ $agent->phone }}"
+                                            > Edit
+                                            </button>
 
+                                    <!-- Delete Form -->
+                                    <form action="{{ route('agents.destroy', $agent->id) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button onclick="return confirm('Are you sure?')" class="btn btn-sm btn-danger">Delete</button>
+                                    </form>
+                                </td>
+                            </tr>
 
+                        <!-- Edit Agent Modal -->
+                        <div class="modal fade" id="editUserModal{{ $agent->id }}" tabindex="-1" aria-labelledby="editUserModalLabel{{ $agent->id }}" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <form action="{{ route('agents.update', $agent->id) }}" method="POST">
+                                        @csrf
+                                        @method('POST')
 
-        <!-- Delete Form -->
-        <form action="{{ route('agents.destroy', $agent->id) }}" method="POST" class="d-inline">
-            @csrf
-            @method('DELETE')
-            <button onclick="return confirm('Are you sure?')" class="btn btn-sm btn-danger">Delete</button>
-        </form>
-    </td>
-</tr>
+                                        <div class="modal-header">
+                                            <h5 class="modal-title" id="editUserModalLabel{{ $agent->id }}">Edit Agent</h5>
+                                        </div>
 
-<!-- Edit Agent Modal -->
-<div class="modal fade" id="editUserModal{{ $agent->id }}" tabindex="-1" aria-labelledby="editUserModalLabel{{ $agent->id }}" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form action="{{ route('agents.update', $agent->id) }}" method="POST">
-                @csrf
-                @method('POST')
+                                        <div class="modal-body">
+                                            <div class="mb-3">
+                                                <label>First Name</label>
+                                                <input type="text" name="first_name" class="form-control" value="{{ $agent->first_name }}" required>
+                                            </div>
 
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editUserModalLabel{{ $agent->id }}">Edit Agent</h5>
-                </div>
+                                            <div class="mb-3">
+                                                <label>Last Name</label>
+                                                <input type="text" name="last_name" class="form-control" value="{{ $agent->last_name }}" required>
+                                            </div>
 
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label>First Name</label>
-                        <input type="text" name="first_name" class="form-control" value="{{ $agent->first_name }}" required>
-                    </div>
+                                            <div class="mb-3">
+                                                <label>Email</label>
+                                                <input type="email" name="email" class="form-control" value="{{ $agent->email }}" required>
+                                            </div>
 
-                    <div class="mb-3">
-                        <label>Last Name</label>
-                        <input type="text" name="last_name" class="form-control" value="{{ $agent->last_name }}" required>
-                    </div>
+                                            <div class="mb-3">
+                                                <label>Phone / WhatsApp</label>
+                                                <input type="text" name="phone" class="form-control" value="{{ $agent->phone }}" required>
+                                            </div>
 
-                    <div class="mb-3">
-                        <label>Email</label>
-                        <input type="email" name="email" class="form-control" value="{{ $agent->email }}" required>
-                    </div>
+                                            <div class="mb-3">
+                                                <label>Commission (%)</label>
+                                                <input type="number" name="commission" class="form-control" value="{{ $agent->commission }}" required>
+                                            </div>
+                                        </div>
 
-                    <div class="mb-3">
-                        <label>Phone / WhatsApp</label>
-                        <input type="text" name="phone" class="form-control" value="{{ $agent->phone }}" required>
-                    </div>
+                                        <div class="modal-footer">
+                                            <button type="submit" class="btn btn-success">Update</button>
+                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
 
-                    <div class="mb-3">
-                        <label>Commission (%)</label>
-                        <input type="number" name="commission" class="form-control" value="{{ $agent->commission }}" required>
-                    </div>
-                </div>
-
-                <div class="modal-footer">
-                    <button type="submit" class="btn btn-success">Update</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-@endforeach
-</tbody>
+                        @endforeach
+                        </tbody>
 
                     </table>
 
-                   
+
                     <!-- /.modal -->
 
                 </div>
@@ -143,6 +154,22 @@
 <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 
 <script>
+    function fetchAgents() {
+    $.ajax({
+        url: "{{ route('agents.filter') }}",
+        method: "GET",
+        data: {
+            name: $('#filterName').val(),
+            email: $('#filterEmail').val()
+        },
+        success: function (response) {
+            $('#agentTableBody').html(response.html);
+        },
+        error: function () {
+            alert('Failed to fetch agents.');
+        }
+    });
+}
 $(document).ready(function() {
   $('#editUserModal{{ $agent->id }}').on('show.bs.modal', function (event) {
     var button = $(event.relatedTarget);

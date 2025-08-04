@@ -6,7 +6,17 @@
         <h2 class="mb-4">Roles & Permissions</h2>
 
         @if(session('success'))
-            <div class="alert alert-success">{{ session('success') }}</div>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+            <script>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: '{{ session('success') }}',
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'OK'
+                });
+            </script>
         @endif
 
         <div class="accordion" id="rolesAccordion">

@@ -9,10 +9,19 @@
 
         {{-- Success Message --}}
         @if(session('success'))
-            <div class="alert alert-success">
-                {{ session('success') }}
-            </div>
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+            <script>
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Success',
+                    text: '{{ session('success') }}',
+                    confirmButtonColor: '#3085d6',
+                    confirmButtonText: 'OK'
+                });
+            </script>
         @endif
+
 
         <div class="card">
             <div class="card-body">
@@ -55,7 +64,7 @@
         </td>
     </tr>
 
-    
+
 @endforeach
 
                         </tbody>
