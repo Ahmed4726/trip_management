@@ -10,7 +10,7 @@ class GuestController extends Controller
  public function show($token)
 {
     $trip = Trip::where('guest_form_token', $token)->firstOrFail();
-    return view('guest_form', compact('trip'));
+    return view('guests.guest_form', compact('trip'));
 }
 
 public function submit(Request $request, $token)
