@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 use App\Models\Trip;
+use App\Models\Booking;
 use Spatie\Permission\Models\Role;
 use App\Models\User;
 use App\Models\Agent;
@@ -202,7 +203,7 @@ class AdminController extends Controller
         $agent = Agent::findOrFail($id);
 
         $agent->update([
-            'first_name' => $request->first_name,
+        'first_name' => $request->first_name,
         'last_name'  => $request->last_name,
         'email'      => $request->email,
         'phone'      => $request->phone,

@@ -4,7 +4,9 @@
     <div class="container pt-3">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="h4">Manage Trips</h2>
+            @can('create-trip')
             <a href="{{ route('trips.create') }}" class="btn btn-primary">Create Trip</a>
+            @endcan
         </div>
 
         @if(session('success'))
@@ -133,23 +135,29 @@
                       <td class="text-center">
     <div class="d-flex justify-content-center">
           <!-- View Button -->
+           @can('view-trips')
         <a href="{{ route('trips.show', $trip->id) }}" class="btn btn-sm btn-success mx-2">
             View
         </a>
+        @endcan
         <!-- Edit Button -->
+
+        @can('edit-trip')
         <button type="button"
             class="btn btn-sm btn-primary mx-2"
             data-toggle="modal"
             data-target="#editTripModal{{ $trip->id }}">
             Edit
         </button>
-
+        @endcan
+                @can('delete-trip')
                                         <!-- Delete Form -->
                                         <form action="{{ route('trips.destroy', $trip->id) }}" method="POST">
                                             @csrf
                                             @method('DELETE')
                                             <button onclick="return confirm('Are you sure?')" class="btn btn-sm btn-danger">Delete</button>
                                         </form>
+                                        @endcan
                                     </div>
                                 </td>
 

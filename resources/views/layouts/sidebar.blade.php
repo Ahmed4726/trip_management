@@ -42,7 +42,7 @@
         <p>Dashboard</p>
     </a>
 </li>
-
+@can('roles-permissions')
 <li class="nav-item {{ request()->is('roles*') || request()->is('permissions*') || request()->is('roles-permissions*') ? 'menu-open' : '' }}">
   <a href="#" class="nav-link {{ request()->is('roles*') || request()->is('permissions*') || request()->is('roles-permissions*') ? 'active' : '' }}">
     <i class="nav-icon fas fa-lock"></i>
@@ -75,49 +75,71 @@
     </li>
   </ul>
 </li>
+@endcan
 
+@can('Users')
        <li class="nav-item">
     <a href="/users" class="nav-link {{ request()->is('users','create-user') ? 'active' : '' }}">
         <i class="nav-icon fas fa-users"></i>
         <p>Manage Users</p>
     </a>
 </li>
+@endcan
+
+@can('trips')
        <li class="nav-item">
     <a href="/trips" class="nav-link {{ request()->is('trips','create-trip','trips/*') ? 'active' : '' }}">
         <i class="nav-icon fas fa-plane"></i>
         <p>Trips</p>
     </a>
 </li>
+@endcan
+
+@can('booking')
       <li class="nav-item">
     <a href="/bookings" class="nav-link {{ request()->is('bookings','create-booking','bookings/*') ? 'active' : '' }}">
         <i class="nav-icon fas fa-clipboard"></i>
         <p>Bookings</p>
     </a>
 </li>
-       <li class="nav-item">
+@endcan
+
+@can('agents')
+  <li class="nav-item">
     <a href="/agents" class="nav-link {{ request()->is('agents','create-agent') ? 'active' : '' }}">
         <i class="nav-icon fas fa-user-tie"></i>
         <p>Agents</p>
     </a>
-</li>
+  </li>
+@endcan
+
+@can('guests')
    <li class="nav-item">
     <a href="/guests" class="nav-link {{ request()->is('guests','') ? 'active' : '' }}">
         <i class="nav-icon fas fa-user-friends"></i>
         <p>Guests</p>
     </a>
 </li>
+@endcan
+
+@can('finance')
        <li class="nav-item">
     <a href="/finances" class="nav-link {{ request()->is('finances') ? 'active' : '' }}">
         <i class="nav-icon fas fa-credit-card"></i>
         <p>Finances</p>
     </a>
 </li>
+@endcan
+
+@can('pdf-approvals')
        <li class="nav-item">
     <a href="#" class="nav-link {{ request()->is('') ? 'active' : '' }}">
         <i class="nav-icon fas fa-file-pdf"></i>
         <p>PDF approvals</p>
     </a>
-</li>  
+</li>
+
+@endcan
         </ul>
       </nav>
       <!-- /.sidebar-menu -->

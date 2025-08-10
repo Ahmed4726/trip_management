@@ -4,7 +4,9 @@
     <div class="container pt-3">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="h4">Manage Agents</h2>
+            @can('create-agent')
             <a href="{{ route('agents.create') }}" class="btn btn-primary">Create Agent</a>
+            @endcan
         </div>
 
         @if(session('success'))
@@ -56,15 +58,15 @@
                                 <td>{{ $agent->phone }}</td>
                                 <td>{{ $agent->commission }}</td>
                                 @php
-    $tripCount = DB::table('agent_trip')->where('agent_id', $agent->id)->count();
-@endphp
-<td>
-    @if($tripCount > 0)
-        <span>{{ $tripCount }} trip(s) assigned</span>
-    @else
-        <span class="text-muted">No trips</span>
-    @endif
-</td>
+                                $tripCount = DB::table('agent_trip')->where('agent_id', $agent->id)->count();
+                                @endphp
+                                <td>
+                                    @if($tripCount > 0)
+                                        <span>{{ $tripCount }} trip(s) assigned</span>
+                                    @else
+                                        <span class="text-muted">No trips</span>
+                                    @endif
+                                </td>
 
                                 <td class="text-center">
                                     <!-- Assign Trips Button -->
@@ -72,6 +74,7 @@
                                         Assign Trips
                                     </button>
 
+                                    @can('edit-agent')
                                     <!-- Trigger Modal -->
                                     <button type="button" class="btn btn-sm btn-primary" data-toggle="modal"
                                                 data-target="#editUserModal{{ $agent->id }}"
@@ -83,7 +86,7 @@
                                                 data-phone="{{ $agent->phone }}"
                                             > Edit
                                             </button>
-
+                                    @endcan
                                     <!-- Delete Form -->
                                     <form action="{{ route('agents.destroy', $agent->id) }}" method="POST" class="d-inline">
                                         @csrf
