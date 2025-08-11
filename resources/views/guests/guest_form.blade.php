@@ -57,34 +57,27 @@
       <div class="step" data-target="#logins-part">
         <button type="button" class="step-trigger" role="tab" aria-controls="logins-part" id="logins-part-trigger">
           <span class="bs-stepper-circle bg-success">1</span>
-          <span class="bs-stepper-label">Lead Guest Info</span>
-        </button>
-      </div>
-      <div class="line"></div>
-      <div class="step" data-target="#information-part">
-        <button type="button" class="step-trigger" role="tab" aria-controls="information-part" id="information-part-trigger">
-          <span class="bs-stepper-circle bg-success">2</span>
-          <span class="bs-stepper-label">Other Guests</span>
+          <span class="bs-stepper-label">Guest Info</span>
         </button>
       </div>
       <div class="line"></div>
       <div class="step" data-target="#personal-part">
         <button type="button" class="step-trigger" role="tab" aria-controls="personal-part" id="personal-part-trigger">
-          <span class="bs-stepper-circle bg-success">3</span>
+          <span class="bs-stepper-circle bg-success">2</span>
           <span class="bs-stepper-label">Travel Details</span>
         </button>
       </div>
       <div class="line"></div>
       <div class="step" data-target="#confirmation-part">
         <button type="button" class="step-trigger" role="tab" aria-controls="confirmation-part" id="confirmation-part-trigger">
-          <span class="bs-stepper-circle bg-success">4</span>
+          <span class="bs-stepper-circle bg-success">3</span>
           <span class="bs-stepper-label">Preferences & Health</span>
         </button>
       </div>
       <div class="line"></div>
       <div class="step" data-target="#guest-part">
         <button type="button" class="step-trigger" role="tab" aria-controls="guest-part" id="guest-part-trigger">
-          <span class="bs-stepper-circle bg-success">5</span>
+          <span class="bs-stepper-circle bg-success">4  </span>
           <span class="bs-stepper-label">File Uploads & Confirmation</span>
         </button>
       </div>
@@ -173,99 +166,7 @@
 
 
      <!-- Step 2 -->
-<div id="information-part" class="content" role="tabpanel" aria-labelledby="information-part-trigger">
-  <div id="guestContainer">
-    <!-- Initial Guest Form -->
-    <div class="guest-form border p-3 mb-3">
-      <div class="form-row">
-        <div class="form-group col-md-6">
-          <label>Name</label>
-          <input type="text" class="form-control" name="guest_name[]" placeholder="Enter full name">
-        </div>
-        <div class="form-group col-md-6">
-          <label>Gender</label>
-          <select class="form-control" name="guest_gender[]">
-            <option value="">Select gender</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-      </div>
 
-      <div class="form-row">
-        <div class="form-group col-md-6">
-          <label>Email address</label>
-          <input type="email" class="form-control" name="guest_email[]" placeholder="Enter email">
-        </div>
-        {{-- <div class="form-group col-md-6">
-          <label>Password</label>
-          <input type="password" class="form-control" name="guest_password[]" placeholder="Password">
-        </div> --}}
-      </div>
-
-      <div class="form-row">
-        <div class="form-group col-md-6">
-          <label>Date of Birth</label>
-          <input type="date" class="form-control" name="guest_dob[]">
-        </div>
-        <div class="form-group col-md-6">
-          <label>Passport Number</label>
-          <input type="text" class="form-control" name="guest_passport[]" placeholder="Enter passport number">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group col-md-6">
-          <label>Nationality</label>
-          <input type="text" class="form-control" name="guest_nationality[]" placeholder="Enter nationality">
-        </div>
-        <div class="form-group col-md-6">
-          <label>Cabin Type</label>
-          <select class="form-control" name="guest_cabin[]">
-            <option value="">Select cabin type</option>
-            <option value="standard">Standard</option>
-            <option value="deluxe">Deluxe</option>
-            <option value="suite">Suite</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group col-md-6">
-          <label>Surf Level</label>
-          <select class="form-control" name="guest_surf[]">
-            <option value="">Select level</option>
-            <option value="beginner">Beginner</option>
-            <option value="intermediate">Intermediate</option>
-            <option value="advanced">Advanced</option>
-          </select>
-        </div>
-        <div class="form-group col-md-6">
-          <label>Board Details</label>
-          <textarea class="form-control" name="guest_board[]" rows="2" placeholder="Describe board preferences"></textarea>
-        </div>
-      </div>
-    </div>
-  </div>
-
-<div class="d-flex justify-content-between align-items-center mb-3">
-  <!-- Left side buttons -->
-  <div>
-    <button type="button" class="btn btn-primary me-2" onclick="stepper.previous()">Previous</button>
-    <button type="button" class="btn btn-primary" onclick="stepper.next()">Next</button>
-  </div>
-
-  <!-- Right side button -->
-  <button type="button" class="btn btn-sm btn-success" onclick="addGuestForm()">
-    + Add Another Guest
-  </button>
-</div>
-
-
-
-
-</div>
 
 
 

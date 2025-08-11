@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Booking;
 use Illuminate\Http\Request;
 use App\Models\Trip;
 use App\Models\Guest;
@@ -103,9 +104,15 @@ class GuestController extends Controller
 
     public function show($token)
     {
-        $trip = Trip::where('guest_form_token', $token)->firstOrFail();
-        return view('guests.guest_form', compact('trip'));
+        $booking = Booking::where('token', $token)->firstOrFail();
+        return view('guests.guest_form', compact('booking'));
     }
+
+    // public function show($token)
+    // {
+    //     $trip = Trip::where('guest_form_token', $token)->firstOrFail();
+    //     return view('guests.guest_form', compact('trip'));
+    // }
 
     public function submit(Request $request, $token)
     {

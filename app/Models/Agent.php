@@ -24,5 +24,10 @@ class Agent extends Model
         return $this->belongsToMany(Trip::class);
     }
 
+    // public function agents()
+    // {
+    //     return $this->belongsToMany(Booking::class);
+    // }
+
 }
 

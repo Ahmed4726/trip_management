@@ -4,51 +4,31 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
-    /**
-     * Run the migrations.
-     */
+return new class extends Migration {
     public function up(): void
     {
         Schema::create('bookings', function (Blueprint $table) {
             $table->id();
-
-            // Relationship
-            $table->unsignedBigInteger('trip_id');
-
-            // Booking details
+            $table->foreignId('trip_id')->constrained()->onDelete('cascade');
             $table->string('customer_name');
-            $table->string('customer_email');
-            $table->string('customer_phone')->nullable();
-            $table->date('booking_date');
-            $table->integer('number_of_guests')->default(1);
-            $table->decimal('total_price', 10, 2)->nullable();
-            $table->string('payment_status')->default('pending'); // pending, paid, cancelled
-            $table->string('booking_status')->default('confirmed'); // confirmed, cancelled, completed
-
-            // Your existing fields
+            $table->integer('guests')->default(1);
             $table->string('source');
+            $table->string('email')->nullable();
+            $table->string('phone_number')->nullable();
+            $table->string('nationality')->nullable();
+            $table->string('passport_number')->nullable();
+            $table->enum('booking_status', ['pending', 'confirmed', 'cancelled'])->nullable();
+            $table->string('pickup_location_time')->nullable();
+            $table->string('addons')->nullable();
+            $table->enum('room_preference', ['single', 'double', 'suite'])->nullable();
+            $table->foreignId('agent_id')->nullable()->constrained('agents')->nullOnDelete();
+            $table->text('comments')->nullable();
             $table->text('notes')->nullable();
-            $table->string('comments')->nullable();
-
-            // Extra integration fields
-            $table->string('guest_form_token')->nullable();
-            $table->string('guest_form_url')->nullable();
-
+            $table->string('token', 64)->unique(); // Booking link token
             $table->timestamps();
-
-            // Foreign key constraint
-            $table->foreign('trip_id')
-                  ->references('id')
-                  ->on('trips')
-                  ->onDelete('cascade');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('bookings');

@@ -85,24 +85,48 @@
                         <thead class="table-light text-uppercase small">
                             <tr>
                                 <th>#</th>
-                                <th>Source</th>
-                                <!-- <th>Region</th>
+                                <!-- <th>Source</th> -->
+                                <th>Customer Name</th>
                                 <th>Status</th>
                                 <th>Agent Name</th>
                                 <th>Start Date</th>
-                                <th>End Date</th> -->
-                                <th>Comments</th>
-                                <th>Notes</th>
+                                <th>End Date</th>
+                                <!-- <th>Comments</th> -->
+                                <!-- <th>Notes</th> -->
                                 <th class="col-2">Link/UUID</th>
-                                <th class="text-center">Actions</th>
+                                <!-- <th class="text-center">Actions</th> -->
                             </tr>
                         </thead>
-                        <tbody id="tripTableBody">
-                            <!-- Empty table row -->
-                            <tr>
-                                <td colspan="10" class="text-center">No Bookings available</td>
-                            </tr>
-                        </tbody>
+                     <tbody id="tripTableBody">
+    @forelse ($bookings as $index => $booking)
+        <tr>
+            <td>{{ $index + 1 }}</td>
+            <!-- <td>{{ $booking->source ?? '—' }}</td> -->
+            <td>{{ $booking->customer_name ?? '—' }}</td>
+            <td>{{ $booking->booking_status ?? '—' }}</td>
+            <td>{{ $booking->agent->first_name  ?? '—' }} {{ $booking->agent->last_name }}</td>
+            <td>{{ $booking->trip->start_date ?? '—' }}</td>
+            <td>{{ $booking->trip->end_date ?? '—' }}</td>
+            <!-- <td>{{ $booking->comments ?? '—' }}</td> -->
+            <!-- <td>{{ $booking->notes ?? '—' }}</td> -->
+            <td>
+                <button class="btn btn-sm btn-outline-primary" onclick="copyText({{ $booking->id }})">
+                    Copy Link
+                </button>
+                <span id="linkText{{ $booking->id }}" class="d-none">
+                    {{ route('guest.form', $booking->token) }}
+                </span>
+            </td>
+            
+        </tr>
+    @empty
+        <tr>
+            <td colspan="11" class="text-center">No Bookings available</td>
+        </tr>
+    @endforelse
+</tbody>
+
+
                     </table>
                 </div>
             </div>

@@ -6,48 +6,39 @@ use Illuminate\Database\Eloquent\Model;
 
 class Booking extends Model
 {
-protected $fillable = [
-    'trip_id',
-    'customer_name',
-    'customer_email',
-    'customer_phone',
-    'pickup_location',
-    'dropoff_location',
-    'booking_date',
-    'number_of_guests',
-    'total_price',
-    'status',
-    'payment_status',
-    'payment_method',
-    'assigned_agent_id',
-    'source',
-    'notes',
-    'comments',
-    'guest_form_token',
-    'guest_form_url',
-];
+    protected $fillable = [
+        'trip_id',
+        'customer_name',
+        'guests',
+        'source',
+        'email',
+        'phone_number',
+        'nationality',
+        'passport_number',
+        'booking_status',
+        'pickup_location_time',
+        'addons',
+        'room_preference',
+        'agent_id',
+        'comments',
+        'notes',
+        'token',
+    ];
 
 
-    // public function agent()
-    // {
-    //     return $this->belongsTo(Agent::class);
-    // }
-
-       public function leadingGuest()
+       /**
+     * Get the trip that this booking belongs to.
+     */
+    public function trip()
     {
-        return $this->belongsTo(Guest::class, 'leading_guest_id');
+        return $this->belongsTo(Trip::class, 'trip_id');
     }
-    
-    // Trip.php
-public function trip()
-{
-    return $this->belongsTo(Trip::class);
+
+    /**
+     * Get the agent assigned to this booking.
+     */
+    public function agent()
+    {
+        return $this->belongsTo(Agent::class, 'agent_id');
+    }
 }
-
-
-
-
-
-
-}
-

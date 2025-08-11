@@ -414,16 +414,14 @@ public function destroy_finance($id)
      // Bookings
     public function booking_index()
     {
-        $trips = Trip::all();
-        $agents = Agent::all();
-        $tripTypes = Trip::select('trip_type')->distinct()->pluck('trip_type');
-        return view('admin.bookings.index',compact('trips','agents', 'tripTypes'));
+        $bookings = Booking::with(['trip', 'agent'])->latest()->get();
+        return view('admin.bookings.index', compact('bookings'));
     }
 
     public function create_booking()
     {
-         $agents = Agent::all();
-         $trips = Trip::all();
+         $agents = Agent::get();
+         $trips = Trip::get();
 
         return view('admin.bookings.create',compact('agents','trips'));
     }
@@ -431,29 +429,33 @@ public function destroy_finance($id)
     
 
 
-    public function store_booking(Request $request)
+   public function store_booking(Request $request)
     {
-        $token = Str::uuid(); // or Str::random(32)
-        $formUrl = route('guest.form', ['token' => $token]); // generate full URL
-
-        Booking::create([
-            'source'            => $request->source,
-            // 'region'           => $request->region,
-            // 'status'           => $request->status,
-            // 'trip_type'        => $request->trip_type,
-            // 'leading_guest_id' => $request->leading_guest_id,
-            // 'notes'            => $request->notes,
-            // 'start_date'       => $request->start_date,
-            // 'end_date'         => $request->end_date,
-            // 'guests'           => $request->guests,
-            // 'price'            => $request->price,
-            // 'boat'             => $request->boat,
-            // 'agent_id'         => $request->agent_id,
-            'guest_form_token' => $token,
-            'guest_form_url'   => $formUrl,
+        $validated = $request->validate([
+            'trip_id' => 'required|exists:trips,id',
+            'customer_name' => 'required|string|max:255',
+            'guests' => 'required|integer|min:1',
+            'source' => 'required|string|max:255',
+            'email' => 'nullable|email',
+            'phone_number' => 'nullable|string|max:20',
+            'nationality' => 'nullable|string|max:255',
+            'passport_number' => 'nullable|string|max:255',
+            'booking_status' => 'nullable|in:pending,confirmed,cancelled',
+            'pickup_location_time' => 'nullable|string|max:255',
+            'addons' => 'nullable|string|max:255',
+            'room_preference' => 'nullable|in:single,double,suite',
+            'agent_id' => 'nullable|exists:agents,id',
+            'comments' => 'nullable|string',
+            'notes' => 'nullable|string',
         ]);
 
-        return redirect()->route('bookings.index')->with('success', 'Booking created successfully. Share this link with guests: ' . $formUrl);
+        // Generate unique token
+        $validated['token'] = Str::random(32);
+
+        $booking = Booking::create($validated);
+
+        return redirect()->route('bookings.index')
+            ->with('success', 'Booking created successfully. Share this link with the user: ' . route('guest.form', $booking->token));
     }
 
     public function show_booking($id)
