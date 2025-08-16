@@ -33,7 +33,7 @@
     </div>
 
     <div class="col-md-6">
-        <label for="region" class="form-label">Region</label>
+        <label for="region" class="form-label">Sailing Region</label>
         <input type="text" name="region" id="region" class="form-control" placeholder="Enter region" required>
     </div>
 
@@ -45,17 +45,20 @@
             <option value="open">Open (multiple guests)</option>
         </select>
     </div>
-    <div class="col-md-6">
-        <label for="status" class="form-label">Status</label>
-        <select name="status" id="status" class="form-control" required>
-            <option value="">Select status</option>
-            <option value="Available">Available</option>
-            <option value="On Hold">On Hold</option>
-            <option value="Booked">Booked</option>
-        </select>
-    </div>
-
  <div class="col-md-6">
+    <label for="status" class="form-label">Status</label>
+    <select name="status" id="status" class="form-control" required>
+        <option value="">Select status</option>
+        <option value="Available">Available</option>
+        <option value="On Hold">On Hold</option>
+        <option value="Booked">Booked</option>
+        <option value="Maintenance">Maintenance</option>
+        <option value="Docking">Docking</option>
+    </select>
+</div>
+
+
+ <!-- <div class="col-md-6">
     <label for="boat" class="form-label">Boat</label>
     <select name="boat" id="boat" class="form-control" required>
         <option value="">Select boat</option>
@@ -89,7 +92,18 @@
             <option value="Room6">Room6</option>
         </optgroup>
     </select>
+</div> -->
+<div class="col-md-6">
+    <label for="boat" class="form-label">Boat</label>
+    <select name="boat" id="boat" class="form-control" required>
+        <option value="">Select boat</option>
+        <option value="Samara 1 (5 rooms)">Samara 1 (5 rooms)</option>
+        <option value="Samara 1 (4 rooms)">Samara 1 (4 rooms)</option>
+        <option value="Mischief (5 rooms)">Mischief (5 rooms)</option>
+        <option value="Samara (6 rooms)">Samara (6 rooms)</option>
+    </select>
 </div>
+
 
 
 
@@ -104,23 +118,23 @@
     </div>
 
     <div class="col-md-6">
-        <label for="guests" class="form-label">Guests</label>
+        <label for="guests" class="form-label">No Of Guests</label>
         <input type="number" name="guests" id="guests" class="form-control" placeholder="Enter number of guests" required>
     </div>
 
     <div class="col-md-6">
-        <label for="price" class="form-label">Price</label>
-        <input type="text" name="price" id="price" class="form-control" placeholder="Enter price" required>
+        <label for="price" class="form-label">Published Rate</label>
+        <input type="text" name="price" id="price" class="form-control" placeholder="Enter published rate" required>
     </div>
 
- <div class="col-md-6">
+ <!-- <div class="col-md-6">
         <label for="leading_guest_id" class="form-label">Leading Guest</label>
         <select name="leading_guest_id" id="leading_guest_id" class="form-control">
             <option value="">Select guest</option>
           
         </select>
-    </div>
-    <div class="col-md-6">
+    </div> -->
+    <!-- <div class="col-md-6">
         <label for="agent_id" class="form-label">Agent</label>
         <select name="agent_id" id="agent_id" class="form-control" required>
             <option value="">Select agent</option>
@@ -130,7 +144,7 @@
                 </option>
             @endforeach
         </select>
-    </div>
+    </div> -->
      <div class="col-md-6">
         <label for="notes" class="form-label">Notes</label>
         <textarea name="notes" id="notes" class="form-control" rows="3" placeholder="Enter notes"></textarea>

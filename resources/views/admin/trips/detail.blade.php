@@ -40,16 +40,18 @@
                         </div>
                         <div class="row mb-2">
                             <div class="col-md-6">
-                                <strong>Guests Count:</strong> {{ is_iterable($trip->guestList) ? $trip->guestList->count() : 0 }}
+                                <!-- <strong>Guests Count:</strong> {{ is_iterable($trip->guestList) ? $trip->guestList->count() : 0 }} -->
+                                <div class="col-md-6"><strong>No Of Guests:</strong> {{ $trip->guests }}</div>
                             </div>
-                            <div class="col-md-6"><strong>Leading Guest ID:</strong> {{ $trip->leading_guest_id }}</div>
+                            <!-- <div class="col-md-6"><strong>Leading Guest ID:</strong> {{ $trip->leading_guest_id }}</div> -->
+                        <div class="col-md-6"><strong>Notes:</strong> {{ $trip->notes }}</div>
                         </div>
                         <div class="row mb-2">
-                            <div class="col-md-6">
+                            <!-- <div class="col-md-6">
                                 <strong>Agent:</strong>
                                 {{ $trip->agent ? $trip->agent->first_name . ' ' . $trip->agent->last_name : '-' }}
-                            </div>
-                            <div class="col-md-6"><strong>Notes:</strong> {{ $trip->notes }}</div>
+                            </div> -->
+                            
                         </div>
                     </div>
                 </div>

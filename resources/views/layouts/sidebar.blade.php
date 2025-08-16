@@ -97,7 +97,7 @@
 
 @can('booking')
       <li class="nav-item">
-    <a href="/bookings" class="nav-link {{ request()->is('bookings','create-booking','bookings/*') ? 'active' : '' }}">
+    <a href="/bookings" class="nav-link {{ request()->is('bookings','create-booking','booking/*') ? 'active' : '' }}">
         <i class="nav-icon fas fa-clipboard"></i>
         <p>Bookings</p>
     </a>

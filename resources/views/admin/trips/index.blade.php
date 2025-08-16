@@ -27,41 +27,17 @@
             <div class="card-body">
                 <div class="table-responsive">
                     <div class="row mb-4">
-                        <div class="col-md-3">
-                            <label>Boat</label>
-                            <select id="filterBoat" class="form-control">
-                            <option value="">Select boat</option>
-                            <optgroup label="Samara 1 (5 rooms)">
-                                <option value="Rinca">Rinca</option>
-                                <option value="Komodo">Komodo</option>
-                                <option value="Padar">Padar</option>
-                                <option value="Kanawa">Kanawa</option>
-                                <option value="Kelor">Kelor</option>
-                            </optgroup>
-                            <optgroup label="Samara 1 (4 rooms)">
-                                <option value="Room1">Room1</option>
-                                <option value="Room2">Room2</option>
-                                <option value="Room3">Room3</option>
-                                <option value="Room4">Room4</option>
+                       <div class="col-md-3">
+    <label>Boat</label>
+    <select id="filterBoat" class="form-control">
+        <option value="">Select boat</option>
+        <option value="Samara 1 (5 rooms)">Samara 1 (5 rooms)</option>
+        <option value="Samara 1 (4 rooms)">Samara 1 (4 rooms)</option>
+        <option value="Mischief (5 rooms)">Mischief (5 rooms)</option>
+        <option value="Samara (6 rooms)">Samara (6 rooms)</option>
+    </select>
+</div>
 
-                            </optgroup>
-                            <optgroup label="Mischief (5 rooms)">
-                                <option value="Room1">Room1</option>
-                                <option value="Room2">Room2</option>
-                                <option value="Room3">Room3</option>
-                                <option value="Room4">Room4</option>
-                                <option value="Room5">Room5</option>
-                            </optgroup>
-                            <optgroup label="Samara (6 rooms)">
-                                <option value="Room1">Room1</option>
-                                <option value="Room2">Room2</option>
-                                <option value="Room3">Room3</option>
-                                <option value="Room4">Room4</option>
-                                <option value="Room5">Room5</option>
-                                <option value="Room6">Room6</option>
-                            </optgroup>
-                            </select>
-                        </div>
                         <div class="col-md-3">
                             <label>Region</label>
                             <input type="text" id="filterRegion" class="form-control">
@@ -96,7 +72,7 @@
                                 <!-- <th>Leading Guest</th> -->
                                 <!-- <th>Boat</th>
                                 <th>Guests</th> -->
-                                <th>Agent Name</th>
+                                <!-- <th>Agent Name</th> -->
                                 <th>Start Date</th>
                                 <th>End Date</th>
                                 <th>Price</th>
@@ -115,7 +91,7 @@
                                 <!-- <td>{{ $trip->leading_guest_id }}</td> -->
                                 <!-- <td>{{ $trip->boat }}</td>
                                 <td>{{ $trip->guests }}</td> -->
-                                <td class="w-25">{{ $trip->agent ? $trip->agent->first_name . ' ' . $trip->agent->last_name : '-' }}</td>
+                                <!-- <td class="w-25">{{ $trip->agent ? $trip->agent->first_name . ' ' . $trip->agent->last_name : '-' }}</td> -->
                                <td class="w-25">{{ $trip->start_date }}</td>
 
                                 <td class="w-25">{{ $trip->end_date }}</td>
@@ -200,53 +176,30 @@
                                                         </select>
                                                 </div>
 
-                                                <div class="mb-3">
+                                                <!-- <div class="mb-3">
                                                     <label>Leading Guest ID</label>
                                                     <input type="number" name="leading_guest_id" class="form-control" value="{{ $trip->leading_guest_id }}">
-                                                </div>
+                                                </div> -->
                                                 <div class="mb-3">
                                                     <label>Notes</label>
                                                     <textarea name="notes" class="form-control">{{ $trip->notes }}</textarea>
                                                 </div>
-                                                        <div class="mb-3">
-                                                            <label>Boat</label>
-                                                            <select name="boat" class="form-control" required>
-                                                                <option value="">Select boat</option>
-                                                                <optgroup label="Samara 1 (5 rooms)">
-                                                                    <option value="Rinca" {{ $trip->boat == 'Rinca' ? 'selected' : '' }}>Rinca</option>
-                                                                    <option value="Komodo" {{ $trip->boat == 'Komodo' ? 'selected' : '' }}>Komodo</option>
-                                                                    <option value="Padar" {{ $trip->boat == 'Padar' ? 'selected' : '' }}>Padar</option>
-                                                                    <option value="Kanawa" {{ $trip->boat == 'Kanawa' ? 'selected' : '' }}>Kanawa</option>
-                                                                    <option value="Kelor" {{ $trip->boat == 'Kelor' ? 'selected' : '' }}>Kelor</option>
-                                                                </optgroup>
-                                                                <optgroup label="Samara 1 (4 rooms)">
-                                                                    <option value="Room1" {{ $trip->boat == 'Room1' ? 'selected' : '' }}>Room1</option>
-                                                                    <option value="Room2" {{ $trip->boat == 'Room2' ? 'selected' : '' }}>Room2</option>
-                                                                    <option value="Room3" {{ $trip->boat == 'Room3' ? 'selected' : '' }}>Room3</option>
-                                                                    <option value="Room4" {{ $trip->boat == 'Room4' ? 'selected' : '' }}>Room4</option>
-                                                                </optgroup>
-                                                                <optgroup label="Mischief (5 rooms)">
-                                                                    <option value="Room1" {{ $trip->boat == 'Room1' ? 'selected' : '' }}>Room1</option>
-                                                                    <option value="Room2" {{ $trip->boat == 'Room2' ? 'selected' : '' }}>Room2</option>
-                                                                    <option value="Room3" {{ $trip->boat == 'Room3' ? 'selected' : '' }}>Room3</option>
-                                                                    <option value="Room4" {{ $trip->boat == 'Room4' ? 'selected' : '' }}>Room4</option>
-                                                                    <option value="Room5" {{ $trip->boat == 'Room5' ? 'selected' : '' }}>Room5</option>
-                                                                </optgroup>
-                                                                <optgroup label="Samara (6 rooms)">
-                                                                    <option value="Room1" {{ $trip->boat == 'Room1' ? 'selected' : '' }}>Room1</option>
-                                                                    <option value="Room2" {{ $trip->boat == 'Room2' ? 'selected' : '' }}>Room2</option>
-                                                                    <option value="Room3" {{ $trip->boat == 'Room3' ? 'selected' : '' }}>Room3</option>
-                                                                    <option value="Room4" {{ $trip->boat == 'Room4' ? 'selected' : '' }}>Room4</option>
-                                                                    <option value="Room5" {{ $trip->boat == 'Room5' ? 'selected' : '' }}>Room5</option>
-                                                                    <option value="Room6" {{ $trip->boat == 'Room6' ? 'selected' : '' }}>Room6</option>
-                                                                </optgroup>
-                                                            </select>
-                                                    </div>
+                                                       <div class="mb-3">
+    <label>Boat</label>
+    <select name="boat" class="form-control" required>
+        <option value="">Select boat</option>
+        <option value="Samara 1 (5 rooms)" {{ $trip->boat == 'Samara 1 (5 rooms)' ? 'selected' : '' }}>Samara 1 (5 rooms)</option>
+        <option value="Samara 1 (4 rooms)" {{ $trip->boat == 'Samara 1 (4 rooms)' ? 'selected' : '' }}>Samara 1 (4 rooms)</option>
+        <option value="Mischief (5 rooms)" {{ $trip->boat == 'Mischief (5 rooms)' ? 'selected' : '' }}>Mischief (5 rooms)</option>
+        <option value="Samara (6 rooms)" {{ $trip->boat == 'Samara (6 rooms)' ? 'selected' : '' }}>Samara (6 rooms)</option>
+    </select>
+</div>
+
                                                 <div class="mb-3">
                                                     <label>Guests</label>
                                                     <input type="number" name="guests" class="form-control" value="{{ $trip->guests }}" required>
                                                 </div>
-                                                <div class="mb-3">
+                                                <!-- <div class="mb-3">
                                                     <label>Agent</label>
                                                     <select name="agent_id" class="form-control" required>
                                                         @foreach($agents as $agent)
@@ -255,7 +208,7 @@
                                                             </option>
                                                         @endforeach
                                                     </select>
-                                                </div>
+                                                </div> -->
                                                 <div class="mb-3">
                                                     <label>Start Date</label>
                                                     <input type="date" name="start_date" class="form-control" value="{{ $trip->start_date }}" required>

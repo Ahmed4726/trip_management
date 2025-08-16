@@ -262,19 +262,10 @@ class AdminController extends Controller
                 <td>' . $trip->title . '</td>
                 <td>' . $trip->region . '</td>
                 <td>' . $trip->status . '</td>
-                <td>' . $trip->trip_type . '</td>
-                <td>' . $trip->leading_guest_id . '</td>
-                <td>' . $trip->boat . '</td>
-                <td>' . $trip->guests . '</td>
-                <td>' . ($trip->agent ? $trip->agent->first_name . ' ' . $trip->agent->last_name : '-') . '</td>
                 <td>' . $trip->start_date . '</td>
                 <td>' . $trip->end_date . '</td>
                 <td>$' . $trip->price . '</td>
-                <td>
-                    <span id="linkText' . $trip->id . '" onclick="copyText(\'' . $trip->id . '\')" style="cursor: pointer; color: blue; text-decoration: underline;">
-                        ' . $trip->guest_form_url . '
-                    </span>
-                </td>
+               
                 <td class="text-center">
                     <div class="d-flex justify-content-center">
                         <button type="button" class="btn btn-sm btn-primary mx-2" data-toggle="modal" data-target="#editTripModal' . $trip->id . '">
@@ -316,7 +307,7 @@ class AdminController extends Controller
          
         ]);
 
-        return redirect()->route('trips.index')->with('success', 'Trip created successfully. Share this link with guests: ' . $formUrl);
+        return redirect()->route('trips.index')->with('success', 'Trip created successfully.');
     }
 
     public function show($id)
@@ -357,6 +348,39 @@ class AdminController extends Controller
 
         return redirect()->route('trips.index')->with('success', 'Trip deleted successfully.');
     }
+
+    // app/Http/Controllers/TripController.php
+
+// public function getRooms($tripId)
+// {
+//     $trip = Trip::findOrFail($tripId);
+
+//     // Extract number of rooms from boat name e.g. "Samara 1 (5 rooms)"
+//     preg_match('/\((\d+)\s*rooms?\)/i', $trip->boat, $matches);
+//     $rooms = isset($matches[1]) ? (int)$matches[1] : 0;
+
+//     return response()->json(['rooms' => $rooms]);
+// }
+
+
+public function getRooms($tripId)
+{
+    $trip = Trip::findOrFail($tripId);
+
+    // Extract total rooms from boat name
+    preg_match('/\((\d+)\s*rooms?\)/i', $trip->boat, $matches);
+    $totalRooms = isset($matches[1]) ? (int)$matches[1] : 0;
+
+    // Already booked guest numbers
+    $booked = Booking::where('trip_id', $tripId)->pluck('guests')->toArray();
+
+    // Available = total minus booked
+    $availableRooms = array_values(array_diff(range(1, $totalRooms), $booked));
+
+    return response()->json([
+        'rooms' => $availableRooms
+    ]);
+}
 
 
     // Finances
@@ -412,11 +436,66 @@ public function destroy_finance($id)
     }
 
      // Bookings
-    public function booking_index()
-    {
-        $bookings = Booking::with(['trip', 'agent'])->latest()->get();
-        return view('admin.bookings.index', compact('bookings'));
+public function booking_index(Request $request)
+{
+    $bookings = Booking::with(['trip', 'agent'])
+        ->when($request->customer_name, function ($q) use ($request) {
+            $q->where('customer_name', 'like', '%' . $request->customer_name . '%');
+        })
+        ->when($request->status, function ($q) use ($request) {
+            $q->where('booking_status', $request->status);
+        })
+        ->when($request->start_date, function ($q) use ($request) {
+            $q->whereHas('trip', function ($q2) use ($request) {
+                $q2->whereDate('start_date', '>=', $request->start_date);
+            });
+        })
+        ->when($request->end_date, function ($q) use ($request) {
+            $q->whereHas('trip', function ($q2) use ($request) {
+                $q2->whereDate('end_date', '<=', $request->end_date);
+            });
+        })
+        ->latest()
+        ->get();
+
+    if ($request->ajax()) {
+        $html = '';
+        if ($bookings->count()) {
+            foreach ($bookings as $index => $booking) {
+                $html .= '
+                <tr>
+                    <td>'.($index+1).'</td>
+                    <td>'.($booking->customer_name ?? "—").'</td>
+                    <td>'.($booking->booking_status ?? "—").'</td>
+                    <td>'.(optional($booking->agent)->first_name.' '.optional($booking->agent)->last_name).'</td>
+                    <td>'.($booking->trip->start_date ?? "—").'</td>
+                    <td>'.($booking->trip->end_date ?? "—").'</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="copyText('.$booking->id.')">Copy Link</button>
+                        <span id="linkText'.$booking->id.'" class="d-none">'.route("guest.form",$booking->token).'</span>
+                    </td>
+                    <td>'.($booking->source ?? "—").'</td>
+                    <td class="text-center">
+                        <div class="d-flex justify-content-center">
+                            <a href="'.route("bookings.show",$booking->id).'" class="btn btn-sm btn-success mx-2">View</a>
+                            <a href="'.route("bookings.edit",$booking->id).'" class="btn btn-sm btn-primary mx-2">Edit</a>
+                            <form action="'.route("bookings.destroy",$booking->id).'" method="POST" onsubmit="return confirm(\'Are you sure?\')">
+                                '.csrf_field().method_field("DELETE").'
+                                <button type="submit" class="btn btn-sm btn-danger mx-2">Delete</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>';
+            }
+        } else {
+            $html .= '<tr><td colspan="11" class="text-center">No Bookings available</td></tr>';
+        }
+        return response()->json(['html' => $html]);
     }
+
+    return view('admin.bookings.index', compact('bookings'));
+}
+
 
     public function create_booking()
     {
@@ -460,41 +539,55 @@ public function destroy_finance($id)
 
     public function show_booking($id)
     {
-        $trip = Trip::with(['agent', 'guestList.otherGuests'])->findOrFail($id);
-        return view('admin.trips.detail', compact('trip'));
+        $booking = Booking::with(['trip', 'agent'])->findOrFail($id);
+        return view('admin.bookings.detail', compact('booking'));
     }
+
+    public function edit_booking($id)
+    {
+        $booking = Booking::findOrFail($id);
+        $trips   = Trip::all();
+        $agents  = Agent::all();
+
+        return view('admin.bookings.edit', compact('booking', 'trips', 'agents'));
+    }
+
 
 
 
     public function update_booking(Request $request, $id)
     {
-        $trip = Trip::findOrFail($id);
-
-        $trip->update([
-            'title'            => $request->title,
-            'region'           => $request->region,
-            'status'           => $request->status,
-            'trip_type'        => $request->trip_type,
-            'leading_guest_id' => $request->leading_guest_id,
-            'notes'            => $request->notes,
-            'start_date'       => $request->start_date,
-            'end_date'         => $request->end_date,
-            'guests'           => $request->guests,
-            'price'            => $request->price,
-            'boat'             => $request->boat,
-            'agent_id'         => $request->agent_id,
+        $validated = $request->validate([
+            'trip_id' => 'required|exists:trips,id',
+            'customer_name' => 'required|string|max:255',
+            'guests' => 'required|integer|min:1',
+            'source' => 'required|string|max:255',
+            'email' => 'nullable|email',
+            'phone_number' => 'nullable|string|max:20',
+            'nationality' => 'nullable|string|max:255',
+            'passport_number' => 'nullable|string|max:255',
+            'booking_status' => 'nullable|in:pending,confirmed,cancelled',
+            'pickup_location_time' => 'nullable|string|max:255',
+            'addons' => 'nullable|string|max:255',
+            'room_preference' => 'nullable|in:single,double,suite',
+            'agent_id' => 'nullable|exists:agents,id',
+            'comments' => 'nullable|string',
+            'notes' => 'nullable|string',
         ]);
 
-        return redirect()->route('trips.index')->with('success', 'Booking updated successfully.');
+        $booking = Booking::findOrFail($id);
+        $booking->update($validated);
+
+        return redirect()->route('bookings.index')->with('success', 'Booking updated successfully.');
     }
 
 
     public function destroy_booking($id)
     {
-        $trip = Trip::findOrFail($id);
-        $trip->delete();
+        $booking = Booking::findOrFail($id);
+        $booking->delete();
 
-        return redirect()->route('trips.index')->with('success', 'Booking deleted successfully.');
+        return redirect()->route('bookings.index')->with('success', 'Booking deleted successfully.');
     }
 
 

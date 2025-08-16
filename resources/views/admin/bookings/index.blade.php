@@ -22,65 +22,30 @@
 
         <div class="card">
             <div class="card-body">
-                <div class="table-responsive">
-                    <!-- <div class="row mb-4">
-                        <div class="col-md-3">
-                            <label>Boat</label>
-                            <select id="filterBoat" class="form-control">
-                                <option value="">Select boat</option>
-                                <optgroup label="Samara 1 (5 rooms)">
-                                    <option value="Rinca">Rinca</option>
-                                    <option value="Komodo">Komodo</option>
-                                    <option value="Padar">Padar</option>
-                                    <option value="Kanawa">Kanawa</option>
-                                    <option value="Kelor">Kelor</option>
-                                </optgroup>
-                                <optgroup label="Samara 1 (4 rooms)">
-                                    <option value="Room1">Room1</option>
-                                    <option value="Room2">Room2</option>
-                                    <option value="Room3">Room3</option>
-                                    <option value="Room4">Room4</option>
-                                </optgroup>
-                                <optgroup label="Mischief (5 rooms)">
-                                    <option value="Room1">Room1</option>
-                                    <option value="Room2">Room2</option>
-                                    <option value="Room3">Room3</option>
-                                    <option value="Room4">Room4</option>
-                                    <option value="Room5">Room5</option>
-                                </optgroup>
-                                <optgroup label="Samara (6 rooms)">
-                                    <option value="Room1">Room1</option>
-                                    <option value="Room2">Room2</option>
-                                    <option value="Room3">Room3</option>
-                                    <option value="Room4">Room4</option>
-                                    <option value="Room5">Room5</option>
-                                    <option value="Room6">Room6</option>
-                                </optgroup>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label>Region</label>
-                            <input type="text" id="filterRegion" class="form-control">
-                        </div>
-                        <div class="col-md-2">
-                            <label>Status</label>
-                            <select id="filterStatus" class="form-control">
-                                <option value="">Select status</option>
-                                <option value="Available">Available</option>
-                                <option value="On Hold">On Hold</option>
-                                <option value="Booked">Booked</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label>Start Date</label>
-                            <input type="date" id="filterStartDate" class="form-control">
-                        </div>
-                        <div class="col-md-2">
-                            <label>End Date</label>
-                            <input type="date" id="filterEndDate" class="form-control">
-                        </div>
-                    </div> -->
+                <form id="filterForm" class="row g-2 mb-3">
+    <div class="col-md-2">
+        <input type="text" name="customer_name" id="filterCustomer" class="form-control" placeholder="Customer Name">
+    </div>
+    <div class="col-md-2">
+        <select name="status" id="filterStatus" class="form-control">
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="cancelled">Cancelled</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <input type="date" name="start_date" id="filterStartDate" class="form-control">
+    </div>
+    <div class="col-md-2">
+        <input type="date" name="end_date" id="filterEndDate" class="form-control">
+    </div>
+    <div class="col-md-2">
+        <button type="button" id="searchBtn" class="btn btn-primary w-100">Search</button>
+    </div>
+</form>
 
+                <div class="table-responsive">
                     <table class="table table-bordered table-striped align-middle">
                         <thead class="table-light text-uppercase small">
                             <tr>
@@ -93,8 +58,9 @@
                                 <th>End Date</th>
                                 <!-- <th>Comments</th> -->
                                 <!-- <th>Notes</th> -->
-                                <th class="col-2">Link/UUID</th>
-                                <!-- <th class="text-center">Actions</th> -->
+                                <th class="">Link/UUID</th>
+                                <th class="">Source</th>
+                                <th class="text-center">Actions</th>
                             </tr>
                         </thead>
                      <tbody id="tripTableBody">
@@ -104,11 +70,11 @@
             <!-- <td>{{ $booking->source ?? '—' }}</td> -->
             <td>{{ $booking->customer_name ?? '—' }}</td>
             <td>{{ $booking->booking_status ?? '—' }}</td>
-            <td>{{ $booking->agent->first_name  ?? '—' }} {{ $booking->agent->last_name }}</td>
+          <td>{{ optional($booking->agent)->first_name }} {{ optional($booking->agent)->last_name }}</td>
+
             <td>{{ $booking->trip->start_date ?? '—' }}</td>
             <td>{{ $booking->trip->end_date ?? '—' }}</td>
-            <!-- <td>{{ $booking->comments ?? '—' }}</td> -->
-            <!-- <td>{{ $booking->notes ?? '—' }}</td> -->
+           
             <td>
                 <button class="btn btn-sm btn-outline-primary" onclick="copyText({{ $booking->id }})">
                     Copy Link
@@ -117,7 +83,33 @@
                     {{ route('guest.form', $booking->token) }}
                 </span>
             </td>
-            
+             <td>{{ $booking->source ?? '—' }}</td>
+             <td class="text-center">
+    <div class="d-flex justify-content-center">
+          <!-- View Button -->
+           @can('view-trips')
+        <a href="{{ route('bookings.show', $booking->id) }}" class="btn btn-sm btn-success mx-2">
+            View
+        </a>
+        @endcan
+        <!-- Edit Button -->
+
+        @can('edit-trip')
+        <a href="{{ route('bookings.edit',$booking->id) }}" class="btn btn-sm btn-primary mx-2"
+            data-target="">
+            Edit
+        </a>
+        @endcan
+                @can('delete-trip')
+                                        <!-- Delete Form -->
+                                        <form action="{{ route('bookings.destroy', $booking->id) }}" method="POST">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button onclick="return confirm('Are you sure?')" class="btn btn-sm btn-danger">Delete</button>
+                                        </form>
+                                        @endcan
+                                    </div>
+                                </td>
         </tr>
     @empty
         <tr>
@@ -139,17 +131,11 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
-function fetchTrips() {
+$('#searchBtn').on('click', function () {
     $.ajax({
-        url: "{{ route('trips.filter') }}",
+        url: "{{ route('bookings.index') }}",
         method: "GET",
-        data: {
-            boat: $('#filterBoat').val(),
-            region: $('#filterRegion').val(),
-            status: $('#filterStatus').val(),
-            start_date: $('#filterStartDate').val(),
-            end_date: $('#filterEndDate').val(),
-        },
+        data: $('#filterForm').serialize(),
         success: function (response) {
             $('#tripTableBody').html(response.html);
         },
@@ -157,7 +143,8 @@ function fetchTrips() {
             alert('Something went wrong!');
         }
     });
-}
+});
+
 
 $('#filterBoat, #filterRegion, #filterStatus, #filterStartDate, #filterEndDate').on('change', fetchTrips);
 

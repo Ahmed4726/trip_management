@@ -97,13 +97,19 @@ Route::middleware('auth')->group(function () {
     Route::post('/guest-store', [GuestController::class, 'store'])->name('guest.store');
 
 
-     //Manage Trips
+     //Manage Bookings
     Route::get('/bookings', [AdminController::class, 'booking_index'])->name('bookings.index');
     Route::get('/create-booking', [AdminController::class, 'create_booking'])->name('bookings.create');
     Route::post('/store-booking', [AdminController::class, 'store_booking'])->name('bookings.store');
-    Route::post('booking/{id}', [AdminController::class, 'update_booking'])->name('bookings.update');
+    Route::put('booking/{id}', [AdminController::class, 'update_booking'])->name('bookings.update');
     Route::get('/booking/{id}', [AdminController::class, 'show_booking'])->name('bookings.show');
+    Route::get('/booking/edit/{id}', [AdminController::class, 'edit_booking'])->name('bookings.edit');
     Route::delete('booking/{id}', [AdminController::class, 'destroy_booking'])->name('bookings.destroy');
+
+    // Manage rooms
+    // routes/web.php
+    Route::get('/trips/{trip}/rooms', [AdminController::class, 'getRooms'])->name('trips.rooms');
+
 });
 
 
