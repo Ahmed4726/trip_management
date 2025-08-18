@@ -12,7 +12,7 @@ class GuestController extends Controller
 
    public function store(Request $request)
     {
-
+      
 
         $guest = Guest::create([
             'trip_id' => $request->trip_id,
@@ -122,17 +122,14 @@ public function show_guest($id)
 // PDF
 
 
-    public function download_pdf($id)
-    {
-        $guest = Guest::with(['trip', 'booking'])->findOrFail($id);
+public function download_pdf($id)
+{
+    $guest = Guest::with('trip')->findOrFail($id);
 
-        $pdf = PDF::loadView('guests.pdf.view', compact('guest'))
-                  ->setPaper('a4')
-                  ->setOption('margin-top', 10);
+    $pdf = Pdf::loadView('guests.pdf.view', compact('guest'));
 
-        // return $pdf->inline('guest-'.$guest->id.'.pdf'); // view in browser
-        return $pdf->download('guest-'.$guest->id.'.pdf'); // force download
-    }
+    return $pdf->download('guest-'.$guest->id.'.pdf');
+}
 
 
 }
