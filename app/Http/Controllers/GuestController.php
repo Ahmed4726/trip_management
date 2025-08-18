@@ -12,7 +12,7 @@ class GuestController extends Controller
 
    public function store(Request $request)
     {
-      
+
 
         $guest = Guest::create([
             'trip_id' => $request->trip_id,

@@ -21,32 +21,33 @@ Route::get('/test-pdf', function () {
 Route::get('/download-pdf', function () {
     {
         $users = User::get();
-    
+
         $data = [
             'title' => 'Welcome to ItSolutionStuff.com',
             'date' => date('m/d/Y'),
             'users' => $users
-        ]; 
-              
+        ];
+
         $pdf = PDF::loadView('pdf', $data);
-       
+
         return $pdf->download('itsolutionstuff.pdf');
     }
 });
 
-
-  Route::get('/guest/form/{token}', [GuestController::class, 'show'])->name('guest.form');
+    Route::get('/guest/form/{token}', [GuestController::class, 'show'])->name('guest.form');
     Route::post('/guest/form/{token}', [GuestController::class, 'submit'])->name('guest.form.submit');
-Route::get('/', function () {
-    return view('welcome');
-});
+
+
+    Route::get('/', function () {
+        return view('welcome');
+    });
 
 Route::get('/about',[HomeController::class, 'about']);
 Route::get('/trips',[HomeController::class, 'trips']);
 Route::get('/blog',[HomeController::class, 'blog']);
 Route::get('/contact',[HomeController::class, 'contact']);
 
-  
+
 
 // web.php
 Route::get('/dashboard', [AdminController::class, 'dashboard'])
@@ -105,8 +106,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/trips/{id}', [AdminController::class, 'show'])->name('trips.show');
     Route::delete('trips/{id}', [AdminController::class, 'destroy_trip'])->name('trips.destroy');
 
-    Route::get('/guest/form/{token}', [GuestController::class, 'show'])->name('guest.form');
-    Route::post('/guest/form/{token}', [GuestController::class, 'submit'])->name('guest.form.submit');
     Route::get('/admin/trips/filter', [AdminController::class, 'filter'])->name('trips.filter');
 
 
@@ -139,7 +138,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/trips/{trip}/rooms', [AdminController::class, 'getRooms'])->name('trips.rooms');
 
 
-    
+
 
 });
 
