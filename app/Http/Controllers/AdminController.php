@@ -5,6 +5,7 @@ use App\Models\Trip;
 use App\Models\Booking;
 use Spatie\Permission\Models\Role;
 use App\Models\User;
+use App\Models\Guest;
 use App\Models\Agent;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -134,6 +135,7 @@ class AdminController extends Controller
             'email'      => $request->email,
             'phone'      => $request->phone,
             'commission' => $request->commission,
+            'company' => $request->company,
         ]);
         return redirect()->route('agents.index')->with('success', 'Agent created successfully.');
     }
@@ -208,6 +210,7 @@ class AdminController extends Controller
         'email'      => $request->email,
         'phone'      => $request->phone,
         'commission' => $request->commission,
+        'company' => $request->company,
         ]);
 
         return redirect()->route('agents.index')->with('success', 'Agent updated successfully.');
@@ -430,10 +433,12 @@ public function destroy_finance($id)
 }
 
     //Guests
-     public function guest_index()
-    {
-        return view('guests.index');
-    }
+         public function guest_index()
+{
+    $guests = Guest::all();
+
+    return view('guests.index', compact('guests'));
+}
 
      // Bookings
 public function booking_index(Request $request)

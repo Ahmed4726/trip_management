@@ -3,9 +3,9 @@
 <div class="content-wrapper">
     <div class="container pt-3">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="h4">Manage Trips</h2>
+            <h2 class="h4">Manage Availabilities</h2>
             @can('create-trip')
-            <a href="{{ route('trips.create') }}" class="btn btn-primary">Create Trip</a>
+            <a href="{{ route('trips.create') }}" class="btn btn-primary">Create</a>
             @endcan
         </div>
 

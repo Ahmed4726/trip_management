@@ -19,7 +19,7 @@
             <div class="tab-pane fade show active" id="info" role="tabpanel">
                 <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">Trip Information</h5>
+                        <h5 class="mb-0">Availability Information</h5>
                     </div>
                     <div class="card-body">
                         <div class="row mb-2">

@@ -57,12 +57,16 @@
 </button>
 
 
-        <!-- Delete Form -->
+      <!-- Delete Form (hide if admin) -->
+    @if(!$user->hasRole('admin'))
         <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="d-inline">
             @csrf
             @method('DELETE')
             <button onclick="return confirm('Are you sure?')" class="btn btn-sm btn-danger">Delete</button>
         </form>
+    @else
+        <button class="btn btn-sm btn-secondary" disabled>Protected</button>
+    @endif
     </td>
 </tr>
 

@@ -90,7 +90,7 @@
        <li class="nav-item">
     <a href="/trips" class="nav-link {{ request()->is('trips','create-trip','trips/*') ? 'active' : '' }}">
         <i class="nav-icon fas fa-plane"></i>
-        <p>Trips</p>
+        <p>Availability</p>
     </a>
 </li>
 @endcan
@@ -115,7 +115,7 @@
 
 @can('guests')
    <li class="nav-item">
-    <a href="/guests" class="nav-link {{ request()->is('guests','') ? 'active' : '' }}">
+    <a href="/guests" class="nav-link {{ request()->is('guests','guest/*') ? 'active' : '' }}">
         <i class="nav-icon fas fa-user-friends"></i>
         <p>Guests</p>
     </a>

@@ -6,30 +6,13 @@ use App\Models\Booking;
 use Illuminate\Http\Request;
 use App\Models\Trip;
 use App\Models\Guest;
+use Barryvdh\Snappy\Facades\SnappyPdf as PDF;
 class GuestController extends Controller
 {
 
    public function store(Request $request)
     {
-        // dd($request);
-        // $request->validate([
-        //     'name' => 'required',
-        //     'gender' => 'required',
-        //     'email' => 'required|email',
-        //     'dob' => 'required|date',
-        //     'passport' => 'required',
-        //     'nationality' => 'required',
-        //     'cabin' => 'required',
-        //     'surfLevel' => 'required',
-        //     'arrivalFlightDate' => 'required|date',
-        //     'arrivalFlightNumber' => 'required',
-        //     'arrivalAirport' => 'required',
-        //     'arrivalTime' => 'required',
-        //     'departureFlightDate' => 'required|date',
-        //     'departureFlightNumber' => 'required',
-        //     'departureAirport' => 'required',
-        //     'departureTime' => 'required',
-        // ]);
+      
 
         $guest = Guest::create([
             'trip_id' => $request->trip_id,
@@ -127,4 +110,29 @@ class GuestController extends Controller
 
         return redirect()->back()->with('success', 'Guest info submitted!');
     }
+
+public function show_guest($id)
+{
+    // Load guest with its trip and booking
+    $guest = Guest::with(['trip', 'booking'])->findOrFail($id);
+
+    return view('guests.detail', compact('guest'));
+}
+
+// PDF
+
+
+    public function download_pdf($id)
+    {
+        $guest = Guest::with(['trip', 'booking'])->findOrFail($id);
+
+        $pdf = PDF::loadView('guests.pdf.view', compact('guest'))
+                  ->setPaper('a4')
+                  ->setOption('margin-top', 10);
+
+        // return $pdf->inline('guest-'.$guest->id.'.pdf'); // view in browser
+        return $pdf->download('guest-'.$guest->id.'.pdf'); // force download
+    }
+
+
 }

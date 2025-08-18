@@ -75,14 +75,15 @@
             <td>{{ $booking->trip->start_date ?? '—' }}</td>
             <td>{{ $booking->trip->end_date ?? '—' }}</td>
            
-            <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="copyText({{ $booking->id }})">
-                    Copy Link
-                </button>
-                <span id="linkText{{ $booking->id }}" class="d-none">
-                    {{ route('guest.form', $booking->token) }}
-                </span>
-            </td>
+         <td>
+    <button class="btn btn-sm btn-outline-primary" onclick="copyText({{ $booking->id }})">
+        Copy Link
+    </button>
+    <span id="linkText{{ $booking->id }}" class="d-none">
+        {{ route('guest.form', $booking->token) }}?trip_id={{ $booking->trip_id }}
+    </span>
+</td>
+
              <td>{{ $booking->source ?? '—' }}</td>
              <td class="text-center">
     <div class="d-flex justify-content-center">

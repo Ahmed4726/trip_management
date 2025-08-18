@@ -11,7 +11,8 @@ class Agent extends Model
         'last_name',
         'email',
         'commission',
-        'phone'
+        'phone',
+        'company'
     ];
 
     public function trips()

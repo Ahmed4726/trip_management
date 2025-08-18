@@ -3,7 +3,7 @@
 <div class="content-wrapper">
 <div class="container pt-3">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h4">Create Trip</h2>
+        <h2 class="h4">Create Availability</h2>
         <a href="{{ route('trips.index') }}" class="btn btn-secondary">Back</a>
     </div>
 

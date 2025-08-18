@@ -53,6 +53,10 @@
         <label for="commission" class="form-label">Commission (%)</label>
         <input type="number" name="commission" id="commission" class="form-control" placeholder="Enter commission percentage">
     </div>
+      <div class="col-md-6">
+        <label for="company" class="form-label">Company Name</label>
+        <input type="text" name="company" id="company" class="form-control" placeholder="Enter company name">
+    </div>
 </div>
 
 

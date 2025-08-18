@@ -84,6 +84,7 @@
                                                 data-email="{{ $agent->email }}"
                                                 data-commission="{{ $agent->commission }}"
                                                 data-phone="{{ $agent->phone }}"
+                                                data-company="{{ $agent->company }}"
                                             > Edit
                                             </button>
                                     @endcan
@@ -132,6 +133,10 @@
                                             <div class="mb-3">
                                                 <label>Commission (%)</label>
                                                 <input type="number" name="commission" class="form-control" value="{{ $agent->commission }}" required>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label>Company name</label>
+                                                <input type="text" name="company" class="form-control" value="{{ $agent->company }}" required>
                                             </div>
                                         </div>
 

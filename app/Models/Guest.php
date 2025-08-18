@@ -26,6 +26,15 @@ public function otherGuests()
 {
     return $this->hasMany(OtherGuest::class, 'guest_id');
 }
+   public function trip()
+    {
+        return $this->belongsTo(Trip::class, 'trip_id');
+    }
+
+    public function booking()
+    {
+        return $this->belongsTo(Booking::class, 'booking_id');
+    }
 
 }
 

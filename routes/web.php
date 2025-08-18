@@ -4,13 +4,39 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\GuestController;
 use App\Http\Controllers\ProfileController;
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\RolePermissionController;
 
+use Barryvdh\DomPDF\Facade\Pdf;
+
+Route::get('/test-pdf', function () {
+    $pdf = Pdf::loadHTML('<h1>Hello World</h1><p>This is working!</p>');
+    return $pdf->download('test.pdf');
+});
 
 
+Route::get('/download-pdf', function () {
+    {
+        $users = User::get();
+    
+        $data = [
+            'title' => 'Welcome to ItSolutionStuff.com',
+            'date' => date('m/d/Y'),
+            'users' => $users
+        ]; 
+              
+        $pdf = PDF::loadView('pdf', $data);
+       
+        return $pdf->download('itsolutionstuff.pdf');
+    }
+});
+
+
+  Route::get('/guest/form/{token}', [GuestController::class, 'show'])->name('guest.form');
+    Route::post('/guest/form/{token}', [GuestController::class, 'submit'])->name('guest.form.submit');
 Route::get('/', function () {
     return view('welcome');
 });
@@ -20,8 +46,7 @@ Route::get('/trips',[HomeController::class, 'trips']);
 Route::get('/blog',[HomeController::class, 'blog']);
 Route::get('/contact',[HomeController::class, 'contact']);
 
-    Route::get('/guest/form/{token}', [GuestController::class, 'show'])->name('guest.form');
-    Route::post('/guest/form/{token}', [GuestController::class, 'submit'])->name('guest.form.submit');
+  
 
 // web.php
 Route::get('/dashboard', [AdminController::class, 'dashboard'])
@@ -95,6 +120,10 @@ Route::middleware('auth')->group(function () {
     //Manage Guests
     Route::get('/guests', [AdminController::class, 'guest_index'])->name('guest.index');
     Route::post('/guest-store', [GuestController::class, 'store'])->name('guest.store');
+    Route::get('/guest/{id}', [GuestController::class, 'show_guest'])->name('guest.show');
+
+    //Guests PDF
+    Route::get('/guest/{id}/pdf', [GuestController::class, 'download_pdf'])->name('guest.download.pdf');
 
 
      //Manage Bookings
@@ -107,8 +136,10 @@ Route::middleware('auth')->group(function () {
     Route::delete('booking/{id}', [AdminController::class, 'destroy_booking'])->name('bookings.destroy');
 
     // Manage rooms
-    // routes/web.php
     Route::get('/trips/{trip}/rooms', [AdminController::class, 'getRooms'])->name('trips.rooms');
+
+
+    
 
 });
 
