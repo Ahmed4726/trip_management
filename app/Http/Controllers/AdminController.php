@@ -18,7 +18,6 @@ class AdminController extends Controller
 
     public function __construct()
     {
-        // dd(app('tenant'));
         // If tenant is resolved via middleware, set it
         $this->tenant = app()->bound('tenant') ? app('tenant') : null;
     }

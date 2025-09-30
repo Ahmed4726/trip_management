@@ -3,55 +3,48 @@
 namespace App\Http\Controllers;
 
 use App\Models\Booking;
-use Illuminate\Http\Request;
 use App\Models\Trip;
 use App\Models\Guest;
+use Illuminate\Http\Request;
 use Barryvdh\Snappy\Facades\SnappyPdf as PDF;
+
 class GuestController extends Controller
 {
-
+    /**
+     * List all guests for the current tenant (Admin side).
+     */
     public function guest_index()
     {
-        $guests = Guest::all();
+        $company = app('tenant');
+
+        $guests = Guest::whereHas('trip', function ($q) use ($company) {
+            $q->where('company_id', $company->id);
+        })->get();
 
         return view('guests.index', compact('guests'));
     }
 
+    /**
+     * Store a new guest (Admin adding manually).
+     */
     public function store(Request $request)
     {
-        $guest = Guest::create([
-            'trip_id' => $request->trip_id,
-            'name' => $request->name,
-            'gender' => $request->gender,
-            'email' => $request->email,
-            'dob' => $request->dob,
-            'passport' => $request->passport,
-            'nationality' => $request->nationality,
-            'cabin' => $request->cabin,
-            'surfLevel' => $request->surfLevel,
-            'boardDetails' => $request->boardDetails,
+        $company = app('tenant');
 
-            'arrivalFlightDate' => $request->arrivalFlightDate,
-            'arrivalFlightNumber' => $request->arrivalFlightNumber,
-            'arrivalAirport' => $request->arrivalAirport,
-            'arrivalTime' => $request->arrivalTime,
-            'hotelPickup' => $request->hotelPickup,
-            'departureFlightDate' => $request->departureFlightDate,
-            'departureFlightNumber' => $request->departureFlightNumber,
-            'departureAirport' => $request->departureAirport,
-            'departureTime' => $request->departureTime,
+        // Verify the trip belongs to current tenant
+        $trip = Trip::where('company_id', $company->id)
+            ->findOrFail($request->trip_id);
 
-            'medicalDietary' => $request->medicalDietary,
-            'specialRequests' => $request->specialRequests,
-            'insuranceName' => $request->insuranceName,
-            'policyNumber' => $request->policyNumber,
-            'emergencyName' => $request->emergencyName,
-            'emergencyRelation' => $request->emergencyRelation,
-            'emergencyPhone' => $request->emergencyPhone,
-            'guestWhatsapp' => $request->guestWhatsapp,
-            'guestEmail' => $request->guestEmail,
-        ]);
+        $guest = $trip->guests()->create($request->only([
+            'name','gender','email','dob','passport','nationality',
+            'cabin','surfLevel','boardDetails',
+            'arrivalFlightDate','arrivalFlightNumber','arrivalAirport','arrivalTime','hotelPickup',
+            'departureFlightDate','departureFlightNumber','departureAirport','departureTime',
+            'medicalDietary','specialRequests','insuranceName','policyNumber',
+            'emergencyName','emergencyRelation','emergencyPhone','guestWhatsapp','guestEmail'
+        ]));
 
+        // Handle uploads
         if ($request->hasFile('image')) {
             $imagePath = $request->file('image')->store('guests/images', 'public');
             $guest->update(['image_path' => $imagePath]);
@@ -67,72 +60,86 @@ class GuestController extends Controller
             $guest->update(['video_path' => $videoPath]);
         }
 
+        // Add other guests (companions)
         if ($request->has('guest_name')) {
-            $guestCount = count($request->guest_name);
-
-            for ($i = 0; $i < $guestCount; $i++) {
+            foreach ($request->guest_name as $i => $name) {
                 $guest->otherGuests()->create([
-                    'name'          => $request->guest_name[$i] ?? null,
-                    'gender'        => $request->guest_gender[$i] ?? null,
-                    'email'         => $request->guest_email[$i] ?? null,
-                    // 'password'    => $request->guest_password[$i] ?? null, // if added later
-                    'dob'           => $request->guest_dob[$i] ?? null,
-                    'passport'      => $request->guest_passport[$i] ?? null,
-                    'nationality'   => $request->guest_nationality[$i] ?? null,
-                    'cabin'         => $request->guest_cabin[$i] ?? null,
-                    'surfLevel'     => $request->guest_surf[$i] ?? null,
-                    'boardDetails'  => $request->guest_board[$i] ?? null,
+                    'name'         => $name ?? null,
+                    'gender'       => $request->guest_gender[$i] ?? null,
+                    'email'        => $request->guest_email[$i] ?? null,
+                    'dob'          => $request->guest_dob[$i] ?? null,
+                    'passport'     => $request->guest_passport[$i] ?? null,
+                    'nationality'  => $request->guest_nationality[$i] ?? null,
+                    'cabin'        => $request->guest_cabin[$i] ?? null,
+                    'surfLevel'    => $request->guest_surf[$i] ?? null,
+                    'boardDetails' => $request->guest_board[$i] ?? null,
                 ]);
             }
         }
 
-
         return redirect()->back()->with('success', 'Guest form submitted successfully.');
     }
 
+    /**
+     * Public guest form (via booking token, scoped to tenant).
+     */
     public function show($token)
     {
-        $booking = Booking::where('token', $token)->firstOrFail();
+        $company = app('tenant');
+
+        $booking = Booking::where('token', $token)
+            ->where('company_id', $company->id)
+            ->firstOrFail();
+
         return view('guests.guest_form', compact('booking'));
     }
 
-    // public function show($token)
-    // {
-    //     $trip = Trip::where('guest_form_token', $token)->firstOrFail();
-    //     return view('guests.guest_form', compact('trip'));
-    // }
-
+    /**
+     * Submit guest info (via trip token, scoped to tenant).
+     */
     public function submit(Request $request, $token)
     {
-        $trip = Trip::where('guest_form_token', $token)->firstOrFail();
+        $company = app('tenant');
 
-        Guest::create([
-            'trip_id' => $trip->id,
-            'name'    => $request->name,
-            'email'   => $request->email,
-            // other guest fields...
+        $trip = Trip::where('guest_form_token', $token)
+            ->where('company_id', $company->id)
+            ->firstOrFail();
+
+        $trip->guests()->create([
+            'name'  => $request->name,
+            'email' => $request->email,
+            // other guest fields here...
         ]);
 
         return redirect()->back()->with('success', 'Guest info submitted!');
     }
 
+    /**
+     * Admin side: view guest detail (scoped to tenant).
+     */
     public function show_guest($id)
     {
-        // Load guest with its trip and booking
-        $guest = Guest::with(['trip', 'booking'])->findOrFail($id);
+        $company = app('tenant');
+
+        $guest = Guest::whereHas('trip', function ($q) use ($company) {
+            $q->where('company_id', $company->id);
+        })->with(['trip','booking'])->findOrFail($id);
 
         return view('guests.detail', compact('guest'));
     }
 
-    // PDF
+    /**
+     * Download guest PDF (Admin side, scoped to tenant).
+     */
     public function download_pdf($id)
     {
-        $guest = Guest::with('trip')->findOrFail($id);
+        $company = app('tenant');
 
-        $pdf = Pdf::loadView('guests.pdf.view', compact('guest'));
+        $guest = Guest::whereHas('trip', function ($q) use ($company) {
+            $q->where('company_id', $company->id);
+        })->with('trip')->findOrFail($id);
 
-        return $pdf->download('guest-'.$guest->id.'.pdf');
+        $pdf = PDF::loadView('guests.pdf.view', compact('guest'));
+        return $pdf->download('guest-' . $guest->id . '.pdf');
     }
-
-
 }

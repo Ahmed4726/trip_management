@@ -9,22 +9,18 @@ use App\Models\Company;
 use App\Models\Trip;
 use App\Models\Booking;
 use Illuminate\Support\Str;
-use Spatie\Permission\Models\Role;
-use App\Models\User;
-use Illuminate\Support\Facades\DB;
 
 class BookingController extends Controller
 {
-    // Bookings
+    // List bookings (Admin side, scoped to tenant)
     public function booking_index(Request $request)
     {
+        $company = app('tenant');
+
         $bookings = Booking::with(['trip', 'agent'])
-            ->when($request->customer_name, function ($q) use ($request) {
-                $q->where('customer_name', 'like', '%' . $request->customer_name . '%');
-            })
-            ->when($request->status, function ($q) use ($request) {
-                $q->where('booking_status', $request->status);
-            })
+            ->where('company_id', $company->id)
+            ->when($request->customer_name, fn($q) => $q->where('customer_name', 'like', '%' . $request->customer_name . '%'))
+            ->when($request->status, fn($q) => $q->where('booking_status', $request->status))
             ->when($request->start_date, function ($q) use ($request) {
                 $q->whereHas('trip', function ($q2) use ($request) {
                     $q2->whereDate('start_date', '>=', $request->start_date);
@@ -76,162 +72,163 @@ class BookingController extends Controller
         return view('admin.bookings.index', compact('bookings'));
     }
 
-
+    // Create booking (Admin)
     public function create_booking()
     {
-         $agents = Agent::get();
-         $trips = Trip::get();
+        $company = app('tenant');
+        $agents = Agent::where('company_id', $company->id)->get();
+        $trips  = Trip::where('company_id', $company->id)->get();
 
-        return view('admin.bookings.create',compact('agents','trips'));
+        return view('admin.bookings.create', compact('agents', 'trips'));
     }
 
-    
+    // Store booking
+    public function store_booking(Request $request)
+    {
+        $company = app('tenant');
 
+        // If creating inline trip
+        if (!$request->trip_id && $request->inline_trip) {
+            $trip = Trip::create([
+                'company_id' => $company->id,
+                'title'      => $request->trip_title,
+                'boat'       => $request->boat,
+                'trip_type'  => $request->trip_type,
+                'start_date' => $request->start_date,
+                'end_date'   => $request->end_date,
+                'status'     => 'Booked',
+                'guests'     => $request->inline_guests,
+                'price'      => $request->price,
+                'region'     => $request->region,
+            ]);
 
- public function store_booking(Request $request)
-{
-    // If creating inline availability (Trip)
-    if (!$request->trip_id && $request->inline_trip) {
-        $trip = Trip::create([
-            'title'      => $request->trip_title,
-            'boat'       => $request->boat,
-            'trip_type'  => $request->trip_type,
-            'start_date' => $request->start_date,
-            'end_date'   => $request->end_date,
-            'status'     => 'Booked', // trips = active/inactive
-            'guests'     => $request->inline_guests,
-            'price'      => $request->price,
-            'region'     => $request->region,
+            $request->merge(['trip_id' => $trip->id]);
+        }
+
+        $validated = $request->validate([
+            'trip_id'            => 'required|exists:trips,id',
+            'customer_name'      => 'required|string|max:255',
+            'guests'             => $request->inline_trip ? 'nullable' : 'required|integer|min:1',
+            'inline_guests'      => $request->inline_trip ? 'required|integer|min:1' : 'nullable',
+            'source'             => 'required|string|max:255',
+            'email'              => 'nullable|email',
+            'phone_number'       => 'nullable|string|max:20',
+            'nationality'        => 'nullable|string|max:255',
+            'passport_number'    => 'nullable|string|max:255',
+            'booking_status'     => 'nullable|in:pending,confirmed,cancelled',
+            'pickup_location_time' => 'nullable|string|max:255',
+            'addons'             => 'nullable|string|max:255',
+            'room_preference'    => 'nullable|in:single,double,suite',
+            'agent_id'           => 'nullable|exists:agents,id',
+            'comments'           => 'nullable|string',
+            'notes'              => 'nullable|string',
         ]);
 
-        $request->merge(['trip_id' => $trip->id]);
+        if (empty($validated['booking_status'])) {
+            $validated['booking_status'] = 'pending';
+        }
+
+        if ($request->inline_trip) {
+            $validated['guests'] = $request->inline_guests;
+        }
+
+        $validated['token'] = Str::random(32);
+        $validated['company_id'] = $company->id;
+
+        $booking = Booking::create($validated);
+
+        return redirect()->route('bookings.index')
+            ->with('success', 'Booking created successfully. Share this link: ' . route('guest.form', $booking->token));
     }
 
-    // Validation
-    $validated = $request->validate([
-        'trip_id'            => 'required|exists:trips,id',
-        'customer_name'      => 'required|string|max:255',
-        // Guests rule depends on inline_trip
-        'guests'             => $request->inline_trip ? 'nullable' : 'required|integer|min:1',
-        'inline_guests'      => $request->inline_trip ? 'required|integer|min:1' : 'nullable',
-        'source'             => 'required|string|max:255',
-        'email'              => 'nullable|email',
-        'phone_number'       => 'nullable|string|max:20',
-        'nationality'        => 'nullable|string|max:255',
-        'passport_number'    => 'nullable|string|max:255',
-        'booking_status'     => 'nullable|in:pending,confirmed,cancelled',
-        'pickup_location_time' => 'nullable|string|max:255',
-        'addons'             => 'nullable|string|max:255',
-        'room_preference'    => 'nullable|in:single,double,suite',
-        'agent_id'           => 'nullable|exists:agents,id',
-        'comments'           => 'nullable|string',
-        'notes'              => 'nullable|string',
-    ]);
-
-    // Default booking_status
-    if (empty($validated['booking_status'])) {
-        $validated['booking_status'] = 'pending';
-    }
-
-    // Always map guests correctly for Booking
-    if ($request->inline_trip) {
-        $validated['guests'] = $request->inline_guests;
-    }
-
-    // Generate unique token
-    $validated['token'] = Str::random(32);
-
-    $booking = Booking::create($validated);
-
-    return redirect()->route('bookings.index')
-        ->with('success', 'Booking created successfully. Share this link with the user: ' . route('guest.form', $booking->token));
-}
-
+    // Show booking
     public function show_booking($id)
     {
-        $booking = Booking::with(['trip', 'agent'])->findOrFail($id);
+        $company = app('tenant');
+
+        $booking = Booking::where('company_id', $company->id)
+            ->with(['trip', 'agent'])
+            ->findOrFail($id);
+
         return view('admin.bookings.detail', compact('booking'));
     }
 
+    // Edit booking
     public function edit_booking($id)
     {
-        $booking = Booking::findOrFail($id);
-        $trips   = Trip::all();
-        $agents  = Agent::all();
+        $company = app('tenant');
+
+        $booking = Booking::where('company_id', $company->id)->findOrFail($id);
+        $trips   = Trip::where('company_id', $company->id)->get();
+        $agents  = Agent::where('company_id', $company->id)->get();
 
         return view('admin.bookings.edit', compact('booking', 'trips', 'agents'));
     }
 
+    // Update booking
+    public function update_booking(Request $request, $id)
+    {
+        $company = app('tenant');
 
+        $validated = $request->validate([
+            'trip_id' => 'required|exists:trips,id',
+            'customer_name' => 'required|string|max:255',
+            'guests' => 'required|integer|min:1',
+            'source' => 'required|string|max:255',
+            'email' => 'nullable|email',
+            'phone_number' => 'nullable|string|max:20',
+            'nationality' => 'nullable|string|max:255',
+            'passport_number' => 'nullable|string|max:255',
+            'booking_status' => 'nullable|in:pending,confirmed,cancelled',
+            'pickup_location_time' => 'nullable|string|max:255',
+            'addons' => 'nullable|string|max:255',
+            'room_preference' => 'nullable|in:single,double,suite',
+            'agent_id' => 'nullable|exists:agents,id',
+            'comments' => 'nullable|string',
+            'notes' => 'nullable|string',
+            'dp_paid' => 'nullable|boolean',
+        ]);
 
+        $booking = Booking::where('company_id', $company->id)->findOrFail($id);
 
-  public function update_booking(Request $request, $id)
-{
-    $validated = $request->validate([
-        'trip_id' => 'required|exists:trips,id',
-        'customer_name' => 'required|string|max:255',
-        'guests' => 'required|integer|min:1',
-        'source' => 'required|string|max:255',
-        'email' => 'nullable|email',
-        'phone_number' => 'nullable|string|max:20',
-        'nationality' => 'nullable|string|max:255',
-        'passport_number' => 'nullable|string|max:255',
-        'booking_status' => 'nullable|in:pending,confirmed,cancelled',
-        'pickup_location_time' => 'nullable|string|max:255',
-        'addons' => 'nullable|string|max:255',
-        'room_preference' => 'nullable|in:single,double,suite',
-        'agent_id' => 'nullable|exists:agents,id',
-        'comments' => 'nullable|string',
-        'notes' => 'nullable|string',
-        'dp_paid' => 'nullable|boolean',
-    ]);
+        if ($request->has('dp_paid') && $request->dp_paid) {
+            $validated['dp_paid'] = true;
+            $validated['booking_status'] = 'confirmed';
+        } else {
+            $validated['dp_paid'] = false;
+        }
 
-    $booking = Booking::findOrFail($id);
+        $booking->update($validated);
 
-    // ✅ If DP is paid, force status = confirmed
-    if ($request->has('dp_paid') && $request->dp_paid) {
-        $validated['dp_paid'] = true;
-        $validated['booking_status'] = 'confirmed';
-    } else {
-        $validated['dp_paid'] = false;
+        return redirect()->route('bookings.index')->with('success', 'Booking updated successfully.');
     }
 
-    $booking->update($validated);
-
-    return redirect()->route('bookings.index')->with('success', 'Booking updated successfully.');
-}
-
-
-
+    // Destroy booking
     public function destroy_booking($id)
     {
-        $booking = Booking::findOrFail($id);
+        $company = app('tenant');
+
+        $booking = Booking::where('company_id', $company->id)->findOrFail($id);
         $booking->delete();
 
         return redirect()->route('bookings.index')->with('success', 'Booking deleted successfully.');
     }
 
+    // Rooms by boat
     public function getRoomsByBoat(Request $request)
     {
-        $boatName = $request->input('boat'); // e.g. "Samara 1 (5 rooms)"
-        $tripType = $request->input('trip_type'); // 'open' or 'private'
+        $boatName = $request->input('boat');
+        $tripType = $request->input('trip_type');
 
         if (!$boatName) {
             return response()->json(['rooms' => []]);
         }
 
-        // Extract total rooms from boat name
         preg_match('/\((\d+)\s*rooms?\)/i', $boatName, $matches);
         $totalRooms = isset($matches[1]) ? (int)$matches[1] : 0;
 
         $availableRooms = range(1, $totalRooms);
 
-        // If Private Charter, auto-attach all rooms (we just return all)
-        // For Open Trip, user can select multiple but not all
-        return response()->json([
-            'rooms' => $availableRooms
-        ]);
+        return response()->json(['rooms' => $availableRooms]);
     }
-
 }
-
