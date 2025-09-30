@@ -56,16 +56,25 @@ class BookingController extends Controller
     // ==========================
     public function create_booking()
     {
-        $agents = Agent::when($this->tenant, function ($q) {
-            $q->where('company_id', $this->tenant->id);
-        })->get();
+        if (auth()->user()->hasRole('admin')) {
+            $companies = Company::all();
+            $companyId = null; // Admin sees all
+        } else {
+            $companies = null;
+            $companyId = auth()->user()->company_id; // Non-admin sees only their company
+        }
 
-        $trips = Trip::when($this->tenant, function ($q) {
-            $q->where('company_id', $this->tenant->id);
-        })->get();
+        $agents = $companyId 
+            ? Agent::where('company_id', $companyId)->get() 
+            : Agent::all();
 
-        return view('admin.bookings.create', compact('agents','trips'));
+        $trips = $companyId
+            ? Trip::where('company_id', $companyId)->get()
+            : Trip::all();
+
+        return view('admin.bookings.create', compact('agents', 'trips', 'companies', 'companyId'));
     }
+
 
     // ==========================
     // STORE
@@ -89,6 +98,7 @@ class BookingController extends Controller
             'agent_id' => 'nullable|exists:agents,id',
             'comments' => 'nullable|string',
             'notes' => 'nullable|string',
+            'company_id' => 'required'
         ]);
 
         // Default booking_status

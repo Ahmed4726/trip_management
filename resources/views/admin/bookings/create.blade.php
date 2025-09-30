@@ -205,6 +205,20 @@
     </div>
 
     <div class="row mb-3">
+        @if(auth()->user()->hasRole('admin'))
+<div class="col-md-6">
+    <label for="company_id" class="form-label">Company</label>
+    <select name="company_id" id="company_id" class="form-control" required>
+        <option value="">Select Company</option>
+        @foreach($companies as $company)
+            <option value="{{ $company->id }}">{{ $company->name }}</option>
+        @endforeach
+    </select>
+</div>
+@else
+    <input type="hidden" name="company_id" value="{{ $companyId }}">
+@endif
+
         
     </div>
 

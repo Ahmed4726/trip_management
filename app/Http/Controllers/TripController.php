@@ -30,15 +30,33 @@ class TripController extends Controller
         return view('admin.trips.index', compact('trips','agents','tripTypes'));
     }
 
-    public function create_trip()
-    {
-        $agents = Agent::all();
-        $ratePlans = RatePlan::all();
-        $paymentPolicies = PaymentPolicy::all();
-        $cancellationPolicies = CancellationPolicy::all();
+public function create_trip()
+{
+    $company_id = null;
 
-        return view('admin.trips.create', compact('agents', 'ratePlans', 'paymentPolicies', 'cancellationPolicies'));
+    if (auth()->user()->hasRole('admin')) {
+        $companies = Company::all();
+    } else {
+        $companies = null;
+        $company_id = auth()->user()->company_id;
     }
+
+    // Fetch data filtered by company_id
+    $agents = $company_id ? Agent::where('company_id', $company_id)->get() : Agent::all();
+    $ratePlans = $company_id ? RatePlan::where('company_id', $company_id)->get() : RatePlan::all();
+    $paymentPolicies = $company_id ? PaymentPolicy::where('company_id', $company_id)->get() : PaymentPolicy::all();
+    $cancellationPolicies = $company_id ? CancellationPolicy::where('company_id', $company_id)->get() : CancellationPolicy::all();
+
+    return view('admin.trips.create', compact(
+        'agents',
+        'ratePlans',
+        'paymentPolicies',
+        'cancellationPolicies',
+        'companies',
+        'company_id'
+    ));
+}
+
 
     // Filtering for calendar resources
     public function filter(Request $request)
@@ -192,6 +210,7 @@ class TripController extends Controller
             'payment_policy_id' => 'required|exists:payment_policies,id',
             'cancellation_policy_id' => 'required|exists:cancellation_policies,id',
             'notes' => 'nullable|string',
+            'company_id' => 'required'
         ]);
 
         if (!auth()->user()->hasRole('admin')) {

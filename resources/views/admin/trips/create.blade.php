@@ -122,6 +122,20 @@
                         <label for="notes" class="form-label">Notes</label>
                         <textarea name="notes" id="notes" class="form-control" rows="3" placeholder="Enter notes"></textarea>
                     </div>
+                    @if(auth()->user()->hasRole('admin'))
+                    <div class="col-md-6">
+                        <label for="company_id" class="form-label">Company Name</label>
+                        <select name="company_id" id="company_id" class="form-control" required>
+                            <option value="">Select Company</option>
+                            @foreach($companies as $company)
+                                <option value="{{ $company->id }}">{{ $company->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @else
+                        <input type="hidden" name="company_id" value="{{ $company_id }}">
+                    @endif
+
                 </div>
 
                 <button type="submit" class="btn btn-primary">Create Trip</button>

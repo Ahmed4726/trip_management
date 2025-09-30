@@ -53,10 +53,19 @@
         <label for="commission" class="form-label">Commission (%)</label>
         <input type="number" name="commission" id="commission" class="form-control" placeholder="Enter commission percentage">
     </div>
-      <div class="col-md-6">
-        <label for="company" class="form-label">Company Name</label>
-        <input type="text" name="company" id="company" class="form-control" placeholder="Enter company name">
-    </div>
+        @if(auth()->user()->hasRole('admin'))
+        <div class="col-md-6">
+            <label for="company_id" class="form-label">Company Name</label>
+            <select name="company_id" id="company_id" class="form-control">
+                <option value="">Select Company</option>
+                @foreach($companies as $company)
+                    <option value="{{ $company->id }}">{{ $company->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        @endif
+
+
 </div>
 
 
