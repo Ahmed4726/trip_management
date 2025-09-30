@@ -8,18 +8,17 @@ use App\Models\RatePlan;
 
 class RatePlanController extends Controller
 {
-    protected $tenant;
-
-    public function __construct()
-    {
-        // If tenant is resolved via middleware, set it
-        $this->tenant = app()->bound('tenant') ? app('tenant') : null;
-    }
-
     public function index()
     {
-        // Fetch only rate plans belonging to the tenant
-        $plans = RatePlan::where('tenant_id', $this->tenant->id)->get();
+        $query = RatePlan::query();
+
+        // If not admin, restrict by company
+        if (!auth()->user()->hasRole('admin')) {
+            $query->where('company_id', auth()->user()->company_id);
+        }
+
+        $plans = $query->get();
+
         return view('admin.rate_plans.index', compact('plans'));
     }
 
@@ -36,18 +35,22 @@ class RatePlanController extends Controller
             'base_price_type' => 'required|in:per_room,charter',
         ]);
 
-        RatePlan::create(array_merge(
-            $request->all(),
-            ['tenant_id' => $this->tenant->id]
-        ));
+        $data = $request->all();
+
+        // Add company_id for non-admins
+        if (!auth()->user()->hasRole('admin')) {
+            $data['company_id'] = auth()->user()->company_id;
+        }
+
+        RatePlan::create($data);
 
         return redirect()->route('rate-plans.index')->with('success', 'Rate Plan created.');
     }
 
     public function edit(RatePlan $ratePlan)
     {
-        // Make sure the rate plan belongs to tenant
-        if ($ratePlan->tenant_id !== $this->tenant->id) {
+        // Only allow editing if admin or same company
+        if (!auth()->user()->hasRole('admin') && $ratePlan->company_id !== auth()->user()->company_id) {
             abort(403);
         }
 
@@ -56,8 +59,8 @@ class RatePlanController extends Controller
 
     public function update(Request $request, RatePlan $ratePlan)
     {
-        // Make sure the rate plan belongs to tenant
-        if ($ratePlan->tenant_id !== $this->tenant->id) {
+        // Only allow updating if admin or same company
+        if (!auth()->user()->hasRole('admin') && $ratePlan->company_id !== auth()->user()->company_id) {
             abort(403);
         }
 
@@ -74,8 +77,8 @@ class RatePlanController extends Controller
 
     public function destroy(RatePlan $ratePlan)
     {
-        // Make sure the rate plan belongs to tenant
-        if ($ratePlan->tenant_id !== $this->tenant->id) {
+        // Only allow deleting if admin or same company
+        if (!auth()->user()->hasRole('admin') && $ratePlan->company_id !== auth()->user()->company_id) {
             abort(403);
         }
 

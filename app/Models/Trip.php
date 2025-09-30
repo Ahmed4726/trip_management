@@ -21,7 +21,16 @@ class Trip extends Model
         'agent_id',
         'guest_form_token',
         'guest_form_url',
-        'company_id'
+        'company_id',
+        'balance_due_date',
+        'rate_plan_id',
+        'payment_policy_id',
+        'cancellation_policy_id',
+        'pricing_snapshot_json',
+        'payment_policy_snapshot_json',
+        'cancellation_policy_snapshot_json',
+        'dp_amount',
+        
     ];
 
     public function agent()

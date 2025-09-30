@@ -9,34 +9,42 @@ use App\Models\RatePlan;
 
 class RatePlanRuleController extends Controller 
 {
-    protected $tenant;
-
-    public function __construct()
-    {
-        $this->tenant = app()->bound('tenant') ? app('tenant') : null;
-    }
-
+    /**
+     * List all rules for a given rate plan.
+     */
     public function index($ratePlanId)
     {
-        $ratePlan = RatePlan::with('rules')
-            ->where('tenant_id', $this->tenant->id)
-            ->findOrFail($ratePlanId);
+        $query = RatePlan::with('rules');
+
+        if (!auth()->user()->hasRole('admin')) {
+            $query->where('company_id', auth()->user()->company_id);
+        }
+
+        $ratePlan = $query->findOrFail($ratePlanId);
 
         return view('admin.rate_plan_rules.index', compact('ratePlan'));
     }
 
     public function create($ratePlanId)
     {
-        $ratePlan = RatePlan::where('tenant_id', $this->tenant->id)
-            ->findOrFail($ratePlanId);
+        $query = RatePlan::query();
+        if (!auth()->user()->hasRole('admin')) {
+            $query->where('company_id', auth()->user()->company_id);
+        }
+
+        $ratePlan = $query->findOrFail($ratePlanId);
 
         return view('admin.rate_plan_rules.create', compact('ratePlan'));
     }
 
     public function store(Request $r, $ratePlanId)
     {
-        $ratePlan = RatePlan::where('tenant_id', $this->tenant->id)
-            ->findOrFail($ratePlanId);
+        $query = RatePlan::query();
+        if (!auth()->user()->hasRole('admin')) {
+            $query->where('company_id', auth()->user()->company_id);
+        }
+
+        $ratePlan = $query->findOrFail($ratePlanId);
 
         $r->validate([
             'room_id' => 'nullable|integer',
@@ -55,8 +63,12 @@ class RatePlanRuleController extends Controller
 
     public function edit($ratePlanId, RatePlanRule $rule)
     {
-        $ratePlan = RatePlan::where('tenant_id', $this->tenant->id)
-            ->findOrFail($ratePlanId);
+        $query = RatePlan::query();
+        if (!auth()->user()->hasRole('admin')) {
+            $query->where('company_id', auth()->user()->company_id);
+        }
+
+        $ratePlan = $query->findOrFail($ratePlanId);
 
         // Ensure the rule belongs to this rate plan
         if ($rule->rate_plan_id !== $ratePlan->id) {
@@ -68,8 +80,12 @@ class RatePlanRuleController extends Controller
 
     public function update(Request $r, $ratePlanId, RatePlanRule $rule)
     {
-        $ratePlan = RatePlan::where('tenant_id', $this->tenant->id)
-            ->findOrFail($ratePlanId);
+        $query = RatePlan::query();
+        if (!auth()->user()->hasRole('admin')) {
+            $query->where('company_id', auth()->user()->company_id);
+        }
+
+        $ratePlan = $query->findOrFail($ratePlanId);
 
         if ($rule->rate_plan_id !== $ratePlan->id) {
             abort(403);
@@ -89,8 +105,12 @@ class RatePlanRuleController extends Controller
 
     public function destroy($ratePlanId, RatePlanRule $rule)
     {
-        $ratePlan = RatePlan::where('tenant_id', $this->tenant->id)
-            ->findOrFail($ratePlanId);
+        $query = RatePlan::query();
+        if (!auth()->user()->hasRole('admin')) {
+            $query->where('company_id', auth()->user()->company_id);
+        }
+
+        $ratePlan = $query->findOrFail($ratePlanId);
 
         if ($rule->rate_plan_id !== $ratePlan->id) {
             abort(403);

@@ -55,10 +55,10 @@
     <a href="{{ route('company.show', $company->id) }}" class="btn btn-sm btn-success">
         View
     </a>
-    <a href="{{ $company->slug }} . '.' . 'trip_management.test' }}"
-    class="btn btn-sm btn-warning" target="_blank">
+<a href="https://{{ $company->slug }}.trip_management.test" class="btn btn-sm btn-warning" target="_blank">
     Tenant Link
-    </a>
+</a>
+
 
 
     <button class="btn btn-sm btn-primary edit-btn"

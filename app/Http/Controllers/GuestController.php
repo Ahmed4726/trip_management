@@ -11,15 +11,20 @@ use Barryvdh\Snappy\Facades\SnappyPdf as PDF;
 class GuestController extends Controller
 {
     /**
-     * List all guests for the current tenant (Admin side).
+     * List all guests for admin or company users.
      */
     public function guest_index()
     {
-        $company = app('tenant');
+        $query = Guest::with('trip');
 
-        $guests = Guest::whereHas('trip', function ($q) use ($company) {
-            $q->where('company_id', $company->id);
-        })->get();
+        // Restrict by company if not admin
+        if (!auth()->user()->hasRole('admin')) {
+            $query->whereHas('trip', function ($q) {
+                $q->where('company_id', auth()->user()->company_id);
+            });
+        }
+
+        $guests = $query->get();
 
         return view('guests.index', compact('guests'));
     }
@@ -29,11 +34,19 @@ class GuestController extends Controller
      */
     public function store(Request $request)
     {
-        $company = app('tenant');
+        $request->validate([
+            'trip_id' => 'required|exists:trips,id',
+            'name'    => 'required|string|max:255',
+            'email'   => 'nullable|email',
+            // Add other validation rules as needed
+        ]);
 
-        // Verify the trip belongs to current tenant
-        $trip = Trip::where('company_id', $company->id)
-            ->findOrFail($request->trip_id);
+        $trip = Trip::findOrFail($request->trip_id);
+
+        // Restrict by company if not admin
+        if (!auth()->user()->hasRole('admin') && $trip->company_id !== auth()->user()->company_id) {
+            abort(403);
+        }
 
         $guest = $trip->guests()->create($request->only([
             'name','gender','email','dob','passport','nationality',
@@ -45,19 +58,11 @@ class GuestController extends Controller
         ]));
 
         // Handle uploads
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('guests/images', 'public');
-            $guest->update(['image_path' => $imagePath]);
-        }
-
-        if ($request->hasFile('pdf')) {
-            $pdfPath = $request->file('pdf')->store('guests/pdfs', 'public');
-            $guest->update(['pdf_path' => $pdfPath]);
-        }
-
-        if ($request->hasFile('video')) {
-            $videoPath = $request->file('video')->store('guests/videos', 'public');
-            $guest->update(['video_path' => $videoPath]);
+        foreach (['image', 'pdf', 'video'] as $file) {
+            if ($request->hasFile($file)) {
+                $path = $request->file($file)->store("guests/{$file}s", 'public');
+                $guest->update(["{$file}_path" => $path]);
+            }
         }
 
         // Add other guests (companions)
@@ -81,63 +86,71 @@ class GuestController extends Controller
     }
 
     /**
-     * Public guest form (via booking token, scoped to tenant).
+     * Public guest form (via booking token).
      */
     public function show($token)
     {
-        $company = app('tenant');
+        $query = Booking::where('token', $token);
 
-        $booking = Booking::where('token', $token)
-            ->where('company_id', $company->id)
-            ->firstOrFail();
+        if (!auth()->user()->hasRole('admin')) {
+            $query->where('company_id', auth()->user()->company_id);
+        }
+
+        $booking = $query->firstOrFail();
 
         return view('guests.guest_form', compact('booking'));
     }
 
     /**
-     * Submit guest info (via trip token, scoped to tenant).
+     * Submit guest info (via trip token).
      */
     public function submit(Request $request, $token)
     {
-        $company = app('tenant');
+        $trip = Trip::where('guest_form_token', $token);
 
-        $trip = Trip::where('guest_form_token', $token)
-            ->where('company_id', $company->id)
-            ->firstOrFail();
+        if (!auth()->user()->hasRole('admin')) {
+            $trip->where('company_id', auth()->user()->company_id);
+        }
 
-        $trip->guests()->create([
-            'name'  => $request->name,
-            'email' => $request->email,
-            // other guest fields here...
-        ]);
+        $trip = $trip->firstOrFail();
+
+        $trip->guests()->create($request->only(['name','email'])); // Add other fields as needed
 
         return redirect()->back()->with('success', 'Guest info submitted!');
     }
 
     /**
-     * Admin side: view guest detail (scoped to tenant).
+     * Admin side: view guest detail.
      */
     public function show_guest($id)
     {
-        $company = app('tenant');
+        $query = Guest::with(['trip','booking'])->where('id', $id);
 
-        $guest = Guest::whereHas('trip', function ($q) use ($company) {
-            $q->where('company_id', $company->id);
-        })->with(['trip','booking'])->findOrFail($id);
+        if (!auth()->user()->hasRole('admin')) {
+            $query->whereHas('trip', function ($q) {
+                $q->where('company_id', auth()->user()->company_id);
+            });
+        }
+
+        $guest = $query->firstOrFail();
 
         return view('guests.detail', compact('guest'));
     }
 
     /**
-     * Download guest PDF (Admin side, scoped to tenant).
+     * Download guest PDF.
      */
     public function download_pdf($id)
     {
-        $company = app('tenant');
+        $query = Guest::with('trip')->where('id', $id);
 
-        $guest = Guest::whereHas('trip', function ($q) use ($company) {
-            $q->where('company_id', $company->id);
-        })->with('trip')->findOrFail($id);
+        if (!auth()->user()->hasRole('admin')) {
+            $query->whereHas('trip', function ($q) {
+                $q->where('company_id', auth()->user()->company_id);
+            });
+        }
+
+        $guest = $query->firstOrFail();
 
         $pdf = PDF::loadView('guests.pdf.view', compact('guest'));
         return $pdf->download('guest-' . $guest->id . '.pdf');
