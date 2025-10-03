@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Trip;
 use App\Models\Booking;
+use App\Models\Company;
 use Illuminate\Http\Request;
 
 class PublicBookingController extends Controller
@@ -15,12 +16,17 @@ class PublicBookingController extends Controller
         $company = $request->query('company');
         $boat    = $request->query('boat');
 
-        $trip = Trip::leftJoin('companies','companies.id','trips.company_id')->with([
-    'paymentPolicy',
-    'cancellationPolicy.rules'
-])->findOrFail($tripId);
+        // dd($tripId);
 
-        return view('public.widget', compact('trip', 'company', 'boat'));
+        $trip = Trip::leftJoin('companies','companies.id','trips.company_id')->with([
+            'paymentPolicy',
+            'cancellationPolicy.rules'
+        ])->findOrFail($tripId);
+
+$company_id = Company::where('name', $company)->first();
+// dd($trip);
+
+        return view('public.widget', compact('trip', 'company', 'boat','company_id','tripId'));
     }
 
     // Fetch single availability details

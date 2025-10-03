@@ -17,6 +17,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\WaitingListController;
 use App\Http\Controllers\RatePlanController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\TripController;
@@ -223,6 +224,14 @@ Route::middleware('auth')->group(function () {
         Route::delete('users/{id}', [AdminController::class, 'destroy'])->name('users.destroy');
     });
 
+
+    Route::prefix('admin')->middleware(['auth','role:admin'])->group(function() {
+    Route::get('waiting-lists', [WaitingListController::class, 'index'])->name('admin.waitinglists.index');
+    Route::post('waiting-lists/{waitingList}/notify', [WaitingListController::class, 'notify'])->name('admin.waitinglists.notify');
+    Route::get('waiting-lists/{waitingList}/convert', [WaitingListController::class, 'convertToBooking'])->name('admin.waitinglists.convert');
+    Route::post('waiting-lists/{waitingList}/mark-converted', [WaitingListController::class, 'markConverted'])->name('admin.waitinglists.markConverted');
+});
+
     /*
     |--------------------------------------------------------------------------
     | Admin + Super Admin Routes
@@ -310,6 +319,11 @@ Route::middleware('auth')->group(function () {
         Route::put('/{id}', [CancellationPolicyRuleController::class, 'update'])->name('cancellation-policy-rules.update');
         Route::delete('/{id}', [CancellationPolicyRuleController::class, 'destroy'])->name('cancellation-policy-rules.destroy');
     });
+
+    // WaitingList
+    Route::post('/public/waitlist', [App\Http\Controllers\WaitingListController::class, 'store'])
+        ->name('public.waitlist');
+
 });
 
 require __DIR__.'/auth.php';

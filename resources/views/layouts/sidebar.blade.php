@@ -134,6 +134,17 @@
 </li>
 @endcan
 
+@can('waitinglist')
+    <li class="nav-item">
+        <a href="{{ route('admin.waitinglists.index') }}" 
+           class="nav-link {{ request()->is('admin/waiting-lists*') ? 'active' : '' }}">
+            <i class="nav-icon fas fa-clock"></i>
+            <p>Waiting List</p>
+        </a>
+    </li>
+@endcan
+
+
 @can('agents')
   <li class="nav-item">
     <a href="/agents" class="nav-link {{ request()->is('agents','create-agent') ? 'active' : '' }}">

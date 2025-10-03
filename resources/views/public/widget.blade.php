@@ -58,7 +58,7 @@
       <p><strong>Region:</strong> {{ $trip->region ?? 'N/A' }}</p>
       <p><strong>Type:</strong> {{ ucfirst($trip->trip_type) }}</p>
       <p><strong>Guests Allowed:</strong> {{ $trip->guests }}</p>
-      <p><strong>Dates:</strong> {{ \Carbon\Carbon::parse($trip->start)->format('M d, Y') }} - {{ \Carbon\Carbon::parse($trip->end)->format('M d, Y') }}</p>
+      <p><strong>Dates:</strong> {{ \Carbon\Carbon::parse($trip->start_date)->format('M d, Y') }} - {{ \Carbon\Carbon::parse($trip->end_date)->format('M d, Y') }}</p>
       <p><strong>Price:</strong> ${{ $trip->price }}</p>
     </div>
 
@@ -115,28 +115,89 @@
     </div>
 
     {{-- Booking Form --}}
-    <form action="{{ route('public.prebook') }}" method="POST" class="mt-4">
-      @csrf
-      <input type="hidden" name="trip_id" value="{{ $trip->id }}">
-      
-      <div class="mb-3">
-        <label for="name" class="form-label">Your Name</label>
-        <input type="text" name="name" class="form-control" required>
-      </div>
+{{-- Booking OR Waitlist --}}
+@if($trip->status === 'sold' || \Carbon\Carbon::parse($trip->end_date)->isPast())
+  {{-- Waitlist Form --}}
+  <div class="policy-box">
+    <h5>Join Waiting List</h5>
+  <form action="{{ route('public.waitlist') }}" method="POST" class="mt-3">
+    @csrf
+    <input type="hidden" name="trip_id" value="{{ $tripId }}">
+    <input type="hidden" name="company_id" value="{{ $company_id }}">
 
-      <div class="mb-3">
-        <label for="email" class="form-label">Your Email</label>
-        <input type="email" name="email" class="form-control" required>
-      </div>
+    <div class="mb-3">
+        <label class="form-label">Your Name</label>
+        <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" required>
+        @error('name')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
 
-      <div class="mb-3">
-        <label for="guests" class="form-label">Number of Guests</label>
-        <input type="number" name="guests" min="1" max="{{ $trip->guests }}" class="form-control" required>
-        <div class="form-text">Maximum allowed guests: {{ $trip->guests }}</div>
-      </div>
+    <div class="mb-3">
+        <label class="form-label">Your Email</label>
+        <input type="email" name="email" class="form-control @error('email') is-invalid @enderror" required>
+        @error('email')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
 
-      <button type="submit" class="btn btn-book w-100">Pre-Book Now</button>
-    </form>
+    <div class="mb-3">
+        <label class="form-label">Party Size</label>
+        <input type="number" name="party_size" class="form-control @error('party_size') is-invalid @enderror" min="1" required>
+        @error('party_size')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Phone</label>
+        <input type="text" name="phone" class="form-control @error('phone') is-invalid @enderror">
+        @error('phone')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Notes</label>
+        <textarea name="notes" class="form-control @error('notes') is-invalid @enderror"></textarea>
+        @error('notes')
+            <div class="invalid-feedback">{{ $message }}</div>
+        @enderror
+    </div>
+
+    {{-- reCAPTCHA --}}
+    <!-- Add your captcha widget here -->
+
+    <button type="submit" class="btn btn-warning w-100">Join Waiting List</button>
+</form>
+
+  </div>
+@else
+  {{-- Booking Form --}}
+  <form action="{{ route('public.prebook') }}" method="POST" class="mt-4">
+    @csrf
+    <input type="hidden" name="trip_id" value="{{ $trip->id }}">
+
+    <div class="mb-3">
+      <label for="name" class="form-label">Your Name</label>
+      <input type="text" name="name" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="email" class="form-label">Your Email</label>
+      <input type="email" name="email" class="form-control" required>
+    </div>
+
+    <div class="mb-3">
+      <label for="guests" class="form-label">Number of Guests</label>
+      <input type="number" name="guests" min="1" max="{{ $trip->guests }}" class="form-control" required>
+      <div class="form-text">Maximum allowed guests: {{ $trip->guests }}</div>
+    </div>
+
+    <button type="submit" class="btn btn-book w-100">Pre-Book Now</button>
+  </form>
+@endif
+
 
     {{-- Copy Embed Code --}}
     <button class="btn btn-embed w-100" onclick="copyEmbed()">Copy Widget Embed Code</button>

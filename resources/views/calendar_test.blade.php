@@ -7,6 +7,6 @@
 </head>
 <body>
   <h2>Testing Trip Widget Embed</h2>
-<iframe src="http://trip_management.test/public/widget?boat=Samara-1-%285-rooms%29&amp;company=1&amp;trip=12" width="100%" height="900" style="border:0;"></iframe>
+<iframe src="http://trip_management.test/public/widget?boat=Samara-1-%285-rooms%29&amp;company=test&amp;trip=12" width="100%" height="900" style="border:0;"></iframe>
 </body>
 </html>

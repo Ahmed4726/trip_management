@@ -16,6 +16,10 @@ return [
 
     'default' => env('MAIL_MAILER', 'log'),
 
+
+    'office_email' => env('MAIL_OFFICE_EMAIL', 'office@example.com'),
+
+
     /*
     |--------------------------------------------------------------------------
     | Mailer Configurations
