@@ -172,6 +172,24 @@
 </li>
 @endcan
 
+@can('boats')
+   <li class="nav-item">
+    <a href="/boats" class="nav-link {{ request()->is('boats','boats/*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-ship"></i>
+        <p>Boats</p>
+    </a>
+</li>
+@endcan
+
+<!-- @can('rooms')
+   <li class="nav-item">
+    <a href="/rooms" class="nav-link {{ request()->is('rooms','rooms/*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-hotel"></i>
+        <p>Rooms</p>
+    </a>
+</li>
+@endcan -->
+
 @can('finance')
        <li class="nav-item">
     <a href="/finances" class="nav-link {{ request()->is('finances') ? 'active' : '' }}">

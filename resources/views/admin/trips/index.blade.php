@@ -15,13 +15,15 @@
                 <div class="row">
                     <div class="col-md-4">
                         <label>Boat</label>
-                        <select id="filterBoat" class="form-control">
+                       <select id="filterBoat" class="form-control">
                             <option value="">All boats</option>
-                            <option value="Samara 1 (5 rooms)">Samara 1 (5 rooms)</option>
-                            <option value="Samara 1 (4 rooms)">Samara 1 (4 rooms)</option>
-                            <option value="Mischief (5 rooms)">Mischief (5 rooms)</option>
-                            <option value="Samara (6 rooms)">Samara (6 rooms)</option>
+                            @foreach($boats as $boat)
+                                <option value="{{ $boat->name }}">
+                                    {{ $boat->name }} ({{ $boat->rooms_count }} rooms)
+                                </option>
+                            @endforeach
                         </select>
+
                     </div>
                     <div class="col-md-4">
                         <label>Status</label>
@@ -64,6 +66,13 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+let boats = @json($boats->map(fn($b) => [
+    'id' => 'boat-' . $b->id,
+    'title' => $b->name . ' (' . $b->rooms_count . ' rooms)'
+]));
+</script>
+
+<script>
 let calendar;
 
 function loadCalendar() {
@@ -74,17 +83,13 @@ function loadCalendar() {
     let selectedBoat = $('#filterBoat').val();
 
     // All boats by default
-    let allResources = [
-        { id: 'boat-1', title: 'Samara 1 (5 rooms)' },
-        { id: 'boat-2', title: 'Samara 1 (4 rooms)' },
-        { id: 'boat-3', title: 'Mischief (5 rooms)' },
-        { id: 'boat-4', title: 'Samara (6 rooms)' }
-    ];
+    let allResources = boats; // replace the old hardcoded array
 
-    // If filter applied → only keep that boat
+    // If a boat is selected in the filter, only show that one
     let resources = selectedBoat
-        ? allResources.filter(r => r.title === selectedBoat)
+        ? allResources.filter(r => r.id === 'boat-' + selectedBoat)
         : allResources;
+
 
     calendar = new FullCalendar.Calendar(calendarEl, {
         schedulerLicenseKey: 'GPL-My-Project-Is-Open-Source',
@@ -128,6 +133,8 @@ function loadCalendar() {
                 <div class="form-group mb-2">
                     <label>Title</label>
                     <input type="text" id="tripTitle" class="form-control" value="${info.event.title}">
+                    <input type="hidden" id="tripType" class="form-control" value="${info.event.trip_type}">
+
                 </div>
                 <div class="form-group mb-2">
                     <label>Guests</label>
@@ -155,11 +162,11 @@ function loadCalendar() {
                 <div class="form-row mb-2 d-flex">
                     <div class="form-group flex-fill me-2">
                         <label>Start Date</label>
-                        <input type="date" id="tripStart" class="form-control" value="${props.start}">
+                        <input type="date" id="tripStart" class="form-control" value="${info.event.startStr}">
                     </div>
                     <div class="form-group flex-fill">
                         <label>End Date</label>
-                        <input type="date" id="tripEnd" class="form-control" value="${props.end}">
+                        <input type="date" id="tripEnd" class="form-control" value="${info.event.endStr}">
                     </div>
                 </div>
                 <div class="form-group mb-2">

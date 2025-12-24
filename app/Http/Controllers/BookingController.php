@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Guest;
+use App\Models\Boat;
 use App\Models\Agent;
 use App\Models\Company;
 use App\Models\Trip;
@@ -48,7 +48,12 @@ class BookingController extends Controller
             ->latest()
             ->get();
 
-        return view('admin.bookings.index', compact('bookings'));
+
+
+            $boats = Boat::with('rooms')->get();
+
+
+        return view('admin.bookings.index', compact('bookings','boats'));
     }
 
     // ==========================
@@ -72,7 +77,10 @@ class BookingController extends Controller
             ? Trip::where('company_id', $companyId)->get()
             : Trip::all();
 
-        return view('admin.bookings.create', compact('agents', 'trips', 'companies', 'companyId'));
+
+        $boats = Boat::withCount('rooms')->get(); // add rooms_count for display
+
+        return view('admin.bookings.create', compact('agents', 'trips', 'companies', 'companyId','boats'));
     }
 
 
@@ -207,4 +215,72 @@ class BookingController extends Controller
 
         return redirect()->route('bookings.index')->with('success', 'Booking deleted successfully.');
     }
+
+       /**
+     * Return available rooms for an existing trip
+     */
+    public function availableRoomsForTrip(Trip $trip)
+    {
+        // Get all rooms of the trip's boat
+        $allRooms = $trip->boat->rooms;
+
+        // Get rooms already booked in this trip
+        $bookedRoomIds = Booking::where('trip_id', $trip->id)
+                                ->pluck('guests'); // assuming 'guests' stores room IDs
+        // Filter available rooms
+        $availableRooms = $allRooms->whereNotIn('id', $bookedRoomIds);
+
+        return response()->json([
+            'rooms' => $availableRooms->map(fn($room)=>[
+                'id' => $room->id,
+                'name' => $room->room_name,
+                'capacity' => $room->capacity,
+                'price_per_day' => $room->price_per_night,
+            ])
+        ]);
+    }
+
+    /**
+     * Return available rooms of a boat for given dates (inline trip creation)
+     */
+    public function availableRoomsForBoat(Request $request)
+    {
+        $boatId = $request->boat;
+        $startDate = $request->start_date;
+        $endDate = $request->end_date;
+
+        if(!$boatId || !$startDate || !$endDate){
+            return response()->json(['rooms'=>[]]);
+        }
+
+        $boat = Boat::with('rooms')->find($boatId);
+        if(!$boat) return response()->json(['rooms'=>[]]);
+
+        // Get room IDs already booked in overlapping trips
+        $bookedRoomIds = Booking::whereHas('trip', function($q) use($startDate, $endDate){
+            $q->where(function($q2) use($startDate, $endDate){
+                $q2->whereBetween('start_date', [$startDate, $endDate])
+                   ->orWhereBetween('end_date', [$startDate, $endDate])
+                   ->orWhere(function($q3) use($startDate, $endDate){
+                        $q3->where('start_date', '<=', $startDate)
+                           ->where('end_date', '>=', $endDate);
+                   });
+            });
+        })->pluck('guests'); // assuming guests column stores room IDs
+
+        // Filter available rooms
+        $availableRooms = $boat->rooms->whereNotIn('id', $bookedRoomIds);
+
+        return response()->json([
+            'rooms' => $availableRooms->map(fn($room)=>[
+                'id' => $room->id,
+                'name' => $room->room_name,
+                'capacity' => $room->capacity,
+                'price_per_day' => $room->price_per_night,
+            ])
+        ]);
+    }
+
+
+
 }

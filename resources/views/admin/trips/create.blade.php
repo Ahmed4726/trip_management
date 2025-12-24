@@ -59,13 +59,15 @@
 
                     <div class="col-md-6">
                         <label for="boat" class="form-label">Boat</label>
-                        <select name="boat" id="boat" class="form-control" required>
+                       <select name="boat_id" id="boat" class="form-control" required>
                             <option value="">Select boat</option>
-                            <option value="Samara 1 (5 rooms)">Samara 1 (5 rooms)</option>
-                            <option value="Samara 1 (4 rooms)">Samara 1 (4 rooms)</option>
-                            <option value="Mischief (5 rooms)">Mischief (5 rooms)</option>
-                            <option value="Samara (6 rooms)">Samara (6 rooms)</option>
+                            @foreach($boats as $boat)
+                                <option value="{{ $boat->id }}">
+                                    {{ $boat->name }} ({{ $boat->rooms_count ?? $boat->rooms->count() }} rooms)
+                                </option>
+                            @endforeach
                         </select>
+
                     </div>
 
                     <div class="col-md-6">

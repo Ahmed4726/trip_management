@@ -17,7 +17,7 @@ class Trip extends Model
         'end_date',
         'guests',
         'price',
-        'boat',
+        'boat_id',
         'agent_id',
         'guest_form_token',
         'guest_form_url',
@@ -81,6 +81,11 @@ class Trip extends Model
     public function company()
     { 
         return $this->belongsTo(Company::class); 
+    }
+
+    public function boat()
+    { 
+        return $this->belongsTo(Boat::class); 
     }
 
 }

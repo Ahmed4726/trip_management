@@ -17,11 +17,13 @@
                         <label>Boat</label>
                         <select id="filterBoat" class="form-control">
                             <option value="">All boats</option>
-                            <option value="Samara 1 (5 rooms)">Samara 1 (5 rooms)</option>
-                            <option value="Samara 1 (4 rooms)">Samara 1 (4 rooms)</option>
-                            <option value="Mischief (5 rooms)">Mischief (5 rooms)</option>
-                            <option value="Samara (6 rooms)">Samara (6 rooms)</option>
+                            @foreach($boats as $boat)
+                                <option value="{{ $boat->name }} ({{ $boat->rooms->count() }} rooms)">
+                                    {{ $boat->name }} ({{ $boat->rooms->count() }} rooms)
+                                </option>
+                            @endforeach
                         </select>
+
                     </div>
                     <div class="col-md-4">
                         <label>Status</label>
@@ -73,11 +75,11 @@ function loadCalendar() {
     let selectedBoat = $('#filterBoat').val();
 
     let allResources = [
-        { id: 'boat-1', title: 'Samara 1 (5 rooms)' },
-        { id: 'boat-2', title: 'Samara 1 (4 rooms)' },
-        { id: 'boat-3', title: 'Mischief (5 rooms)' },
-        { id: 'boat-4', title: 'Samara (6 rooms)' }
+        @foreach($boats as $boat)
+            { id: 'boat-{{ $boat->id }}', title: '{{ $boat->name }} ({{ $boat->rooms->count() }} rooms)' },
+        @endforeach
     ];
+
 
     let resources = selectedBoat
         ? allResources.filter(r => r.title === selectedBoat)
@@ -151,11 +153,11 @@ function loadCalendar() {
                         <div class="form-row mb-2 d-flex">
                             <div class="form-group flex-fill me-2">
                                 <label>Start Date</label>
-                                <input type="date" id="tripStart" class="form-control" value="${props.start}">
+                                <input type="date" id="tripStart" class="form-control" value="${info.event.startStr}">
                             </div>
                             <div class="form-group flex-fill">
                                 <label>End Date</label>
-                                <input type="date" id="tripEnd" class="form-control" value="${props.end}">
+                                <input type="date" id="tripEnd" class="form-control" value="${info.event.endStr}">
                             </div>
                         </div>
                         <div class="form-group mb-2">

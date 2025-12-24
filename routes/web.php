@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AgentController;
+use App\Http\Controllers\BoatController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CancellationPolicyController;
 use App\Http\Controllers\CancellationPolicyRuleController;
@@ -20,6 +21,7 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\WaitingListController;
 use App\Http\Controllers\RatePlanController;
 use App\Http\Controllers\RolePermissionController;
+use App\Http\Controllers\RoomController;
 use App\Http\Controllers\TripController;
 use Barryvdh\DomPDF\Facade\Pdf;
 
@@ -135,6 +137,14 @@ Route::middleware('auth')->group(function () {
 });
 });
 
+
+// Get available rooms for a specific trip
+Route::get('/trips/{trip}/available-rooms', [BookingController::class, 'availableRoomsForTrip']);
+
+// Get available rooms for a boat in a given date range (inline trip creation)
+Route::get('/boats/available-rooms', [BookingController::class, 'availableRoomsForBoat']);
+
+
 // routes/api.php (or web.php if you want web sessions)
 Route::prefix('public')->group(function() {
     Route::get('/widget', [PublicBookingController::class, 'widget'])->name('public.widget');
@@ -230,7 +240,7 @@ Route::middleware('auth')->group(function () {
     Route::post('waiting-lists/{waitingList}/notify', [WaitingListController::class, 'notify'])->name('admin.waitinglists.notify');
     Route::get('waiting-lists/{waitingList}/convert', [WaitingListController::class, 'convertToBooking'])->name('admin.waitinglists.convert');
     Route::post('waiting-lists/{waitingList}/mark-converted', [WaitingListController::class, 'markConverted'])->name('admin.waitinglists.markConverted');
-});
+    });
 
     /*
     |--------------------------------------------------------------------------
@@ -301,6 +311,7 @@ Route::middleware('auth')->group(function () {
     });
 
 
+     // ================== Rate Plans ==================
     Route::resource('rate-plans', RatePlanController::class);
     Route::prefix('rate-plan-rules')->group(function () {
         Route::get('/{rate_plan}', [RatePlanRuleController::class, 'index'])->name('rate-plan-rules.index');
@@ -310,7 +321,10 @@ Route::middleware('auth')->group(function () {
         Route::put('/{ratePlanId}/rules/{rule}', [RatePlanRuleController::class, 'update'])->name('rate-plan-rules.update');
         Route::delete('/{ratePlanId}/rules/{rule}', [RatePlanRuleController::class, 'destroy'])->name('rate-plan-rules.destroy');
     });    
+
+     // ================== Payment policies ==================
     Route::resource('payment-policies', PaymentPolicyController::class)->parameters(['payment-policies' => 'policy']);
+     // ================== Cancellation policies ==================
     Route::resource('cancellation-policies', CancellationPolicyController::class);
     Route::prefix('cancellation-policy-rules')->group(function () {
         Route::get('/{id}', [CancellationPolicyRuleController::class, 'index'])->name('cancellation-policy-rules.index');
@@ -321,10 +335,33 @@ Route::middleware('auth')->group(function () {
         Route::delete('/{id}', [CancellationPolicyRuleController::class, 'destroy'])->name('cancellation-policy-rules.destroy');
     });
 
-    // WaitingList
+      // ================== // WaitingList ==================
     Route::post('/public/waitlist', [App\Http\Controllers\WaitingListController::class, 'store'])
         ->name('public.waitlist');
 
+            // ================== Boats ==================
+// ================== Boats ==================
+    Route::get('/boats', [BoatController::class, 'boat_index'])->name('boat.index');
+    Route::get('/boats/create', [BoatController::class, 'create_boat'])->name('boat.create');
+    Route::post('/boats', [BoatController::class, 'store_boat'])->name('boat.store');
+    Route::get('/boats/{boat}', [BoatController::class, 'show_boat'])->name('boat.show');
+    Route::put('/boats/{boat}', [BoatController::class, 'update_boat'])->name('boat.update');
+    Route::delete('/boats/{boat}', [BoatController::class, 'destroy_boat'])->name('boat.destroy');
+
+    // ================== Rooms (NESTED) ==================
+       Route::prefix('boats/{boat}')->group(function () {
+        Route::get('/rooms', [RoomController::class, 'room_index'])->name('room.index');
+        Route::get('/rooms/create', [RoomController::class, 'create_room'])->name('room.create');
+        Route::post('/rooms', [RoomController::class, 'store_room'])->name('room.store');
+        Route::get('/rooms/{room}/edit', [RoomController::class, 'edit_room'])->name('room.edit');
+        Route::put('/rooms/{room}', [RoomController::class, 'update_room'])->name('room.update');
+        Route::delete('/rooms/{room}', [RoomController::class, 'destroy_room'])->name('room.destroy');
+    });
+
 });
+
+
+
+
 
 require __DIR__.'/auth.php';
