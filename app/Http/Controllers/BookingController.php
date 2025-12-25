@@ -8,6 +8,9 @@ use App\Models\Agent;
 use App\Models\Company;
 use App\Models\Trip;
 use App\Models\Booking;
+use App\Models\CancellationPolicy;
+use App\Models\PaymentPolicy;
+use App\Models\RatePlan;
 use Illuminate\Support\Str;
 
 class BookingController extends Controller
@@ -61,27 +64,45 @@ class BookingController extends Controller
     // ==========================
     public function create_booking()
     {
+        $companyId = null;
+        $companies = null;
+
         if (auth()->user()->hasRole('admin')) {
             $companies = Company::all();
-            $companyId = null; // Admin sees all
         } else {
-            $companies = null;
-            $companyId = auth()->user()->company_id; // Non-admin sees only their company
+            $companyId = auth()->user()->company_id;
         }
 
-        $agents = $companyId 
-            ? Agent::where('company_id', $companyId)->get() 
+        $agents = $companyId
+            ? Agent::where('company_id', $companyId)->get()
             : Agent::all();
 
         $trips = $companyId
             ? Trip::where('company_id', $companyId)->get()
             : Trip::all();
 
+        $boats = Boat::withCount(['rooms as available_rooms_count' => function ($q) {
+            $q->whereDoesntHave('bookings');
+        }])->get();
 
-        $boats = Boat::withCount('rooms')->get(); // add rooms_count for display
+        $ratePlans = $companyId
+            ? RatePlan::where('company_id', $companyId)->get()
+            : RatePlan::all();
 
-        return view('admin.bookings.create', compact('agents', 'trips', 'companies', 'companyId','boats'));
+        $paymentPolicies = $companyId
+            ? PaymentPolicy::where('company_id', $companyId)->get()
+            : PaymentPolicy::all();
+
+        $cancellationPolicies = $companyId
+            ? CancellationPolicy::where('company_id', $companyId)->get()
+            : CancellationPolicy::all();
+
+        return view('admin.bookings.create', compact(
+            'agents', 'trips', 'companies', 'companyId', 
+            'boats', 'ratePlans', 'paymentPolicies', 'cancellationPolicies'
+        ));
     }
+
 
 
     // ==========================
@@ -89,11 +110,80 @@ class BookingController extends Controller
     // ==========================
     public function store_booking(Request $request)
     {
-        // Validation
+        if ($request->inline_trip) {
+
+            // dd($request);
+            // Validate inline trip fields
+            $tripValidated = $request->validate([
+                'trip_title' => 'required|string|max:255',
+                // 'region' => 'required|string|max:255',
+                'boat_id' => 'required|exists:boats,id',
+                'trip_type' => 'required|string',
+                'start_date' => 'required|date',
+                'end_date' => 'required|date|after_or_equal:start_date',
+                // 'guests' => 'required|integer|min:1',
+                'price' => 'required|numeric',
+                'rate_plan_id' => 'required',
+                'payment_policy_id' => 'required',
+                'cancellation_policy_id' => 'required',
+                'notes' => 'nullable|string',
+                'company_id' => 'required'
+            ]);
+
+            if (!auth()->user()->hasRole('admin')) {
+                $tripValidated['company_id'] = auth()->user()->company_id;
+            }
+
+            // Create the trip
+            $trip = Trip::create([
+                'title' => $tripValidated['trip_title'],
+                'boat_id' => $tripValidated['boat_id'],
+                'trip_type' => $tripValidated['trip_type'],
+                'start_date' => $tripValidated['start_date'],
+                'end_date' => $tripValidated['end_date'],
+                // 'guests' => $tripValidated['guests'],
+                'price' => $tripValidated['price'],
+                // 'region' => $tripValidated['region'],
+                'rate_plan_id' => $tripValidated['rate_plan_id'],
+                'payment_policy_id' => $tripValidated['payment_policy_id'],
+                'cancellation_policy_id' => $tripValidated['cancellation_policy_id'],
+                'notes' => $tripValidated['notes'] ?? null,
+                'status' => $request->status,
+                'company_id' => $tripValidated['company_id'],
+            ]);
+
+            // Calculate DP and balance due
+            $paymentPolicy = PaymentPolicy::find($tripValidated['payment_policy_id']);
+            $total = $tripValidated['price'];
+            $dp_amount = round($total * $paymentPolicy->dp_percent / 100, 2);
+            $balance_due_date = now()->parse($tripValidated['start_date'])
+                ->subDays($paymentPolicy->balance_days_before_start);
+
+            $trip->update([
+                'pricing_snapshot_json' => json_encode([
+                    'total' => $total,
+                    'dp_amount' => $dp_amount
+                ]),
+                'payment_policy_snapshot_json' => json_encode($paymentPolicy),
+                'cancellation_policy_snapshot_json' => json_encode(
+                    CancellationPolicy::find($tripValidated['cancellation_policy_id'])
+                ),
+                'dp_amount' => $dp_amount,
+                'balance_due_date' => $balance_due_date,
+            ]);
+
+            // Set trip_id for booking
+            $request->merge(['trip_id' => $trip->id]);
+        }
+
+                // dd(vars: 'ok');
+
+        // Now validate booking fields
         $validated = $request->validate([
             'trip_id' => 'required|exists:trips,id',
+            'room_id' => 'required|exists:rooms,id',
             'customer_name' => 'required|string|max:255',
-            'guests' => 'nullable|integer|min:1',
+            // 'guests' => 'nullable',
             'source' => 'required|string|max:255',
             'email' => 'nullable|email',
             'phone_number' => 'nullable|string|max:20',
@@ -105,28 +195,25 @@ class BookingController extends Controller
             'room_preference' => 'nullable|in:single,double,suite',
             'agent_id' => 'nullable|exists:agents,id',
             'comments' => 'nullable|string',
-            'notes' => 'nullable|string',
-            'company_id' => 'required'
+            'notes' => 'nullable|string'
+            // 'company_id' => 'required'
         ]);
 
-        // Default booking_status
-        if (empty($validated['booking_status'])) {
-            $validated['booking_status'] = 'pending';
-        }
+        // dd(vars: 'ok');
 
-        // Generate unique token
+        $validated['booking_status'] = $validated['booking_status'] ?? 'pending';
         $validated['token'] = Str::random(32);
 
-        // 🔑 Add company_id if tenant exists
-        if ($this->tenant) {
-            $validated['company_id'] = $this->tenant->id;
+        if (!auth()->user()->hasRole('admin')) {
+            $validated['company_id'] = auth()->user()->company_id;
         }
 
-        $booking = Booking::create($validated);
+        Booking::create($validated);
 
         return redirect()->route('bookings.index')
             ->with('success', 'Booking created successfully.');
     }
+
 
     // ==========================
     // SHOW
@@ -219,26 +306,31 @@ class BookingController extends Controller
        /**
      * Return available rooms for an existing trip
      */
-    public function availableRoomsForTrip(Trip $trip)
-    {
-        // Get all rooms of the trip's boat
-        $allRooms = $trip->boat->rooms;
+  public function availableRoomsForTrip(Trip $trip)
+{
+    $allRooms = $trip->boat->rooms()->get(); // make sure it's a collection
 
-        // Get rooms already booked in this trip
-        $bookedRoomIds = Booking::where('trip_id', $trip->id)
-                                ->pluck('guests'); // assuming 'guests' stores room IDs
-        // Filter available rooms
-        $availableRooms = $allRooms->whereNotIn('id', $bookedRoomIds);
+    // Get rooms already booked in this trip
+    $bookedRoomIds = Booking::where('trip_id', $trip->id)
+                            ->pluck('room_id')
+                            ->toArray(); // convert to array for whereNotIn
 
-        return response()->json([
-            'rooms' => $availableRooms->map(fn($room)=>[
+    // Filter available rooms
+    $availableRooms = $allRooms->whereNotIn('id', $bookedRoomIds);
+
+    // Return JSON
+    return response()->json([
+        'rooms' => $availableRooms->map(function($room) {
+            return [
                 'id' => $room->id,
                 'name' => $room->room_name,
                 'capacity' => $room->capacity,
                 'price_per_day' => $room->price_per_night,
-            ])
-        ]);
-    }
+            ];
+        })->values() // reset keys
+    ]);
+}
+
 
     /**
      * Return available rooms of a boat for given dates (inline trip creation)
@@ -249,30 +341,29 @@ class BookingController extends Controller
         $startDate = $request->start_date;
         $endDate = $request->end_date;
 
-        if(!$boatId || !$startDate || !$endDate){
-            return response()->json(['rooms'=>[]]);
+        if (!$boatId || !$startDate || !$endDate) {
+            return response()->json(['rooms' => []]);
         }
 
         $boat = Boat::with('rooms')->find($boatId);
-        if(!$boat) return response()->json(['rooms'=>[]]);
+        if (!$boat) return response()->json(['rooms' => []]);
 
-        // Get room IDs already booked in overlapping trips
-        $bookedRoomIds = Booking::whereHas('trip', function($q) use($startDate, $endDate){
-            $q->where(function($q2) use($startDate, $endDate){
+        // Get all room IDs booked in overlapping trips
+        $bookedRoomIds = Booking::whereHas('trip', function($q) use ($startDate, $endDate) {
+            $q->where(function($q2) use ($startDate, $endDate) {
                 $q2->whereBetween('start_date', [$startDate, $endDate])
-                   ->orWhereBetween('end_date', [$startDate, $endDate])
-                   ->orWhere(function($q3) use($startDate, $endDate){
-                        $q3->where('start_date', '<=', $startDate)
-                           ->where('end_date', '>=', $endDate);
-                   });
+                ->orWhereBetween('end_date', [$startDate, $endDate])
+                ->orWhere(function($q3) use ($startDate, $endDate) {
+                    $q3->where('start_date', '<', $endDate)
+                        ->where('end_date', '>', $startDate);
+                });
             });
-        })->pluck('guests'); // assuming guests column stores room IDs
+        })->pluck('room_id');
 
-        // Filter available rooms
         $availableRooms = $boat->rooms->whereNotIn('id', $bookedRoomIds);
 
         return response()->json([
-            'rooms' => $availableRooms->map(fn($room)=>[
+            'rooms' => $availableRooms->map(fn($room) => [
                 'id' => $room->id,
                 'name' => $room->room_name,
                 'capacity' => $room->capacity,
