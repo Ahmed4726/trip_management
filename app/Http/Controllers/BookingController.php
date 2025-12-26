@@ -11,6 +11,10 @@ use App\Models\Booking;
 use App\Models\CancellationPolicy;
 use App\Models\PaymentPolicy;
 use App\Models\RatePlan;
+use App\Models\Room;
+use DateInterval;
+use DatePeriod;
+use DateTime;
 use Illuminate\Support\Str;
 
 class BookingController extends Controller
@@ -55,8 +59,10 @@ class BookingController extends Controller
 
             $boats = Boat::with('rooms')->get();
 
+            $rooms = Room::get();
 
-        return view('admin.bookings.index', compact('bookings','boats'));
+
+        return view('admin.bookings.index', compact('bookings','boats', 'rooms'));
     }
 
     // ==========================
@@ -306,30 +312,30 @@ class BookingController extends Controller
        /**
      * Return available rooms for an existing trip
      */
-  public function availableRoomsForTrip(Trip $trip)
-{
-    $allRooms = $trip->boat->rooms()->get(); // make sure it's a collection
+    public function availableRoomsForTrip(Trip $trip)
+    {
+        $allRooms = $trip->boat->rooms()->get(); // make sure it's a collection
 
-    // Get rooms already booked in this trip
-    $bookedRoomIds = Booking::where('trip_id', $trip->id)
-                            ->pluck('room_id')
-                            ->toArray(); // convert to array for whereNotIn
+        // Get rooms already booked in this trip
+        $bookedRoomIds = Booking::where('trip_id', $trip->id)
+                                ->pluck('room_id')
+                                ->toArray(); // convert to array for whereNotIn
 
-    // Filter available rooms
-    $availableRooms = $allRooms->whereNotIn('id', $bookedRoomIds);
+        // Filter available rooms
+        $availableRooms = $allRooms->whereNotIn('id', $bookedRoomIds);
 
-    // Return JSON
-    return response()->json([
-        'rooms' => $availableRooms->map(function($room) {
-            return [
-                'id' => $room->id,
-                'name' => $room->room_name,
-                'capacity' => $room->capacity,
-                'price_per_day' => $room->price_per_night,
-            ];
-        })->values() // reset keys
-    ]);
-}
+        // Return JSON
+        return response()->json([
+            'rooms' => $availableRooms->map(function($room) {
+                return [
+                    'id' => $room->id,
+                    'name' => $room->room_name,
+                    'capacity' => $room->capacity,
+                    'price_per_day' => $room->price_per_night,
+                ];
+            })->values() // reset keys
+        ]);
+    }
 
 
     /**
@@ -373,5 +379,44 @@ class BookingController extends Controller
     }
 
 
+
+    public function getEvents(Request $request)
+    {
+        $query = Trip::with('boat', 'bookings');
+
+        if ($request->boat_id) {
+            $query->where('boat_id', $request->boat_id);
+        }
+
+        if ($request->status) {
+            $query->where('booking_status', $request->status);
+        }
+
+        $trips = $query->get();
+        $events = [];
+
+        foreach ($trips as $trip) {
+            $totalCapacity = $trip->boat->rooms->sum('capacity');
+            $bookedGuests = $trip->bookings->count();
+            $available = $totalCapacity - $bookedGuests;
+
+            $events[] = [
+                'id' => $trip->id,
+                'title' => $trip->title . " (Available: $available)",
+                'start' => $trip->start_date,
+                'end' => $trip->end_date,
+                'resourceId' => 'boat-' . $trip->boat_id,
+                'color' => $available > 0 ? '#34d399' : '#f87171', // green if available, red if full
+                'extendedProps' => [
+                    'status' => $trip->booking_status,
+                    'guests' => $bookedGuests,
+                    'capacity' => $totalCapacity,
+                    'price' => $trip->rate,
+                ]
+            ];
+        }
+
+        return response()->json($events);
+    }
 
 }

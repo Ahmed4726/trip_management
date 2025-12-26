@@ -298,6 +298,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/booking/{id}', [BookingController::class, 'show_booking'])->name('bookings.show');
         Route::get('/booking/edit/{id}', [BookingController::class, 'edit_booking'])->name('bookings.edit');
         Route::delete('booking/{id}', [BookingController::class, 'destroy_booking'])->name('bookings.destroy');
+        Route::get('/trips/events', [BookingController::class, 'getEvents'])->name('trips.events');
+
     });
 
     // ================== Companies ==================
@@ -339,8 +341,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/public/waitlist', [App\Http\Controllers\WaitingListController::class, 'store'])
         ->name('public.waitlist');
 
-            // ================== Boats ==================
-// ================== Boats ==================
+    // ================== Boats ==================
     Route::get('/boats', [BoatController::class, 'boat_index'])->name('boat.index');
     Route::get('/boats/create', [BoatController::class, 'create_boat'])->name('boat.create');
     Route::post('/boats', [BoatController::class, 'store_boat'])->name('boat.store');
