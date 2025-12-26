@@ -8,40 +8,46 @@
             <a href="{{ route('bookings.create') }}" class="btn btn-primary">Create</a>
             @endcan
         </div>
+            @if(session('success'))
+                <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+                <script>
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success',
+                        text: '{{ session('success') }}',
+                        confirmButtonColor: '#3085d6',
+                        confirmButtonText: 'OK'
+                    });
+                </script>
+            @endif
 
         <!-- Filters -->
-        <div class="card mb-4">
+        <div class="card mb-4 shadow-sm">
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4">
+                <div class="row g-3">
+                    <div class="col-md-3">
                         <label>Boat</label>
                         <select id="filterBoat" class="form-control">
                             <option value="">All boats</option>
                             @foreach($boats as $boat)
-                                <option value="{{ $boat->name }} ({{ $boat->rooms->count() }} rooms)">
-                                    {{ $boat->name }} ({{ $boat->rooms->count() }} rooms)
-                                </option>
+                                <option value="{{ $boat->name }}">{{ $boat->name }} ({{ $boat->rooms->count() }} rooms)</option>
                             @endforeach
                         </select>
-
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <label>Status</label>
                         <select id="filterStatus" class="form-control">
                             <option value="">All statuses</option>
                             <option value="Available">Available</option>
-                            <option value="Draft">Draft</option>
-                            <option value="Published">Published</option>
-                            <option value="Active">Active</option>
-                            <option value="Completed">Completed</option>
-                            <option value="Cancelled">Cancelled</option>
+                            <option value="Partially Booked">Partially Booked</option>
+                            <option value="Fully Booked">Fully Booked</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <label>Start Date</label>
                         <input type="date" id="filterStartDate" class="form-control">
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-3">
                         <label>End Date</label>
                         <input type="date" id="filterEndDate" class="form-control">
                     </div>
@@ -49,12 +55,15 @@
             </div>
         </div>
 
-        <!-- Calendar -->
-        <div class="card">
-            <div class="card-body">
-                <h4 class="mb-3">Trips Calendar</h4>
-                <div id="calendar"></div>
-            </div>
+        <!-- Calendars -->
+        <div class="row">
+            @for($i = 0; $i < 4; $i++)
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm p-2">
+                        <div id="calendar-{{ $i }}"></div>
+                    </div>
+                </div>
+            @endfor
         </div>
     </div>
 </div>
@@ -65,57 +74,21 @@
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar-scheduler@6.1.15/index.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
+<style>
+    /* Modern Event Colors */
+    .fc-event {
+        border-radius: 6px !important;
+        font-weight: 500;
+        color: #fff !important;
+        cursor: pointer;
+    }
+    .available-event { background: #28a745; }
+    .partial-event { background: #ffc107; }
+    .full-event { background: #dc3545; }
+</style>
+
 <script>
-let calendar;
-
-function loadCalendar() {
-    let calendarEl = document.getElementById('calendar');
-    if(calendar) calendar.destroy();
-
-    let resources = [
-        @foreach($boats as $boat)
-            @foreach($boat->rooms as $room)
-                { id: 'room-{{ $room->id }}', title: '{{ $boat->name }} - {{ $room->room_name }}' },
-            @endforeach
-        @endforeach
-    ];
-
-    calendar = new FullCalendar.Calendar(calendarEl, {
-        schedulerLicenseKey: 'GPL-My-Project-Is-Open-Source',
-        initialView: 'resourceTimelineMonth',
-        headerToolbar: {
-            left: 'prev,next today',
-            center: 'title',
-            right: 'resourceTimelineDay,resourceTimelineWeek,resourceTimelineMonth'
-        },
-        resources: resources,
-        events: {
-            url: "{{ route('trips.events') }}",
-            method: 'GET',
-        },
-        height: 700,
-        eventColor: '#378006',
-        nowIndicator: true,
-        resourceAreaHeaderContent: 'Rooms / Boats',
-        eventClick: function(info) {
-            if(info.event.title === 'Available') {
-                Swal.fire('Slot is available!', '', 'info');
-            } else {
-                Swal.fire({
-                    title: info.event.title,
-                    html: `
-                        <b>Start:</b> ${info.event.start.toISOString().split('T')[0]} <br>
-                        <b>End:</b> ${info.event.end ? info.event.end.toISOString().split('T')[0] : '-'}
-                    `,
-                    icon: 'info'
-                });
-            }
-        }
-    });
-
-    calendar.render();
-}
-
+let calendars = [];
 
 function getFilters() {
     return {
@@ -126,28 +99,106 @@ function getFilters() {
     };
 }
 
-$('#filterBoat, #filterStatus, #filterStartDate, #filterEndDate').on('change', loadCalendar);
+function loadCalendars() {
+    calendars.forEach(cal => cal.destroy());
+    calendars = [];
 
-$(document).ready(loadCalendar);
+    for (let i = 0; i < 4; i++) {
+        let calendarEl = document.getElementById('calendar-' + i);
 
-// Copy widget code function
-function copyWidgetCode(tripId) {
-    const span = document.getElementById('widgetCode' + tripId);
-    const text = span.innerText;
+        let calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            initialDate: new Date(new Date().setMonth(new Date().getMonth() + i)),
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth'
+            },
+            height: 550,
+            nowIndicator: true,
+            events: {
+                url: "{{ route('booking.events') }}",
+                method: 'GET',
+                extraParams: getFilters
+            },
+            eventDidMount: function(info) {
+                // Add custom classes based on status
+                const status = info.event.extendedProps.booking_status;
+                if(status === 'Available') info.el.classList.add('available-event');
+                if(status === 'Partially Booked') info.el.classList.add('partial-event');
+                if(status === 'Fully Booked') info.el.classList.add('full-event');
 
-    const temp = document.createElement('textarea');
-    temp.value = text;
-    document.body.appendChild(temp);
-    temp.select();
-    document.execCommand('copy');
-    document.body.removeChild(temp);
+                // Tooltip on hover
+                info.el.setAttribute('title', `${info.event.title}\nStatus: ${status}\nAvailable: ${info.event.extendedProps.available}`);
+            },
+            eventClick: function(info) {
+                const props = info.event.extendedProps;
+                const bookingId = props.booking_id;
 
-    Swal.fire({
-        icon: 'success',
-        title: 'Widget code copied!',
-        showConfirmButton: false,
-        timer: 1500
-    });
+                let swalOptions = {
+                    title: `<strong>${info.event.title}</strong>`,
+                    html: `
+                        <b>Start:</b> ${info.event.start.toISOString().split('T')[0]} <br>
+                        <b>End:</b> ${info.event.end ? info.event.end.toISOString().split('T')[0] : '-'} <br>
+                        <b>Available:</b> ${props.available} <br>
+                        <b>Booked:</b> ${props.booked} <br>
+                        <b>Capacity:</b> ${props.capacity} <br>
+                        <b>Status:</b> ${props.booking_status}
+                    `,
+                    icon: 'info',
+                    confirmButtonText: 'Close'
+                };
+
+                // If booking exists, show Edit and Delete buttons
+                if (bookingId) {
+                    swalOptions.showDenyButton = true;
+                    swalOptions.showCancelButton = true;
+                    swalOptions.confirmButtonText = 'Edit';
+                    swalOptions.denyButtonText = 'Delete';
+                    swalOptions.cancelButtonText = 'Close';
+                }
+
+                Swal.fire(swalOptions).then((result) => {
+                    if (bookingId) { // Only allow edit/delete if booking exists
+                        if(result.isConfirmed){
+                            window.location.href = `/booking/edit/${bookingId}`;
+                        } else if(result.isDenied){
+                            Swal.fire({
+                                title: 'Are you sure?',
+                                text: "This booking will be deleted permanently!",
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: 'Yes, delete it!'
+                            }).then((delRes) => {
+                                if(delRes.isConfirmed){
+                                    $.ajax({
+                                        url: `/booking/${bookingId}`,
+                                        type: 'DELETE',
+                                        data: { _token: '{{ csrf_token() }}' },
+                                        success: function() {
+                                            Swal.fire('Deleted!', 'Booking has been deleted.', 'success');
+                                            info.event.remove();
+                                        },
+                                        error: function() {
+                                            Swal.fire('Error!', 'Something went wrong.', 'error');
+                                        }
+                                    });
+                                }
+                            });
+                        }
+                    }
+                });
+            }
+
+        });
+
+        calendar.render();
+        calendars.push(calendar);
+    }
 }
+
+$('#filterBoat, #filterStatus, #filterStartDate, #filterEndDate').on('change', loadCalendars);
+
+$(document).ready(loadCalendars);
 </script>
 @endsection

@@ -300,9 +300,11 @@ class BookingController extends Controller
     // ==========================
     public function destroy_booking($id)
     {
-        $booking = Booking::when($this->tenant, function ($q) {
-            $q->where('company_id', $this->tenant->id);
-        })->findOrFail($id);
+        // $booking = Booking::when($this->tenant, function ($q) {
+        //     $q->where('company_id', $this->tenant->id);
+        // })->findOrFail($id);
+
+        $booking = Booking::findOrFail($id);
 
         $booking->delete();
 
@@ -382,14 +384,10 @@ class BookingController extends Controller
 
     public function getEvents(Request $request)
     {
-        $query = Trip::with('boat', 'bookings');
+        $query = Trip::with('boat.rooms', 'bookings');
 
         if ($request->boat_id) {
             $query->where('boat_id', $request->boat_id);
-        }
-
-        if ($request->status) {
-            $query->where('booking_status', $request->status);
         }
 
         $trips = $query->get();
@@ -400,23 +398,55 @@ class BookingController extends Controller
             $bookedGuests = $trip->bookings->count();
             $available = $totalCapacity - $bookedGuests;
 
-            $events[] = [
-                'id' => $trip->id,
-                'title' => $trip->title . " (Available: $available)",
-                'start' => $trip->start_date,
-                'end' => $trip->end_date,
-                'resourceId' => 'boat-' . $trip->boat_id,
-                'color' => $available > 0 ? '#34d399' : '#f87171', // green if available, red if full
-                'extendedProps' => [
-                    'status' => $trip->booking_status,
-                    'guests' => $bookedGuests,
-                    'capacity' => $totalCapacity,
-                    'price' => $trip->rate,
-                ]
-            ];
+            // Trip status
+            $tripStatus = $available > 0 ? 'Available' : 'Fully Booked';
+
+            // Add an event for each booking
+            foreach ($trip->bookings as $booking) {
+                $events[] = [
+                    'id' => $trip->id, // trip id (optional)
+                    'booking_id' => $booking->id, // add booking_id here
+                    'title' => $trip->title,
+                    'start' => $booking->start_date ?? $trip->start_date,
+                    'end' => $booking->end_date ?? $trip->end_date ?? $trip->start_date,
+                    'color' => $booking->booking_status === 'Cancelled' ? '#f87171' :
+                            ($available > 0 ? '#34d399' : '#fbbf24'), // green if available, yellow if partially booked
+                    'extendedProps' => [
+                        'available' => $available,
+                        'booked' => $bookedGuests,
+                        'capacity' => $totalCapacity,
+                        'trip_status' => $tripStatus,
+                        'booking_status' => $booking->booking_status,
+                        'trip_id' => $trip->id,
+                        'booking_id' => $booking->id, // pass booking_id to frontend
+                    ]
+                ];
+            }
+
+            // Optional: If trip has no bookings, still show as available
+            if ($trip->bookings->isEmpty()) {
+                $events[] = [
+                    'id' => $trip->id,
+                    'booking_id' => null,
+                    'title' => $trip->title,
+                    'start' => $trip->start_date,
+                    'end' => $trip->end_date ?? $trip->start_date,
+                    'color' => '#34d399',
+                    'extendedProps' => [
+                        'available' => $available,
+                        'booked' => 0,
+                        'capacity' => $totalCapacity,
+                        'trip_status' => $tripStatus,
+                        'booking_status' => 'No Booking',
+                        'trip_id' => $trip->id,
+                        'booking_id' => null,
+                    ]
+                ];
+            }
         }
 
         return response()->json($events);
     }
+
 
 }
