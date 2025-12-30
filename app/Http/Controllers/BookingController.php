@@ -440,7 +440,7 @@ public function getEvents(Request $request)
         $events[] = [
             'id' => $trip->id,
             'title' => $trip->title,
-            'start' => $trip->start_date,
+            'start' => $trip->start_date, 
             'end' => \Carbon\Carbon::parse($trip->end_date)->addDay()->format('Y-m-d'), // add 1 day for FC display
             'color' => $availableRooms > 0 ? '#34d399' : '#f87171', // green if available, red if fully booked
             'extendedProps' => [

@@ -56,7 +56,7 @@
                                             title="View Rooms">
                                         <i class="fas fa-eye"></i>
                                         <span class="badge bg-light text-dark ms-1">{{ $boat->rooms->count() }}</span>
-                                    </button>
+                                    </button> 
 
                                     </td>
                                     <td>{{ $boat->created_at->format('d M Y') }}</td>

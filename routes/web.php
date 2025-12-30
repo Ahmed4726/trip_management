@@ -361,7 +361,7 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::get('/boat/rooms/{id}', [BoatController::class, 'room_index']);
-
+ 
     Route::get('/bookings/trips/events', [BookingController::class, 'getEvents'])->name('booking.events');
 
 });

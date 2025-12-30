@@ -26,7 +26,7 @@ class Booking extends Model
         'company_id',
         'dp_paid',
         'room_id',
-        'boat_id'
+        'boat_id' 
     ];
 
 

@@ -71,7 +71,7 @@
                                 Available
                             @endif
                         </td>
-                        <td>{{ $trip->start_date }}</td>
+                        <td>{{ $trip->start_date }}</td> 
                         <td>{{ $trip->end_date }}</td>
                         <td>{{ $booking->customer_name ?? '-' }}</td>
                         <td>

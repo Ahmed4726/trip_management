@@ -176,7 +176,7 @@ function loadCalendars() {
         calendars.push(calendar);
     }
 }
-
+ 
 
 $('#filterBoat, #filterStatus, #filterStartDate, #filterEndDate').on('change', loadCalendars);
 
