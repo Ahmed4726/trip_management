@@ -145,8 +145,8 @@
                     </div>
                 </div>
 
-                {{-- Inline Rooms --}}
-                <div class="row mt-2">
+                {{-- Inline Rooms - Only show if Open Trip --}}
+                <div class="row mt-2" id="inlineGuestsRow">
                     <div class="col-md-6">
                         <label>Room Selection</label>
                         <select name="room_id" id="inline_guests" class="form-control" required>
@@ -332,12 +332,9 @@ $(document).ready(function(){
             url:`/trips/${tripId}/available-rooms`,
             type:'GET',
             success:function(data){
-                console.log(data); // debug
                 guestsSelect.html('<option value="">Select a room</option>');
                 data.rooms.forEach(room=>{
-                    guestsSelect.append(`<option value="${room.id}">
-                        ${room.name} — Capacity: ${room.capacity}, Price: $${room.price_per_day}
-                    </option>`);
+                    guestsSelect.append(`<option value="${room.id}">${room.name} — Capacity: ${room.capacity}, Price: $${room.price_per_day}</option>`);
                 });
             },
             error:function(){
@@ -347,41 +344,47 @@ $(document).ready(function(){
     });
 
     // Inline Trip Rooms Dropdown
-   $('#inline_boat, #trip_type, #start_date, #end_date').on('change', function(){
-    const boat = $('#inline_boat').val();
-    const type = $('#trip_type').val();
-    const start = $('#start_date').val();
-    const end = $('#end_date').val();
-    const guestSelect = $('#inline_guests');
+    $('#inline_boat, #trip_type, #start_date, #end_date').on('change', function(){
+        const boat = $('#inline_boat').val();
+        const type = $('#trip_type').val();
+        const start = $('#start_date').val();
+        const end = $('#end_date').val();
+        const guestSelect = $('#inline_guests');
 
-    if(!boat || !type || !start || !end) return;
+        if(!boat || !type || !start || !end) return;
 
-    $.ajax({
-        url: '/boats/available-rooms',
-        type: 'GET',
-        data: { boat: boat, trip_type: type, start_date: start, end_date: end },
-        success: function(data){
-            guestSelect.empty().append('<option value="">Select a room</option>');
-            if(data.rooms.length){
-                data.rooms.forEach(room => {
-                    guestSelect.append(`<option value="${room.id}" data-price="${room.price_per_day}">
-                        ${room.name} — Capacity: ${room.capacity}, Price: $${room.price_per_day}
-                    </option>`);
-                });
-                $('#inlineGuestsRow').show();
-            } else {
-                guestSelect.append('<option value="">No rooms available</option>');
-                $('#inlineGuestsRow').hide();
-            }
-        },
-        error: function(xhr, status, error){
-            console.error('Error fetching rooms:', error);
-            guestSelect.empty().append('<option value="">Error fetching rooms</option>');
+        if(type === 'private') {
+            // Hide rooms for private charter
             $('#inlineGuestsRow').hide();
+            guestSelect.prop('required', false);
+            guestSelect.empty().append('<option value="">Full boat charter</option>');
+            $('#inline_room_price').val('');
+            return;
+        } else {
+            $('#inlineGuestsRow').show();
+            guestSelect.prop('required', true);
         }
-    });
-});
 
+        $.ajax({
+            url: '/boats/available-rooms',
+            type: 'GET',
+            data: { boat: boat, trip_type: type, start_date: start, end_date: end },
+            success: function(data){
+                guestSelect.empty().append('<option value="">Select a room</option>');
+                if(data.rooms.length){
+                    data.rooms.forEach(room => {
+                        guestSelect.append(`<option value="${room.id}" data-price="${room.price_per_day}">${room.name} — Capacity: ${room.capacity}, Price: $${room.price_per_day}</option>`);
+                    });
+                } else {
+                    guestSelect.append('<option value="">No rooms available</option>');
+                }
+            },
+            error: function(xhr, status, error){
+                console.error('Error fetching rooms:', error);
+                guestSelect.empty().append('<option value="">Error fetching rooms</option>');
+            }
+        });
+    });
 
     // Set price for selected inline room
     $('#inline_guests').on('change', function(){
@@ -407,6 +410,5 @@ $(document).ready(function(){
     }).trigger('change');
 
 });
-
 </script>
 @endsection

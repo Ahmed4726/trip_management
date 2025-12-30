@@ -139,7 +139,7 @@ class BookingController extends Controller
                 'start_date' => 'required|date',
                 'end_date' => 'required|date|after_or_equal:start_date',
                 // 'guests' => 'required|integer|min:1',
-                'price' => 'required|numeric',
+                'price' => 'nullable|numeric',
                 'rate_plan_id' => 'required',
                 'payment_policy_id' => 'required',
                 'cancellation_policy_id' => 'required',
@@ -197,7 +197,7 @@ class BookingController extends Controller
         // Now validate booking fields
         $validated = $request->validate([
             'trip_id' => 'required|exists:trips,id',
-            'room_id' => 'required|exists:rooms,id',
+            'room_id' => 'nullable',
             'customer_name' => 'required|string|max:255',
             // 'guests' => 'nullable',
             'source' => 'required|string|max:255',
