@@ -143,7 +143,7 @@ class BookingController extends Controller
                 'rate_plan_id' => 'required',
                 'payment_policy_id' => 'required',
                 'cancellation_policy_id' => 'required',
-                'notes' => 'nullable|string',
+                'notes' => 'nullable|string', 
                 'company_id' => 'required'
             ]);
 
