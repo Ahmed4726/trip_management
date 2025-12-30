@@ -25,7 +25,8 @@ class Booking extends Model
         'token',
         'company_id',
         'dp_paid',
-        'room_id'
+        'room_id',
+        'boat_id'
     ];
 
 
@@ -48,6 +49,11 @@ class Booking extends Model
 
     public function rooms()
     {
-        return $this->belongsTo(Room::class);
+        return $this->belongsTo(Room::class,'room_id');
+    }
+
+    public function boat()
+    {
+        return $this->belongsTo(Boat::class);
     }
 }

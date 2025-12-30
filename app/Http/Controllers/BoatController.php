@@ -17,11 +17,11 @@ class BoatController extends Controller
     /**
      * Show all boats
      */
-    public function boat_index()
-    {
-        $boats = Boat::latest()->paginate(10);
-        return view('admin.boats.index', compact('boats'));
-    }
+public function boat_index()
+{
+    $boats = Boat::with(['rooms.bookings'])->latest()->paginate(10);
+    return view('admin.boats.index', compact('boats'));
+}
 
     /**
      * Show create boat form
@@ -98,4 +98,38 @@ class BoatController extends Controller
             ->route('boat.index')
             ->with('success', 'Boat deleted successfully');
     }
+
+
+// Controller method
+public function room_index($id)
+{
+
+    $boat = Boat::find($id);
+    $rooms = $boat->rooms()->with('bookings')->get();
+
+    $roomsData = $rooms->map(function ($room) {
+        return [
+            'id' => $room->id,
+            'room_name' => $room->room_name,
+            'capacity' => $room->capacity,
+            'status' => $room->status,
+            'is_booked' => $room->bookings->count() > 0,
+            'bookings' => $room->bookings->map(function ($booking) {
+                return [
+                    'id' => $booking->id,
+                    'trip_title' => $booking->trip->title,
+                    'start_date' => $booking->trip->start_date,
+                    'end_date' => $booking->trip->end_date,
+                    'booking_status' => $booking->booking_status,
+                ];
+            }),
+        ];
+    });
+// dd($roomsData);
+
+    return response()->json(['rooms' => $roomsData]);
+}
+
+
+
 }

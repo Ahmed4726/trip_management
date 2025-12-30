@@ -68,46 +68,57 @@ class BookingController extends Controller
     // ==========================
     // CREATE
     // ==========================
-    public function create_booking()
-    {
-        $companyId = null;
-        $companies = null;
+ public function create_booking()
+{
+    $companyId = null;
+    $companies = null;
 
-        if (auth()->user()->hasRole('admin')) {
-            $companies = Company::all();
-        } else {
-            $companyId = auth()->user()->company_id;
-        }
+    if (auth()->user()->hasRole('admin')) {
+        $companies = Company::all();
+    } else {
+        $companyId = auth()->user()->company_id;
+    }
 
-        $agents = $companyId
-            ? Agent::where('company_id', $companyId)->get()
-            : Agent::all();
+    $agents = $companyId
+        ? Agent::where('company_id', $companyId)->get()
+        : Agent::all();
 
-        $trips = $companyId
-            ? Trip::where('company_id', $companyId)->get()
-            : Trip::all();
+    // Fetch trips where not all rooms are booked
+    $trips = Trip::with(['boat.rooms', 'bookings'])
+        ->when($companyId, fn($q) => $q->where('company_id', $companyId))
+        ->get()
+        ->filter(function($trip) {
+            $totalRooms = $trip->boat->rooms->count();     // total rooms of the boat
+            $bookedRooms = $trip->bookings->count();      // number of bookings for this trip
+            return $bookedRooms < $totalRooms;            // only trips with available rooms
+        });
 
-        $boats = Boat::withCount(['rooms as available_rooms_count' => function ($q) {
+    $boats = $companyId
+        ? Boat::withCount(['rooms as available_rooms_count' => function ($q) {
+            $q->whereDoesntHave('bookings');
+        }])->where('company_id', $companyId)->get()
+        : Boat::withCount(['rooms as available_rooms_count' => function ($q) {
             $q->whereDoesntHave('bookings');
         }])->get();
 
-        $ratePlans = $companyId
-            ? RatePlan::where('company_id', $companyId)->get()
-            : RatePlan::all();
+    $ratePlans = $companyId
+        ? RatePlan::where('company_id', $companyId)->get()
+        : RatePlan::all();
 
-        $paymentPolicies = $companyId
-            ? PaymentPolicy::where('company_id', $companyId)->get()
-            : PaymentPolicy::all();
+    $paymentPolicies = $companyId
+        ? PaymentPolicy::where('company_id', $companyId)->get()
+        : PaymentPolicy::all();
 
-        $cancellationPolicies = $companyId
-            ? CancellationPolicy::where('company_id', $companyId)->get()
-            : CancellationPolicy::all();
+    $cancellationPolicies = $companyId
+        ? CancellationPolicy::where('company_id', $companyId)->get()
+        : CancellationPolicy::all();
 
-        return view('admin.bookings.create', compact(
-            'agents', 'trips', 'companies', 'companyId', 
-            'boats', 'ratePlans', 'paymentPolicies', 'cancellationPolicies'
-        ));
-    }
+    return view('admin.bookings.create', compact(
+        'agents', 'trips', 'companies', 'companyId', 
+        'boats', 'ratePlans', 'paymentPolicies', 'cancellationPolicies'
+    ));
+}
+
 
 
 
@@ -182,7 +193,6 @@ class BookingController extends Controller
             $request->merge(['trip_id' => $trip->id]);
         }
 
-                // dd(vars: 'ok');
 
         // Now validate booking fields
         $validated = $request->validate([
@@ -207,6 +217,10 @@ class BookingController extends Controller
 
         // dd(vars: 'ok');
 
+        // Automatically set boat_id from trip
+        $trip = Trip::findOrFail($validated['trip_id']);
+        $validated['boat_id'] = $trip->boat_id;
+
         $validated['booking_status'] = $validated['booking_status'] ?? 'pending';
         $validated['token'] = Str::random(32);
 
@@ -224,16 +238,21 @@ class BookingController extends Controller
     // ==========================
     // SHOW
     // ==========================
-    public function show_booking($id)
+    public function show_booking($tripId)
     {
-        $booking = Booking::with(['trip', 'agent'])
-            ->when($this->tenant, function ($q) {
-                $q->where('company_id', $this->tenant->id);
-            })
-            ->findOrFail($id);
+        $trip = Trip::with('boat.rooms', 'bookings.rooms')->findOrFail($tripId);
 
-        return view('admin.bookings.detail', compact('booking'));
+        $bookings = $trip->bookings()->with('rooms', 'boat')->get();
+
+        // dd($bookings);
+        // Compute stats for graph
+        $totalRooms = $trip->boat->rooms->count();
+        $bookedRooms = $bookings->count();
+        $availableRooms = $totalRooms - $bookedRooms;
+
+        return view('admin.bookings.show', compact('trip', 'bookings', 'totalRooms', 'bookedRooms', 'availableRooms'));
     }
+
 
     // ==========================
     // EDIT
@@ -382,71 +401,64 @@ class BookingController extends Controller
 
 
 
-    public function getEvents(Request $request)
+    public function getTripRooms(Trip $trip)
     {
-        $query = Trip::with('boat.rooms', 'bookings');
+        $rooms = $trip->boat->rooms->map(function($room) use ($trip) {
+            $isBooked = $trip->bookings()->where('room_id', $room->id)->exists();
+            return [
+                'id' => $room->id,
+                'name' => $room->room_name,
+                'capacity' => $room->capacity,
+                'is_booked' => $isBooked,
+            ];
+        });
 
-        if ($request->boat_id) {
-            $query->where('boat_id', $request->boat_id);
-        }
-
-        $trips = $query->get();
-        $events = [];
-
-        foreach ($trips as $trip) {
-            $totalCapacity = $trip->boat->rooms->sum('capacity');
-            $bookedGuests = $trip->bookings->count();
-            $available = $totalCapacity - $bookedGuests;
-
-            // Trip status
-            $tripStatus = $available > 0 ? 'Available' : 'Fully Booked';
-
-            // Add an event for each booking
-            foreach ($trip->bookings as $booking) {
-                $events[] = [
-                    'id' => $trip->id, // trip id (optional)
-                    'booking_id' => $booking->id, // add booking_id here
-                    'title' => $trip->title,
-                    'start' => $booking->start_date ?? $trip->start_date,
-                    'end' => $booking->end_date ?? $trip->end_date ?? $trip->start_date,
-                    'color' => $booking->booking_status === 'Cancelled' ? '#f87171' :
-                            ($available > 0 ? '#34d399' : '#fbbf24'), // green if available, yellow if partially booked
-                    'extendedProps' => [
-                        'available' => $available,
-                        'booked' => $bookedGuests,
-                        'capacity' => $totalCapacity,
-                        'trip_status' => $tripStatus,
-                        'booking_status' => $booking->booking_status,
-                        'trip_id' => $trip->id,
-                        'booking_id' => $booking->id, // pass booking_id to frontend
-                    ]
-                ];
-            }
-
-            // Optional: If trip has no bookings, still show as available
-            if ($trip->bookings->isEmpty()) {
-                $events[] = [
-                    'id' => $trip->id,
-                    'booking_id' => null,
-                    'title' => $trip->title,
-                    'start' => $trip->start_date,
-                    'end' => $trip->end_date ?? $trip->start_date,
-                    'color' => '#34d399',
-                    'extendedProps' => [
-                        'available' => $available,
-                        'booked' => 0,
-                        'capacity' => $totalCapacity,
-                        'trip_status' => $tripStatus,
-                        'booking_status' => 'No Booking',
-                        'trip_id' => $trip->id,
-                        'booking_id' => null,
-                    ]
-                ];
-            }
-        }
-
-        return response()->json($events);
+        return response()->json(['rooms' => $rooms]);
     }
+
+
+
+public function getEvents(Request $request)
+{
+    $query = Trip::with('boat.rooms', 'bookings');
+
+    if ($request->boat_id) {
+        $query->where('boat_id', $request->boat_id);
+    }
+
+    $trips = $query->get();
+    $events = [];
+
+    foreach ($trips as $trip) {
+        $totalRooms = $trip->boat->rooms->count();           // total rooms
+        $bookedRooms = $trip->bookings->count();            // rooms booked
+        $availableRooms = $totalRooms - $bookedRooms;       // rooms left
+
+        $tripStatus = $availableRooms > 0 ? 'Available' : 'Fully Booked';
+
+        // dd($trip->end_date);
+        $events[] = [
+            'id' => $trip->id,
+            'title' => $trip->title,
+            'start' => $trip->start_date,
+            'end' => \Carbon\Carbon::parse($trip->end_date)->addDay()->format('Y-m-d'), // add 1 day for FC display
+            'color' => $availableRooms > 0 ? '#34d399' : '#f87171', // green if available, red if fully booked
+            'extendedProps' => [
+                'trip_id' => $trip->id,
+                'boat_name' => $trip->boat->name,
+                'total_rooms' => $totalRooms,
+                'booked' => $bookedRooms,
+                'available' => $availableRooms,
+                'start_date' => $trip->start_date,
+                'end_date' => $trip->end_date,
+            ]
+        ];
+    }
+
+    return response()->json($events);
+}
+
+
 
 
 }

@@ -1,19 +1,15 @@
+{{-- Blade Template --}}
 @extends('layouts.admin')
 @section('content')
-
 <div class="content-wrapper">
     <div class="container pt-3">
-
-        <!-- Header -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="h4">Manage Boats</h2>
-
             @can('create-boat')
                 <a href="{{ route('boat.create') }}" class="btn btn-primary">Create Boat</a>
             @endcan
         </div>
 
-        <!-- Success message -->
         @if(session('success'))
             <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
             <script>
@@ -27,7 +23,6 @@
             </script>
         @endif
 
-        <!-- Boats Table -->
         <div class="card">
             <div class="card-body">
                 <div class="table-responsive">
@@ -43,7 +38,6 @@
                                 <th class="text-center">Actions</th>
                             </tr>
                         </thead>
-
                         <tbody>
                             @forelse($boats as $boat)
                                 <tr>
@@ -56,41 +50,30 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="badge bg-info">
-                                            {{ $boat->rooms_count ?? $boat->rooms->count() }}
-                                        </span>
+                                    <button class="btn btn-sm btn-info view-rooms-btn"
+                                            data-boat="{{ $boat->id }}"
+                                            data-boat-name="{{ $boat->name }}"
+                                            title="View Rooms">
+                                        <i class="fas fa-eye"></i>
+                                        <span class="badge bg-light text-dark ms-1">{{ $boat->rooms->count() }}</span>
+                                    </button>
+
                                     </td>
                                     <td>{{ $boat->created_at->format('d M Y') }}</td>
                                     <td class="text-center">
-
-                                        {{-- Manage Rooms --}}
-                                        <a href="{{ route('room.index', $boat->id) }}" class="btn btn-sm btn-info">
-                                            Rooms
+                                        <a href="{{ route('room.index', $boat->id) }}" class="btn btn-sm btn-info">Rooms</a>
+                                        <a href="javascript:void(0);" class="btn btn-sm btn-primary edit-boat-btn"
+                                           data-id="{{ $boat->id }}"
+                                           data-name="{{ $boat->name }}"
+                                           data-location="{{ $boat->location }}"
+                                           data-status="{{ $boat->status }}">
+                                           Edit
                                         </a>
-
-                                        {{-- Edit Boat (Modal) --}}
-                                        
-                                            <a href="javascript:void(0);" class="btn btn-sm btn-primary edit-boat-btn"
-                                               data-id="{{ $boat->id }}"
-                                               data-name="{{ $boat->name }}"
-                                               data-location="{{ $boat->location }}"
-                                               data-status="{{ $boat->status }}">
-                                               Edit
-                                            </a>
-                                      
-
-                                        {{-- Delete Boat --}}
-                                        
-                                            <form action="{{ route('boat.destroy', $boat->id) }}" method="POST" class="d-inline">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="btn btn-sm btn-danger"
-                                                    onclick="return confirm('Delete this boat?')">
-                                                    Delete
-                                                </button>
-                                            </form>
-                                    
-
+                                        <form action="{{ route('boat.destroy', $boat->id) }}" method="POST" class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="btn btn-sm btn-danger" onclick="return confirm('Delete this boat?')">Delete</button>
+                                        </form>
                                     </td>
                                 </tr>
                             @empty
@@ -103,9 +86,10 @@
                 </div>
             </div>
         </div>
-
     </div>
 </div>
+
+
 
 <!-- Edit Boat Modal -->
 <div class="modal fade" id="editBoatModal" tabindex="-1" aria-labelledby="editBoatLabel" aria-hidden="true">
@@ -119,9 +103,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-
                     <input type="hidden" name="boat_id" id="boat_id">
-
                     <div class="mb-3">
                         <label class="form-label">Boat Name</label>
                         <input type="text" id="name" name="name" class="form-control" required>
@@ -137,7 +119,6 @@
                             <option value="inactive">Inactive</option>
                         </select>
                     </div>
-
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-success">Update Boat</button>
@@ -147,24 +128,72 @@
     </div>
 </div>
 
-<!-- jQuery and JS -->
+
+
+<!-- Rooms Modal -->
+<div class="modal fade" id="boatRoomsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="boatRoomsTitle">Boat Rooms</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="boatRoomsContent"></div>
+        </div>
+    </div>
+</div>
+
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
 $(document).ready(function() {
+    // Edit Boat
     $('.edit-boat-btn').on('click', function() {
         let boat = $(this).data();
-
         $('#boat_id').val(boat.id);
         $('#name').val(boat.name);
         $('#location').val(boat.location);
         $('#status').val(boat.status);
-
-        // Set form action dynamically
         $('#editBoatForm').attr('action', '/boats/' + boat.id);
-
         $('#editBoatModal').modal('show');
+    });
+
+    // View Rooms Modal
+    $('.view-rooms-btn').on('click', function() {
+        let boatId = $(this).data('boat');
+        let boatName = $(this).data('boat-name');
+        $('#boatRoomsTitle').text(`Rooms of ${boatName}`);
+
+        $.get(`/boat/rooms/${boatId}`, function(data) {
+
+            // alert(data);
+            if (!data.rooms) return console.error('No rooms returned', data);
+
+            let html = '<ul class="list-group">';
+data.rooms.forEach(r => {
+    html += `<li class="list-group-item d-flex flex-column">
+                <span>
+                    <strong>${r.room_name}</strong> (Capacity: ${r.capacity}) 
+                    <span style="color:${r.is_booked ? 'red' : 'green'}">
+                        ${r.is_booked ? 'Booked' : 'Available'}
+                    </span>
+                </span>`;
+
+    if(r.bookings.length > 0) {
+        html += '<small>';
+        html += r.bookings.map(b => `<strong>Trip:</strong> ${b.trip_title} | ${b.start_date} to ${b.end_date}`).join('<br>');
+        html += '</small>';
+    }
+
+    html += `</li>`;
+});
+
+
+            html += '</ul>';
+
+            $('#boatRoomsContent').html(html);
+            $('#boatRoomsModal').modal('show');
+        });
     });
 });
 </script>
-
 @endsection

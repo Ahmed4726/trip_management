@@ -298,6 +298,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/booking/{id}', [BookingController::class, 'show_booking'])->name('bookings.show');
         Route::get('/booking/edit/{id}', [BookingController::class, 'edit_booking'])->name('bookings.edit');
         Route::delete('booking/{id}', [BookingController::class, 'destroy_booking'])->name('bookings.destroy');
+        Route::get('/trip/{trip}/rooms', [BookingController::class, 'getTripRooms']);
+
 
     });
 
@@ -358,6 +360,7 @@ Route::middleware('auth')->group(function () {
         Route::delete('/rooms/{room}', [RoomController::class, 'destroy_room'])->name('room.destroy');
     });
 
+    Route::get('/boat/rooms/{id}', [BoatController::class, 'room_index']);
 
     Route::get('/bookings/trips/events', [BookingController::class, 'getEvents'])->name('booking.events');
 

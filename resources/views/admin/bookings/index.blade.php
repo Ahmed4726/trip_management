@@ -107,6 +107,7 @@ function loadCalendars() {
         let calendarEl = document.getElementById('calendar-' + i);
 
         let calendar = new FullCalendar.Calendar(calendarEl, {
+            timeZone: 'local',
             initialView: 'dayGridMonth',
             initialDate: new Date(new Date().setMonth(new Date().getMonth() + i)),
             headerToolbar: {
@@ -122,80 +123,60 @@ function loadCalendars() {
                 extraParams: getFilters
             },
             eventDidMount: function(info) {
-                // Add custom classes based on status
-                const status = info.event.extendedProps.booking_status;
-                if(status === 'Available') info.el.classList.add('available-event');
-                if(status === 'Partially Booked') info.el.classList.add('partial-event');
-                if(status === 'Fully Booked') info.el.classList.add('full-event');
+                const booked = info.event.extendedProps.booked;
+                const total = info.event.extendedProps.total_rooms;
 
-                // Tooltip on hover
-                info.el.setAttribute('title', `${info.event.title}\nStatus: ${status}\nAvailable: ${info.event.extendedProps.available}`);
+                if (booked == 0) info.el.classList.add('available-event');
+                else if (booked < total) info.el.classList.add('partial-event');
+                else info.el.classList.add('full-event');
+
+                // Tooltip
+                let tooltip = `Booked: ${booked} / ${total}\nAvailable: ${info.event.extendedProps.available}`;
+                info.el.setAttribute('title', tooltip);
             },
             eventClick: function(info) {
-                const props = info.event.extendedProps;
-                const bookingId = props.booking_id;
+                const tripId = info.event.extendedProps.trip_id;
+                const available = info.event.extendedProps.available;
+                const startDate = info.event.extendedProps.start_date; // real start date
+                const endDate = info.event.extendedProps.end_date;     // real end date
+                const boatName = info.event.extendedProps.boat_name;
 
-                let swalOptions = {
-                    title: `<strong>${info.event.title}</strong>`,
-                    html: `
-                        <b>Start:</b> ${info.event.start.toISOString().split('T')[0]} <br>
-                        <b>End:</b> ${info.event.end ? info.event.end.toISOString().split('T')[0] : '-'} <br>
-                        <b>Available:</b> ${props.available} <br>
-                        <b>Booked:</b> ${props.booked} <br>
-                        <b>Capacity:</b> ${props.capacity} <br>
-                        <b>Status:</b> ${props.booking_status}
-                    `,
-                    icon: 'info',
-                    confirmButtonText: 'Close'
-                };
+                $.get(`/trip/${tripId}/rooms`, function(data) {
+                    let html = `<b>Boat:</b> ${boatName} <br>
+                                <b>Start:</b> ${startDate} <br>
+                                <b>End:</b> ${endDate} <br>
+                                <ul>`;
+                    data.rooms.forEach(r => {
+                        let color = r.is_booked ? 'red' : 'green';
+                        html += `<li style="color:${color}">${r.name} (${r.capacity}) - ${r.is_booked ? 'Booked' : 'Available'}</li>`;
+                    });
+                    html += '</ul>';
 
-                // If booking exists, show Edit and Delete buttons
-                if (bookingId) {
-                    swalOptions.showDenyButton = true;
-                    swalOptions.showCancelButton = true;
-                    swalOptions.confirmButtonText = 'Edit';
-                    swalOptions.denyButtonText = 'Delete';
-                    swalOptions.cancelButtonText = 'Close';
-                }
-
-                Swal.fire(swalOptions).then((result) => {
-                    if (bookingId) { // Only allow edit/delete if booking exists
-                        if(result.isConfirmed){
-                            window.location.href = `/booking/edit/${bookingId}`;
-                        } else if(result.isDenied){
-                            Swal.fire({
-                                title: 'Are you sure?',
-                                text: "This booking will be deleted permanently!",
-                                icon: 'warning',
-                                showCancelButton: true,
-                                confirmButtonText: 'Yes, delete it!'
-                            }).then((delRes) => {
-                                if(delRes.isConfirmed){
-                                    $.ajax({
-                                        url: `/booking/${bookingId}`,
-                                        type: 'DELETE',
-                                        data: { _token: '{{ csrf_token() }}' },
-                                        success: function() {
-                                            Swal.fire('Deleted!', 'Booking has been deleted.', 'success');
-                                            info.event.remove();
-                                        },
-                                        error: function() {
-                                            Swal.fire('Error!', 'Something went wrong.', 'error');
-                                        }
-                                    });
-                                }
-                            });
+                    Swal.fire({
+                        title: `<strong>${info.event.title}</strong>`,
+                        html: html,
+                        icon: 'info',
+                        showCancelButton: true,
+                        confirmButtonText: 'Close',
+                        cancelButtonText: 'View Bookings',
+                        showDenyButton: available > 0,
+                        denyButtonText: 'Create Booking'
+                    }).then(result => {
+                        if (result.isDenied) {
+                            window.location.href = `/create-booking?trip_id=${tripId}`;
+                        } else if (result.dismiss === Swal.DismissReason.cancel) {
+                            window.location.href = `/booking/${tripId}`;
                         }
-                    }
+                    });
                 });
             }
-
         });
 
         calendar.render();
         calendars.push(calendar);
     }
 }
+
 
 $('#filterBoat, #filterStatus, #filterStartDate, #filterEndDate').on('change', loadCalendars);
 
