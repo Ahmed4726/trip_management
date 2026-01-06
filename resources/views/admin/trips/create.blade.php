@@ -3,7 +3,7 @@
 <div class="content-wrapper">
 <div class="container pt-3">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="h4">Create Availability</h2>
+        <h2 class="h4">Create Slot</h2>
         <a href="{{ route('trips.index') }}" class="btn btn-secondary">Back</a>
     </div>
 
@@ -26,13 +26,13 @@
                 @csrf
 
                 <div class="row mb-3">
-                    <div class="col-md-6">
-                        <label for="title" class="form-label">Trip Title</label>
-                        <input type="text" name="title" id="title" class="form-control" placeholder="Enter trip title" required>
+                   <div class="col-md-6">
+                        <label for="title" class="form-label">Slot Title</label>
+                        <input type="text" name="title" id="title" class="form-control" placeholder="Slot title" required>
                     </div>
 
                     <div class="col-md-6">
-                        <label for="region" class="form-label">Sailing Region</label>
+                        <label for="region" class="form-label">Region</label>
                         <input type="text" name="region" id="region" class="form-control" placeholder="Enter region" required>
                     </div>
 
@@ -40,34 +40,19 @@
                         <label for="trip_type" class="form-label">Trip type</label>
                         <select name="trip_type" id="trip_type" class="form-control" required>
                             <option value="">Select Type</option>
-                            <option value="private">Private (1 group charter)</option>
-                            <option value="open">Open (multiple guests)</option>
-                        </select>
-                    </div>
-
-                    <div class="col-md-6">
-                        <label for="status" class="form-label">Status</label>
-                        <select name="status" id="status" class="form-control" required>
-                            <option value="">Select status</option>
-                            <option value="Available">Available</option>
-                            <option value="On Hold">On Hold</option>
-                            <option value="Booked">Booked</option>
-                            <option value="Maintenance">Maintenance</option>
-                            <option value="Docking">Docking</option>
+                            <option value="Private">Private (1 group charter)</option>
+                            <option value="Open">Open (multiple guests)</option>
                         </select>
                     </div>
 
                     <div class="col-md-6">
                         <label for="boat" class="form-label">Boat</label>
-                       <select name="boat_id" id="boat" class="form-control" required>
+                        <select name="boat_id" id="boat" class="form-control" required>
                             <option value="">Select boat</option>
                             @foreach($boats as $boat)
-                                <option value="{{ $boat->id }}">
-                                    {{ $boat->name }} ({{ $boat->rooms_count ?? $boat->rooms->count() }} rooms)
-                                </option>
+                                <option value="{{ $boat->name }}">{{ $boat->name }} ({{ $boat->rooms_count ?? $boat->rooms->count() }} rooms)</option>
                             @endforeach
                         </select>
-
                     </div>
 
                     <div class="col-md-6">
@@ -81,8 +66,8 @@
                     </div>
 
                     <div class="col-md-6">
-                        <label for="guests" class="form-label">No Of Guests</label>
-                        <input type="number" name="guests" id="guests" class="form-control" placeholder="Enter number of guests" required>
+                        <label for="guests" class="form-label">Available rooms</label>
+                        <input type="number" name="guests" id="guests" class="form-control" placeholder="Available rooms" required>
                     </div>
 
                     <div class="col-md-6">

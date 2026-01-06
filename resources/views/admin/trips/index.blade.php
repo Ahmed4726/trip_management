@@ -3,7 +3,7 @@
 <div class="content-wrapper">
     <div class="container pt-3">
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2 class="h4">Manage Availabilities</h2>
+            <h2 class="h4">Manage Slots</h2>
             @can('create-trip')
             <a href="{{ route('trips.create') }}" class="btn btn-primary">Create</a>
             @endcan
@@ -52,7 +52,7 @@
         <!-- Calendar -->
         <div class="card">
             <div class="card-body">
-                <h4 class="mb-3">Trips Calendar</h4>
+                <h4 class="mb-3">Slots Calendar</h4>
                 <div id="calendar"></div>
             </div>
         </div>
@@ -109,8 +109,8 @@ function loadCalendar() {
         },
         dateClick: function(info) {
             Swal.fire({
-                title: "Create a new trip?",
-                text: "Do you want to create a trip starting on " + info.dateStr + "?",
+                title: "Create a new slot?",
+                text: "Do you want to create a slot starting on " + info.dateStr + "?",
                 icon: "question",
                 showCancelButton: true,
                 confirmButtonText: "Yes, create",
@@ -126,7 +126,7 @@ function loadCalendar() {
         // alert(props.start_date);
 
     Swal.fire({
-        title: 'Edit Trip',
+        title: 'Edit Slot',
         width: 600,
         html: `
             <form id="editTripForm" class="text-left">
@@ -152,11 +152,11 @@ function loadCalendar() {
                     <label>Status</label>
                     <select id="tripStatus" class="form-control">
                         <option ${props.status === 'Available' ? 'selected' : ''}>Available</option>
-                        <option ${props.status === 'Draft' ? 'selected' : ''}>Draft</option>
-                        <option ${props.status === 'Published' ? 'selected' : ''}>Published</option>
-                        <option ${props.status === 'Active' ? 'selected' : ''}>Active</option>
-                        <option ${props.status === 'Completed' ? 'selected' : ''}>Completed</option>
-                        <option ${props.status === 'Cancelled' ? 'selected' : ''}>Cancelled</option>
+                        <option ${props.status === 'On Hold' ? 'selected' : ''}>On Hold</option>
+                        <option ${props.status === 'Booked' ? 'selected' : ''}>Booked</option>
+                        <option ${props.status === 'Crossing' ? 'selected' : ''}>Crossing</option>
+                        <option ${props.status === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
+                        <option ${props.status === 'Docking' ? 'selected' : ''}>Docking</option>
                     </select>
                 </div>
                 <div class="form-row mb-2 d-flex">
@@ -211,14 +211,14 @@ function loadCalendar() {
                 type: "POST",
                 data: result.value,
                 success: function() {
-                    Swal.fire("Saved!", "Trip updated successfully.", "success");
+                    Swal.fire("Saved!", "Slot updated successfully.", "success");
                     calendar.refetchEvents();
                 }
             });
         } else if (result.isDenied) {
             Swal.fire({
                 title: "Are you sure?",
-                text: "This will permanently delete the trip.",
+                text: "This will permanently delete the slot.",
                 icon: "warning",
                 showCancelButton: true,
                 confirmButtonText: "Yes, delete"
@@ -229,7 +229,7 @@ function loadCalendar() {
                         type: "DELETE",
                         data: { _token: "{{ csrf_token() }}" },
                         success: function() {
-                            Swal.fire("Deleted!", "Trip removed.", "success");
+                            Swal.fire("Deleted!", "Slot removed.", "success");
                             calendar.refetchEvents();
                         }
                     });

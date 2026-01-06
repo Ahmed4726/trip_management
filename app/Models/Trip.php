@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-
+use App\Traits\Auditable;
 class Trip extends Model
 {
+     use Auditable;
     protected $fillable = [
         'title',
         'region',

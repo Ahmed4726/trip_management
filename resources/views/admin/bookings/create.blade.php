@@ -165,7 +165,7 @@
             {{-- Existing Trip Selection --}}
             <div class="row mb-3 mt-3">
                 <div class="col-md-6">
-                    <label for="trip_id">Select Trip</label>
+                    <label for="trip_id">Select Slot</label>
                     <select name="trip_id" id="trip_id" class="form-control" required>
                         <option value="">Choose a trip</option>
                         @foreach($trips as $trip)
@@ -175,9 +175,9 @@
                     @error('trip_id') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
                 <div class="col-md-6">
-                    <label>Source</label>
+                    <label>Direct/Agent</label>
                     <select name="source" id="source" class="form-control" required>
-                        <option value="">Select source</option>
+                        <option value="">Select</option>
                         <option value="Direct">Direct</option>
                         <option value="By Agent">By Agent</option>
                     </select>

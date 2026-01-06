@@ -87,12 +87,12 @@
 @endcan
 
 @can('trips')
-       <!-- Availability / Trips -->
+       <!-- Slot / Trips -->
                 <li class="nav-item {{ request()->is('trips*') || request()->is('availabilities*') ? 'menu-open' : '' }}">
                     <a href="#" class="nav-link {{ request()->is('trips*') || request()->is('availabilities*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-plane"></i>
                         <p>
-                            Availability
+                            Slot
                             <i class="right fas fa-angle-left"></i>
                         </p>
                     </a>
@@ -100,7 +100,7 @@
                         <li class="nav-item">
                             <a href="{{ route('trips.index') }}" class="nav-link {{ request()->is('trips') ? 'active' : '' }}">
                                 <i class="far fa-circle nav-icon"></i>
-                                <p>Availability</p>
+                                <p>Slot</p>
                             </a>
                         </li>
                         <li class="nav-item">
@@ -125,61 +125,61 @@
                 </li>
 @endcan
 
-@can('booking')
-      <li class="nav-item">
-    <a href="/bookings" class="nav-link {{ request()->is('bookings','create-booking','booking/*') ? 'active' : '' }}">
-        <i class="nav-icon fas fa-clipboard"></i>
-        <p>Bookings</p>
-    </a>
-</li>
-@endcan
+            @can('booking')
+                  <li class="nav-item">
+                <a href="/bookings" class="nav-link {{ request()->is('bookings','create-booking','booking/*') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-clipboard"></i>
+                    <p>Bookings</p>
+                </a>
+            </li>
+            @endcan
 
-@can('waitinglist')
-    <li class="nav-item">
-        <a href="{{ route('admin.waitinglists.index') }}" 
-           class="nav-link {{ request()->is('admin/waiting-lists*') ? 'active' : '' }}">
-            <i class="nav-icon fas fa-clock"></i>
-            <p>Waiting List</p>
-        </a>
-    </li>
-@endcan
+            @can('waitinglist')
+                <li class="nav-item">
+                    <a href="{{ route('admin.waitinglists.index') }}" 
+                      class="nav-link {{ request()->is('admin/waiting-lists*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-clock"></i>
+                        <p>Waiting List</p>
+                    </a>
+                </li>
+            @endcan
 
 
-@can('agents')
-  <li class="nav-item">
-    <a href="/agents" class="nav-link {{ request()->is('agents','create-agent') ? 'active' : '' }}">
-        <i class="nav-icon fas fa-user-tie"></i>
-        <p>Agents</p>
-    </a>
-  </li>
-@endcan
+            @can('agents')
+              <li class="nav-item">
+                <a href="/agents" class="nav-link {{ request()->is('agents','create-agent') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-user-tie"></i>
+                    <p>Agents</p>
+                </a>
+              </li>
+            @endcan
 
-@can('company')
-  <li class="nav-item">
-    <a href="/companies" class="nav-link {{ request()->is('companies','create-company','company/*') ? 'active' : '' }}">
-        <i class="nav-icon fas fa-building"></i>
-        <p>Companies</p>
-    </a>
-  </li>
-@endcan
+            @can('company')
+              <li class="nav-item">
+                <a href="/companies" class="nav-link {{ request()->is('companies','create-company','company/*') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-building"></i>
+                    <p>Companies</p>
+                </a>
+              </li>
+            @endcan
 
-@can('guests')
-   <li class="nav-item">
-    <a href="/guests" class="nav-link {{ request()->is('guests','guest/*') ? 'active' : '' }}">
-        <i class="nav-icon fas fa-user-friends"></i>
-        <p>Guests</p>
-    </a>
-</li>
-@endcan
+            @can('guests')
+              <li class="nav-item">
+                <a href="/guests" class="nav-link {{ request()->is('guests','guest/*') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-user-friends"></i>
+                    <p>Guests</p>
+                </a>
+            </li>
+            @endcan
 
-@can('boats')
-   <li class="nav-item">
-    <a href="/boats" class="nav-link {{ request()->is('boats','boats/*') ? 'active' : '' }}">
-        <i class="nav-icon fas fa-ship"></i>
-        <p>Boats</p>
-    </a>
-</li>
-@endcan
+            @can('boats')
+              <li class="nav-item">
+                <a href="/boats" class="nav-link {{ request()->is('boats','boats/*') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-ship"></i>
+                    <p>Boats</p>
+                </a>
+            </li>
+            @endcan
 
 <!-- @can('rooms')
    <li class="nav-item">
@@ -190,24 +190,31 @@
 </li>
 @endcan -->
 
-@can('finance')
-       <li class="nav-item">
-    <a href="/finances" class="nav-link {{ request()->is('finances') ? 'active' : '' }}">
-        <i class="nav-icon fas fa-credit-card"></i>
-        <p>Finances</p>
-    </a>
-</li>
-@endcan
+            @can('finance')
+                  <li class="nav-item">
+                <a href="/finances" class="nav-link {{ request()->is('finances') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-credit-card"></i>
+                    <p>Finances</p>
+                </a>
+            </li>
+            @endcan
 
-@can('pdf-approvals')
-       <li class="nav-item">
-    <a href="#" class="nav-link {{ request()->is('') ? 'active' : '' }}">
-        <i class="nav-icon fas fa-file-pdf"></i>
-        <p>PDF approvals</p>
-    </a>
-</li>
-
-@endcan
+            @can('pdf-approvals')
+                  <li class="nav-item">
+                <a href="#" class="nav-link {{ request()->is('') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-file-pdf"></i>
+                    <p>PDF approvals</p>
+                </a>
+            </li>
+            @endcan
+             @can('audit')
+                  <li class="nav-item">
+                <a href="/audits" class="nav-link {{ request()->is('/audits') ? 'active' : '' }}">
+                    <i class="nav-icon fas fa-history"></i>
+                    <p>Audit & Logging</p>
+                </a>
+            </li>
+            @endcan
         </ul>
       </nav>
       <!-- /.sidebar-menu -->

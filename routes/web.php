@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AgentController;
+use App\Http\Controllers\AuditController;
 use App\Http\Controllers\BoatController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\CancellationPolicyController;
@@ -363,6 +364,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/boat/rooms/{id}', [BoatController::class, 'room_index']);
  
     Route::get('/bookings/trips/events', [BookingController::class, 'getEvents'])->name('booking.events');
+
+     // ================== Audit & Logging ==================
+    Route::get('/audits', [AuditController::class, 'index'])->name('audit.index');
+
+   
 
 });
 
