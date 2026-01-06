@@ -209,7 +209,7 @@
             @endcan
              @can('audit')
                   <li class="nav-item">
-                <a href="/audits" class="nav-link {{ request()->is('/audits') ? 'active' : '' }}">
+                <a href="/audits" class="nav-link {{ request()->is('audits') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-history"></i>
                     <p>Audit & Logging</p>
                 </a>
