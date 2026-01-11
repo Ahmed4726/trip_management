@@ -100,16 +100,16 @@
 .fc-timeline-lane-frame { padding: 4px 0; }
 </style>
 
+
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar-scheduler@6.1.15/index.global.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar-scheduler@6.1.15/index.global.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-
-    const isIframe = {{ isset($iframe) ? 'true' : 'false' }};
     const el = document.getElementById('boatCalendar');
 
-    window.initBoatCalendar(el, {
+    const calendar = new FullCalendar.Calendar(el, {
         schedulerLicenseKey: 'CC-Attribution-NonCommercial-NoDerivatives',
-
-        initialView: 'resourceTimelineMonth', // single month timeline like fleet
+        initialView: 'resourceTimelineMonth',
         resourceAreaWidth: '250px',
         resourceAreaHeaderContent: 'Rooms & Boat',
 
@@ -123,34 +123,41 @@ document.addEventListener('DOMContentLoaded', function () {
         },
 
         nowIndicator: true,
-        editable: !isIframe,
+        editable: true, // change to false if iframe
         selectable: false,
 
         eventClick(info) {
-            if (isIframe) return;
-
             const { type, trip_id, booking_id, room_id } = info.event.extendedProps;
 
-            if (type === 'open-trip') {
-                window.location = `/trips`;
-            } else if (type === 'trip') {
-                window.location = `/trips`;
-            } else if (type === 'booking') {
+            if (type === 'booking') {
                 window.location = `/booking/edit/${booking_id}`;
             } else if (type === 'available') {
                 window.location = `/create-booking?trip_id=${trip_id}&room_id=${room_id}`;
+            } else {
+                window.location = `/trips`;
             }
         },
 
         eventDidMount(info) {
-            const { type, booking_count, capacity } = info.event.extendedProps;
-            if (type === 'open-trip') {
-                info.el.title = `Open Trip\nBookings: ${booking_count}/${capacity}`;
-            }
+            const { type, booking_count, capacity, room_name, title,customer_name } = info.event.extendedProps;
+
+            if(type == 'booking'){
+                info.el.innerHTML = `<strong>${customer_name}</strong><br>`;
+                info.el.style.backgroundColor = '#4caf50'; // green booked
+        } else if(type === 'open-trip'){
+            const { booking_count, capacity } = info.event.extendedProps;
+            info.el.innerHTML = `${info.event.title} (${booking_count}/${capacity})`;
+            info.el.style.border = '2px dashed rgba(255,255,255,.85)';
+            info.el.style.backgroundColor = info.event.backgroundColor || info.event.color;
+        } else if(type === 'available'){
+                        info.el.style.backgroundColor = '#ff9800'; // orange available
+                    }
         }
     });
 
-    /* COPY EMBED BUTTON */
+    calendar.render();
+
+    // COPY EMBED BUTTON
     const btn = document.getElementById('copyEmbed');
     if (btn) {
         btn.addEventListener('click', () => {
@@ -168,6 +175,7 @@ loading="lazy">
         });
     }
 });
+
 
 </script>
 @endsection

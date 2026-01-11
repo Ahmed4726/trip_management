@@ -237,7 +237,7 @@ public function boatResources(Boat $boat) {
 }
 
 // Boat events (Open Trips + Private Trips + Bookings)
-public function boatEvents(Boat $boat) {
+    public function boatEvents(Boat $boat) {
     $events = [];
 
     $trips = $boat->trip()->with('bookings')->get();
@@ -275,7 +275,7 @@ public function boatEvents(Boat $boat) {
 
             // Room-level OT
             foreach ($boat->rooms as $room) {
-                $booking = $trip->bookings->firstWhere('room_id',$room->id);
+                $booking = $trip->booking->firstWhere('room_id',$room->id);
                 if ($booking) {
                     $events[] = [
                         'id'=>'open-booking-'.$booking->id,
@@ -283,13 +283,16 @@ public function boatEvents(Boat $boat) {
                         'title'=>$booking->customer_name,
                         'start'=>$trip->start_date,
                         'end'=>$trip->end_date,
-                        'color'=>'#dc3545',
+                        'color'=>'#dc3545', // OT color for booked
                         'extendedProps'=>[
                             'type'=>'booking',
                             'booking_id'=>$booking->id,
-                            'room_id'=>$room->id
+                            'room_id'=>$room->id,
+                            'customer_name'=>$booking->customer_name,
+                            'room_name'=>$room->room_name
                         ]
                     ];
+
                 } else {
                     $events[] = [
                         'id'=>'open-available-'.$trip->id.'-'.$room->id,
@@ -341,7 +344,8 @@ public function boatEvents(Boat $boat) {
                 'color'=>'#dc3545',
                 'extendedProps'=>[
                     'type'=>'booking',
-                    'booking_id'=>$booking->id
+                    'booking_id'=>$booking->id,
+                    'customer_name'=>$booking->customer_name
                 ]
             ];
         }
