@@ -43,7 +43,7 @@
     <select name="room_id" id="roomSelect" class="form-control" required>
         @foreach($booking->boat->rooms as $room)
             <option value="{{ $room->id }}" {{ old('room_id', $booking->room_id) == $room->id ? 'selected' : '' }}>
-                {{ $room->name }}
+                {{ $room->room_name }}
             </option>
         @endforeach
     </select>

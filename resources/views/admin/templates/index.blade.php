@@ -8,8 +8,13 @@
     <a href="{{ route('admin.templates.create') }}" class="btn btn-primary">Add Template</a>
 </div>
 
-@includeWhen(session('success'),'partials.success')
-
+@foreach (['success','error'] as $msg)
+    @if(session($msg))
+        <div class="alert alert-{{ $msg == 'success' ? 'success' : 'danger' }}">
+            {{ session($msg) }}
+        </div>
+    @endif
+@endforeach
 <table class="table table-bordered table-sm">
 <thead>
 <tr>

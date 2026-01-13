@@ -29,6 +29,10 @@ class Booking extends Model
         'room_id',
         'boat_id',
         'slot_id',
+        'guest_name',
+        'guest_email',
+        'guest_phone',
+        'status',
     ];
 
 

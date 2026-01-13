@@ -5,6 +5,14 @@
 
 <h4>Create Booking</h4>
 
+
+        @foreach (['success','error'] as $msg)
+            @if(session($msg))
+                <div class="alert alert-{{ $msg == 'success' ? 'success' : 'danger' }}">
+                    {{ session($msg) }}
+                </div>
+            @endif
+        @endforeach
 <form method="POST" action="{{ route('admin.bookings.store') }}">
 @csrf
 
