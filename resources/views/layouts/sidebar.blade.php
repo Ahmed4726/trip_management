@@ -86,7 +86,7 @@
 </li>
 @endcan
 
-@can('trips')
+{{-- @can('trips')
        <!-- Slot / Trips -->
                 <li class="nav-item {{ request()->is('trips*') || request()->is('availabilities*') ? 'menu-open' : '' }}">
                     <a href="#" class="nav-link {{ request()->is('trips*') || request()->is('availabilities*') ? 'active' : '' }}">
@@ -123,20 +123,63 @@
                         </li>
                     </ul>
                 </li>
-@endcan
+@endcan --}}
 
             @can('booking')
-                  <li class="nav-item">
-                <a href="/bookings" class="nav-link {{ request()->is('bookings','create-booking','booking/*') ? 'active' : '' }}">
-                    <i class="nav-icon fas fa-clipboard"></i>
-                    <p>Bookings</p>
-                </a>
-            </li>
+<li class="nav-item">
+    <a href="{{ route('admin.templates.index') }}" class="nav-link {{ request()->is('templates','templates/*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-file-alt"></i>
+        <p>Templates</p>
+    </a>
+</li>
+
+<li class="nav-item">
+    <a href="{{ route('admin.slots.index') }}" class="nav-link {{ request()->is('slots','slots/*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-anchor"></i>
+        <p>Slots</p>
+    </a>
+</li>
+
+<li class="nav-item">
+    <a href="{{ route('admin.boats.index') }}" class="nav-link {{ request()->is('boats','boats/*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-ship"></i>
+        <p>Boats</p>
+    </a>
+</li>
+
+{{-- <li class="nav-item">
+    <a href="{{ route('admin.rooms.index') }}" class="nav-link {{ request()->is('rooms','rooms/*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-bed"></i>
+        <p>Rooms</p>
+    </a>
+</li> --}}
+
+<li class="nav-item">
+    <a href="{{ route('admin.regions.index') }}" class="nav-link {{ request()->is('regions','regions/*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-map-marker-alt"></i>
+        <p>Regions</p>
+    </a>
+</li>
+
+<li class="nav-item">
+    <a href="{{ route('admin.ports.index') }}" class="nav-link {{ request()->is('ports','ports/*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-map-pin"></i>
+        <p>Ports</p>
+    </a>
+</li>
+
+<li class="nav-item">
+    <a href="{{ route('admin.bookings.index') }}" class="nav-link {{ request()->is('bookings','bookings/*','create-booking') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-clipboard"></i>
+        <p>Bookings</p>
+    </a>
+</li>
+
             @endcan
 
             @can('waitinglist')
                 <li class="nav-item">
-                    <a href="{{ route('admin.waitinglists.index') }}" 
+                    <a href="{{ route('admin.waitinglists.index') }}"
                       class="nav-link {{ request()->is('admin/waiting-lists*') ? 'active' : '' }}">
                         <i class="nav-icon fas fa-clock"></i>
                         <p>Waiting List</p>
@@ -172,14 +215,14 @@
             </li>
             @endcan
 
-            @can('boats')
+            {{-- @can('boats')
               <li class="nav-item">
                 <a href="/boats" class="nav-link {{ request()->is('boats','boats/*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-ship"></i>
                     <p>Boats</p>
                 </a>
             </li>
-            @endcan
+            @endcan --}}
 
 <!-- @can('rooms')
    <li class="nav-item">

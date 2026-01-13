@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use App\Traits\Auditable;
 class Booking extends Model
-{   
+{
     use Auditable;
     protected $fillable = [
         'trip_id',
@@ -27,7 +27,8 @@ class Booking extends Model
         'company_id',
         'dp_paid',
         'room_id',
-        'boat_id' 
+        'boat_id',
+        'slot_id',
     ];
 
 
@@ -48,7 +49,7 @@ class Booking extends Model
     }
 
 
-    public function rooms()
+    public function room()
     {
         return $this->belongsTo(Room::class,'room_id');
     }
@@ -56,5 +57,10 @@ class Booking extends Model
     public function boat()
     {
         return $this->belongsTo(Boat::class);
+    }
+
+    public function slot()
+    {
+        return $this->belongsTo(Slot::class);
     }
 }

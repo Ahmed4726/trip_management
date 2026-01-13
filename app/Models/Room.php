@@ -12,10 +12,23 @@ class Room extends Model
         'capacity',
         'price_per_night',
         'status',
+        'deck',
+        'bed_type',
+        'extra_beds',
     ];
     public function boat()
     {
         return $this->belongsTo(Boat::class);
+    }
+
+    public function slots()
+    {
+        return $this->belongsToMany(Slot::class);
+    }
+
+    public function booking()
+    {
+        return $this->hasManyThrough(Booking::class, Slot::class);
     }
 
     public function bookings()
@@ -26,5 +39,11 @@ class Room extends Model
     public function trips()
     {
         return $this->belongsTo(Trip::class);
+    }
+
+
+    public function canBeDeleted(): bool
+    {
+        return $this->booking()->count() === 0;
     }
 }

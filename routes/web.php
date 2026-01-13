@@ -28,6 +28,32 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use App\Http\Controllers\CalendarController;
 use App\Http\Controllers\FleetCalendarController;
 
+use App\Http\Controllers\Admin\{
+    BoatController as AdminBoatController,
+    RoomController as AdminRoomController,
+    RegionController,
+    PortController,
+    SlotController,
+    BookingController as AdminBookingController,
+    TemplateController
+};
+
+Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+
+    Route::resource('regions', RegionController::class);
+    Route::resource('ports', PortController::class);
+
+    Route::resource('boats', AdminBoatController::class);
+    Route::resource('rooms', AdminRoomController::class);
+
+    Route::resource('templates', TemplateController::class);
+
+    Route::resource('slots', SlotController::class);
+    Route::resource('bookings', AdminBookingController::class);
+
+});
+
+
 Route::domain('{slug}.' . env('DOMAIN_NAME'))->middleware(['tenantresolver'])->group(function () {
 // Public routes
 Route::get('/guest/form/{token}', [GuestController::class, 'show'])->name('guest.form');
