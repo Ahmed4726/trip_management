@@ -7,7 +7,13 @@
     <h4>Slots</h4>
     <a href="{{ route('admin.slots.create') }}" class="btn btn-primary">Create Slot</a>
 </div>
-
+        @foreach (['success','error'] as $msg)
+            @if(session($msg))
+                <div class="alert alert-{{ $msg == 'success' ? 'success' : 'danger' }}">
+                    {{ session($msg) }}
+                </div>
+            @endif
+        @endforeach
 
 <table class="table table-bordered table-sm">
 <thead>

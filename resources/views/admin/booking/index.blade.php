@@ -37,7 +37,13 @@
     <td>{{ $booking->boat->name ?? '-' }}</td>
     <td>{{ $booking->room->room_name ?? '-' }}</td>
     <td>{{ $booking->guest_name }}</td>
-    <td>{{ optional($booking->slot)->start_date ?? '-' }} → {{ optional($booking->slot)->end_date ?? '-' }}</td>
+<td>
+    @if($booking->slot)
+        {{ $booking->slot->start_date->format('Y-m-d') }} → {{ $booking->slot->end_date->format('Y-m-d') }}
+    @else
+        -
+    @endif
+</td>
     <td>{{ $booking->status }}</td>
     <td>
         <a href="{{ route('admin.bookings.edit', $booking) }}" class="btn btn-sm btn-warning">Edit</a>

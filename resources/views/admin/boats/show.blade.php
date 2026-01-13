@@ -12,7 +12,7 @@
                 @if(!isset($iframe))
                 <div>
                     <a href="{{ route('dashboard') }}" class="btn btn-secondary">Back to Fleet</a>
-                    <button id="copyEmbed" class="btn btn-sm btn-outline-primary">Copy Embed Code</button>
+                    {{-- <button id="copyEmbed" class="btn btn-sm btn-outline-primary">Copy Embed Code</button> --}}
                 </div>
                 @endif
             </div>
@@ -55,7 +55,7 @@
             </div>
 
             {{-- Booking Table --}}
-            <div class="card">
+            {{-- <div class="card">
                 <div class="card-body">
                     <h5>Bookings</h5>
                     <table class="table table-bordered">
@@ -74,18 +74,18 @@
                             @foreach($bookings as $b)
                             <tr>
                                 <td>{{ $b->customer_name }}</td>
-                                <td>{{ $b->rooms['room_name'] }}</td>
-                                <td>{{ $b->trip->title ?? '-' }}</td>
+                                <td>{{ $b->room->name }}</td>
+                                <td>{{ $b->slot->title ?? '-' }}</td>
                                 <td>{{ $b->source }}</td>
                                 <td>{{ ucfirst($b->booking_status) }}</td>
                                 <td>${{ $b->price }}</td>
-                                <td>{{ $b->trip->start_date ?? '-' }} / {{ $b->trip->end_date ?? '-' }}</td>
+                                <td>{{ $b->slot->start_date ?? '-' }} / {{ $b->slot->end_date ?? '-' }}</td>
                             </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </div> --}}
 
         </div>
     </section>
@@ -104,6 +104,10 @@
 <link href="https://cdn.jsdelivr.net/npm/fullcalendar-scheduler@6.1.15/index.global.min.css" rel="stylesheet" />
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar-scheduler@6.1.15/index.global.min.js"></script>
 <script>
+
+    const bookingEditUrl = "{{ url('admin/bookings') }}"; // /admin/booking
+const slotEditUrl = "{{ url('admin/slots') }}";       // /admin/slots
+const createBookingUrl = "{{ url('admin/booking/create') }}"; // your booking creation route
 document.addEventListener('DOMContentLoaded', function () {
     const el = document.getElementById('boatCalendar');
 
@@ -126,17 +130,21 @@ document.addEventListener('DOMContentLoaded', function () {
         editable: true, // change to false if iframe
         selectable: false,
 
-        eventClick(info) {
-            const { type, trip_id, booking_id, room_id } = info.event.extendedProps;
+
+ eventClick(info) {
+            const { type, slot_id, booking_id, room_id } = info.event.extendedProps;
 
             if (type === 'booking') {
-                window.location = `/booking/edit/${booking_id}`;
+                window.location = `${bookingEditUrl}/${booking_id}/edit`;
             } else if (type === 'available') {
-                window.location = `/create-booking?trip_id=${trip_id}&room_id=${room_id}`;
+                window.location = `${createBookingUrl}?slot_id=${slot_id}&room_id=${room_id}`;
+            } else if (type === 'slot') {
+                window.location = `${slotEditUrl}/${slot_id}/edit`;
             } else {
-                window.location = `/trips`;
+                window.location = "{{ url('admin/slots') }}";
             }
         },
+
 
         eventDidMount(info) {
             const { type, booking_count, capacity, room_name, title,customer_name } = info.event.extendedProps;

@@ -41,6 +41,10 @@ class Room extends Model
         return $this->belongsTo(Trip::class);
     }
 
+    public function maxCapacity()
+    {
+        return $this->capacity + $this->extra_beds;
+    }
 
     public function canBeDeleted(): bool
     {

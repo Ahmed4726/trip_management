@@ -6,22 +6,17 @@
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="h4">Manage Boats</h2>
             @can('create-boat')
-                <a href="{{ route('boat.create') }}" class="btn btn-primary">Create Boat</a>
+                <a href="{{ route('admin.boat.create') }}" class="btn btn-primary">Create Boat</a>
             @endcan
         </div>
 
-        @if(session('success'))
-            <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-            <script>
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Success',
-                    text: '{{ session('success') }}',
-                    confirmButtonColor: '#3085d6',
-                    confirmButtonText: 'OK'
-                });
-            </script>
-        @endif
+        @foreach (['success','error'] as $msg)
+            @if(session($msg))
+                <div class="alert alert-{{ $msg == 'success' ? 'success' : 'danger' }}">
+                    {{ session($msg) }}
+                </div>
+            @endif
+        @endforeach
 
         <div class="card">
             <div class="card-body">
@@ -62,21 +57,26 @@
                                     <td>{{ $boat->created_at->format('d M Y') }}</td>
                                     <td class="text-center">
                                         <a href="{{ route('room.index', $boat->id) }}" class="btn btn-sm btn-info">Rooms</a>
-                                        <a href="{{ route('boats.show', $boat->id) }}" class="btn btn-sm btn-primary">View Calendar</a>
+
+                                        <a href="{{ route('boats.show', $boat->id) }}" class="btn btn-sm btn-primary">
+                                            View Details
+                                        </a>
 
                                         <a href="javascript:void(0);" class="btn btn-sm btn-primary edit-boat-btn"
-                                           data-id="{{ $boat->id }}"
-                                           data-name="{{ $boat->name }}"
-                                           data-location="{{ $boat->location }}"
-                                           data-status="{{ $boat->status }}">
-                                           Edit
+                                        data-id="{{ $boat->id }}"
+                                        data-name="{{ $boat->name }}"
+                                        data-location="{{ $boat->location }}"
+                                        data-status="{{ $boat->status }}">
+                                        Edit
                                         </a>
+
                                         <form action="{{ route('boat.destroy', $boat->id) }}" method="POST" class="d-inline">
                                             @csrf
                                             @method('DELETE')
                                             <button class="btn btn-sm btn-danger" onclick="return confirm('Delete this boat?')">Delete</button>
                                         </form>
                                     </td>
+
                                 </tr>
                             @empty
                                 <tr>

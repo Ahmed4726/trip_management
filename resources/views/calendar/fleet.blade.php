@@ -8,11 +8,11 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h4 class="mb-0">Fleet Calendar</h4>
 
-    @if(!isset($iframe))
+    {{-- @if(!isset($iframe))
     <button id="copyEmbed" class="btn btn-sm btn-outline-primary">
         Copy Embed Code
     </button>
-    @endif
+    @endif --}}
 </div>
 
 <div class="card">
@@ -79,40 +79,30 @@ document.addEventListener('DOMContentLoaded', function () {
             right: 'resourceTimelineMonth,resourceTimelineYear'
         },
 
-        eventClick(info) {
-            if (isIframe) return;
+eventClick(info) {
+    if (isIframe) return;
 
-            const {
-                type,
-                trip_id,
-                booking_id,
-                room_id
-            } = info.event.extendedProps;
+    const { type, slot_id, booking_id, room_id } = info.event.extendedProps;
 
-            /* OPEN TRIP */
-            if (type === 'open') {
-                window.location = `/trips`;
-                return;
-            }
+    /* SLOT ROW CLICK */
+    if (type === 'slot') {
+        window.location = `/admin/slots/${slot_id}/edit`;
+        return;
+    }
 
-            /* PRIVATE TRIP */
-            if (type === 'trip') {
-                window.location = `/trips`;
-                return;
-            }
+    /* BOOKED ROOM CLICK */
+    if (type === 'booking') {
+        window.location = `/admin/bookings/${booking_id}/edit`;
+        return;
+    }
 
-            /* BOOKED ROOM */
-            if (type === 'booking') {
-                window.location = `/booking/edit/${booking_id}`;
-                return;
-            }
+    /* AVAILABLE ROOM CLICK */
+    if (type === 'available') {
+        window.location = `/admin/bookings/create?slot_id=${slot_id}&room_id=${room_id}`;
+        return;
+    }
+},
 
-            /* AVAILABLE ROOM */
-            if (type === 'available') {
-                window.location =
-                    `/create-booking?trip_id=${trip_id}&room_id=${room_id}`;
-            }
-        },
 
         eventDidMount(info) {
             const { type, booking_count, capacity } = info.event.extendedProps;

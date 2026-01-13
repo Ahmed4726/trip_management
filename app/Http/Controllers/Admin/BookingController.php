@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Booking, Slot, Boat, Room};
+use App\Models\{Agent, Booking, Slot, Boat, CancellationPolicy, Company, Guest, PaymentPolicy, Port, RatePlan, Region, Room};
 use Illuminate\Http\Request;
 
 class BookingController extends Controller
@@ -14,106 +14,269 @@ class BookingController extends Controller
         return view('admin.booking.index', compact('bookings'));
     }
 
-    public function create()
+  public function create()
     {
-        $slots = Slot::with('boat.rooms')->orderBy('start_date')->get();
-        return view('admin.booking.create', compact('slots'));
-    }
+        return view('admin.booking.create', [
+            'slots' => Slot::with('boat.rooms')->get(),
+            'agents' => Agent::orderBy('first_name')->get(),
+            'guests' => Guest::orderBy('name')->get(),
 
-    public function store(Request $request)
-    {
-        $request->validate([
-            'slot_id' => 'nullable|exists:slots,id',
-            'boat_id' => 'required|exists:boats,id',
-            'room_id' => 'required|exists:rooms,id',
-            'guest_name' => 'required|string',
-            'guest_email' => 'nullable|email',
-            'guest_phone' => 'nullable|string',
-            'notes' => 'nullable|string',
+            'ratePlans' => RatePlan::with('rules')->get(),
+            'paymentPolicies' => PaymentPolicy::all(),
+            'cancellationPolicies' => CancellationPolicy::with('rules')->get(),
+
+            'boats' => Boat::withCount('rooms')->get(), // add rooms_count for display
+
+            'regions' => Region::all(),
+            'ports' => Port::all(),
+
+            'companies' => auth()->user()->hasRole('admin')
+                ? Company::all()
+                : Company::where('id', auth()->user()->company_id)->get(),
         ]);
-
-        $slotId = $request->slot_id;
-
-        // Inline slot creation if none selected
-        if (!$slotId) {
-            $existingSlot = Slot::where('boat_id', $request->boat_id)
-                                ->whereDate('start_date', $request->start_date ?? now())
-                                ->whereDate('end_date', $request->end_date ?? now())
-                                ->first();
-
-            if ($existingSlot) {
-                $slotId = $existingSlot->id;
-            } else {
-                $slot = Slot::create([
-                    'slot_type' => 'Open Trip',
-                    'status' => 'Available',
-                    'boat_id' => $request->boat_id,
-                    'region_id' => $request->boat->region_id ?? null,
-                    'departure_port_id' => null,
-                    'arrival_port_id' => null,
-                    'start_date' => $request->start_date ?? now(),
-                    'end_date' => $request->end_date ?? now(),
-                    'available_rooms' => [$request->room_id],
-                ]);
-                $slotId = $slot->id;
-            }
-        }
-
-        // Collision check – same room and overlapping slot
-        $collision = Booking::where('slot_id', $slotId)
-                            ->where('room_id', $request->room_id)
-                            ->exists();
-
-        if ($collision) {
-            return back()->withErrors(['room_id'=>'This room is already booked for the selected slot'])->withInput();
-        }
-
-        Booking::create([
-            'slot_id' => $slotId,
-            'boat_id' => $request->boat_id,
-            'room_id' => $request->room_id,
-            'guest_name' => $request->guest_name,
-            'guest_email' => $request->guest_email,
-            'guest_phone' => $request->guest_phone,
-            'notes' => $request->notes,
-            'status' => 'Pending',
-        ]);
-
-        return redirect()->route('admin.bookings.index')->with('success','Booking created successfully.');
     }
 
-    public function edit(Booking $booking)
-    {
-        $slots = Slot::with('boat.rooms')->orderBy('start_date')->get();
-        return view('admin.booking.edit', compact('booking','slots'));
-    }
+public function store(Request $request)
+{
+    $request->validate([
+        'source' => 'required|in:Direct,Agent',
+        'agent_id' => 'nullable|required_if:source,Agent',
+        'rooms' => 'required|array',
+        'guests' => 'array',
+    ]);
 
-    public function update(Request $request, Booking $booking)
-    {
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 1: Resolve Slot (existing OR inline-created)
+    |--------------------------------------------------------------------------
+    */
+
+    if ($request->slot_id) {
+
+        // Existing slot
+        $slot = Slot::with('boat.rooms')->findOrFail($request->slot_id);
+
+    } else {
+
+        // Inline slot creation
         $request->validate([
-            'slot_id' => 'required|exists:slots,id',
             'boat_id' => 'required|exists:boats,id',
-            'room_id' => 'required|exists:rooms,id',
-            'guest_name' => 'required|string',
-            'guest_email' => 'nullable|email',
-            'guest_phone' => 'nullable|string',
-            'notes' => 'nullable|string',
-            'status' => 'required|in:Pending,Confirmed,Cancelled',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'region_id' => 'required|exists:regions,id',
+            'embarkation_port_id' => 'required|exists:ports,id',
+            'disembarkation_port_id' => 'required|exists:ports,id',
         ]);
 
         // Collision check
-        $collision = Booking::where('slot_id', $request->slot_id)
-                            ->where('room_id', $request->room_id)
-                            ->where('id','!=',$booking->id)
-                            ->exists();
+        $collision = Slot::where('boat_id', $request->boat_id)
+            ->where(function ($q) use ($request) {
+                $q->whereBetween('start_date', [$request->start_date, $request->end_date])
+                  ->orWhereBetween('end_date', [$request->start_date, $request->end_date]);
+            })->exists();
 
         if ($collision) {
-            return back()->withErrors(['room_id'=>'This room is already booked for the selected slot'])->withInput();
+            return back()->withErrors([
+                'start_date' => 'Slot collision detected for this boat'
+            ])->withInput();
         }
 
-        $booking->update($request->all());
+        // Create slot
+        $slot = Slot::create([
+            'boat_id' => $request->boat_id,
+            'region_id' => $request->region_id,
+            'embarkation_port_id' => $request->embarkation_port_id,
+            'disembarkation_port_id' => $request->disembarkation_port_id,
+            'start_date' => $request->start_date,
+            'end_date' => $request->end_date,
+            'status' => 'Available',
+        ]);
 
-        return redirect()->route('admin.bookings.index')->with('success','Booking updated successfully.');
+        $slot->load('boat.rooms');
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 2: Capacity validation
+    |--------------------------------------------------------------------------
+    */
+
+    $rooms = Room::whereIn('id', $request->rooms)->get();
+
+    $maxCapacity = $rooms->sum(fn ($r) =>
+        $r->capacity + $r->extra_bed_capacity
+    );
+
+    $guestCount = count($request->guests ?? []);
+
+    if ($guestCount > $maxCapacity) {
+        return back()->withErrors([
+            'guests' => "Guest count exceeds room capacity ({$maxCapacity})"
+        ])->withInput();
+    }
+
+    $leadGuest = Guest::find($request->guests[0] ?? null);
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 3: Create Booking
+    |--------------------------------------------------------------------------
+    */
+    $booking = Booking::create([
+        'company_id' => auth()->user()->company_id,
+        'slot_id' => $slot->id,
+        'boat_id' => $slot->boat_id,
+        'room_id' => $request->rooms[0], // handled in pivot
+        'guest_name' => $leadGuest?->name,
+        'guest_count' => $guestCount,
+        'source' => $request->source,
+        'agent_id' => $request->agent_id,
+        'rate_plan_id' => $request->rate_plan_id,
+        'payment_policy_id' => $request->payment_policy_id,
+        'cancellation_policy_id' => $request->cancellation_policy_id,
+        'notes' => $request->notes,
+        'status' => 'Pending',
+    ]);
+
+    /*
+    |--------------------------------------------------------------------------
+    | STEP 4: Attach Rooms & Guests
+    |--------------------------------------------------------------------------
+    */
+
+    $booking->rooms()->sync($request->rooms);
+    $booking->guests()->sync($request->guests ?? []);
+
+    return redirect()
+        ->route('admin.bookings.index')
+        ->with('success', 'Booking created successfully');
+}
+
+   public function edit(Booking $booking)
+    {
+        return view('admin.booking.edit', [
+            'booking' => $booking->load(['rooms', 'guests', 'slot.boat.rooms']),
+            'slots' => Slot::with('boat.rooms')->get(),
+            'agents' => Agent::orderBy('first_name')->get(),
+            'guests' => Guest::orderBy('name')->get(),
+            'ratePlans' => RatePlan::with('rules')->get(),
+            'paymentPolicies' => PaymentPolicy::all(),
+            'cancellationPolicies' => CancellationPolicy::with('rules')->get(),
+            'boats' => Boat::withCount('rooms')->get(),
+            'regions' => Region::all(),
+            'ports' => Port::all(),
+            'companies' => auth()->user()->hasRole('admin')
+                ? Company::all()
+                : Company::where('id', auth()->user()->company_id)->get(),
+        ]);
+    }
+
+    /**
+     * Update the booking
+     */
+    public function update(Request $request, Booking $booking)
+    {
+        $request->validate([
+            'source' => 'required|in:Direct,Agent',
+            'agent_id' => 'nullable|required_if:source,Agent',
+            'rooms' => 'required|array',
+            'guests' => 'array',
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | STEP 1: Resolve Slot (existing OR inline-created)
+        |--------------------------------------------------------------------------
+        */
+        if ($request->slot_id) {
+            // Existing slot
+            $slot = Slot::with('boat.rooms')->findOrFail($request->slot_id);
+        } else {
+            // Inline slot creation
+            $request->validate([
+                'boat_id' => 'required|exists:boats,id',
+                'start_date' => 'required|date',
+                'end_date' => 'required|date|after_or_equal:start_date',
+                'region_id' => 'required|exists:regions,id',
+                'embarkation_port_id' => 'required|exists:ports,id',
+                'disembarkation_port_id' => 'required|exists:ports,id',
+            ]);
+
+            // Collision check
+            $collision = Slot::where('boat_id', $request->boat_id)
+                ->where(function ($q) use ($request) {
+                    $q->whereBetween('start_date', [$request->start_date, $request->end_date])
+                      ->orWhereBetween('end_date', [$request->start_date, $request->end_date]);
+                })->exists();
+
+            if ($collision) {
+                return back()->withErrors([
+                    'start_date' => 'Slot collision detected for this boat'
+                ])->withInput();
+            }
+
+            // Create slot
+            $slot = Slot::create([
+                'boat_id' => $request->boat_id,
+                'region_id' => $request->region_id,
+                'embarkation_port_id' => $request->embarkation_port_id,
+                'disembarkation_port_id' => $request->disembarkation_port_id,
+                'start_date' => $request->start_date,
+                'end_date' => $request->end_date,
+                'status' => 'Available',
+            ]);
+            $slot->load('boat.rooms');
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | STEP 2: Capacity validation
+        |--------------------------------------------------------------------------
+        */
+        $rooms = Room::whereIn('id', $request->rooms)->get();
+        $maxCapacity = $rooms->sum(fn ($r) => $r->capacity + $r->extra_bed_capacity);
+        $guestCount = count($request->guests ?? []);
+
+        if ($guestCount > $maxCapacity) {
+            return back()->withErrors([
+                'guests' => "Guest count exceeds room capacity ({$maxCapacity})"
+            ])->withInput();
+        }
+
+        $leadGuest = Guest::find($request->guests[0] ?? null);
+
+        /*
+        |--------------------------------------------------------------------------
+        | STEP 3: Update Booking
+        |--------------------------------------------------------------------------
+        */
+        $booking->update([
+            'company_id' => auth()->user()->company_id,
+            'slot_id' => $slot->id,
+            'boat_id' => $slot->boat_id,
+            'room_id' => $request->rooms[0],
+            'guest_name' => $leadGuest?->name,
+            'guest_count' => $guestCount,
+            'source' => $request->source,
+            'agent_id' => $request->agent_id,
+            'rate_plan_id' => $request->rate_plan_id,
+            'payment_policy_id' => $request->payment_policy_id,
+            'cancellation_policy_id' => $request->cancellation_policy_id,
+            'notes' => $request->notes,
+            'status' => $booking->status, // keep current status
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | STEP 4: Sync Rooms & Guests
+        |--------------------------------------------------------------------------
+        */
+        $booking->rooms()->sync($request->rooms);
+        $booking->guests()->sync($request->guests ?? []);
+
+        return redirect()
+            ->route('admin.bookings.index')
+            ->with('success', 'Booking updated successfully');
     }
 
     public function destroy(Booking $booking)

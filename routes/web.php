@@ -50,9 +50,12 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     Route::resource('slots', SlotController::class);
     Route::resource('bookings', AdminBookingController::class);
+        Route::post('guests', [GuestController::class, 'store'])->name('guests.store');
+
 
 });
 
+    Route::post('/guests', [GuestController::class, 'store'])->name('guests.store');
 
 Route::domain('{slug}.' . env('DOMAIN_NAME'))->middleware(['tenantresolver'])->group(function () {
 // Public routes

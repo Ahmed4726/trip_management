@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Boat;
+use App\Models\Slot;
 use App\Models\Trip;
 
 class CalendarController extends Controller
@@ -25,15 +26,13 @@ class CalendarController extends Controller
         $boats = Boat::with('rooms')->get();
 
         $resources = $boats->map(function ($boat) {
-
-            // Boat row
             $boatResource = [
                 'id' => 'boat-'.$boat->id,
                 'title' => $boat->name,
-                'expanded' => false, // rooms collapsed by default
+                'expanded' => true, // rooms collapsed
             ];
 
-            $roomResources = $boat->rooms->map(function($room) use ($boat) {
+            $roomResources = $boat->rooms->map(function ($room) use ($boat) {
                 return [
                     'id' => 'room-'.$room->id,
                     'title' => $room->room_name.' (Cap: '.$room->capacity.')',
@@ -42,11 +41,11 @@ class CalendarController extends Controller
             });
 
             return array_merge([$boatResource], $roomResources->toArray());
-
         })->flatten(1);
 
-        return $resources;
+        return response()->json($resources);
     }
+
 
     /* ================= EVENTS ================= */
 
@@ -54,142 +53,58 @@ public function fleetEvents()
 {
     $events = [];
 
-    $trips = Trip::with([
-        'boat.rooms',
-        'bookings'
-    ])->get();
+    $slots = Slot::with(['boat.rooms', 'bookings'])->get();
 
-    foreach ($trips as $trip) {
+    foreach ($slots as $slot) {
 
-        $boatRowId = 'boat-'.$trip->boat_id;
+        $boatRowId = 'boat-'.$slot->boat_id;
 
-        /* ================= OPEN TRIPS ================= */
-        if ($trip->trip_type === 'open') {
-
-            $bookingCount = $trip->bookings->count();
-            $capacity = $trip->max_bookings ?? 10;
-
-            // Color logic for OT
-            if ($bookingCount >= $capacity) {
-                $color = '#198754'; // green
-                $label = 'Fully Booked';
-            } elseif ($bookingCount > 2) {
-                $color = '#fd7e14'; // orange
-                $label = 'Limited Seats';
-            } elseif ($bookingCount > 0) {
-                $color = '#ffc107'; // yellow
-                $label = 'Few Bookings';
-            } else {
-                $color = '#6f42c1'; // purple
-                $label = 'Available';
-            }
-
-            // OT availability bar (boat row)
-            $events[] = [
-                'id' => 'open-trip-'.$trip->id,
-                'resourceId' => $boatRowId,
-                'title' => "Open Trip · $label ($bookingCount/$capacity)",
-                'start' => $trip->start_date,
-                'end' => $trip->end_date,
-                'color' => $color,
-                'classNames' => ['open'],
-                'extendedProps' => [
-                    'type' => 'open',
-                    'trip_id' => $trip->id,
-                    'booking_count' => $bookingCount,
-                    'capacity' => $capacity
-                ]
-            ];
-
-            // Loop through rooms to show booking per room
-            foreach ($trip->boat->rooms as $room) {
-                $booking = $trip->bookings->firstWhere('room_id', $room->id);
-
-                if ($booking) {
-                    // Booked room
-                    $events[] = [
-                        'id' => 'open-booking-'.$booking->id,
-                        'resourceId' => 'room-'.$room->id,
-                        'title' => $booking->customer_name,
-                        'start' => $trip->start_date,
-                        'end' => $trip->end_date,
-                        'color' => '#dc3545',
-                        'extendedProps' => [
-                            'type' => 'booking',
-                            'booking_id' => $booking->id,
-                            'room_id' => $room->id
-                        ]
-                    ];
-                } else {
-                    // Available room
-                    $events[] = [
-                        'id' => 'open-available-'.$trip->id.'-'.$room->id,
-                        'resourceId' => 'room-'.$room->id,
-                        'start' => $trip->start_date,
-                        'end' => $trip->end_date,
-                        'display' => 'background',
-                        'backgroundColor' => '#d1e7dd',
-                        'extendedProps' => [
-                            'type' => 'available',
-                            'trip_id' => $trip->id,
-                            'room_id' => $room->id
-                        ]
-                    ];
-                }
-            }
-
-            continue; // skip private trip logic
-        }
-
-        /* ================= PRIVATE TRIPS ================= */
-        $totalRooms    = $trip->boat->rooms->count();
-        $bookedRoomIds = $trip->bookings->pluck('room_id')->unique();
-        $bookedCount   = $bookedRoomIds->count();
-        $available     = $totalRooms - $bookedCount;
-
-        // Boat summary
+        // --- SLOT BAR (background for boat row) ---
         $events[] = [
-            'id' => 'trip-'.$trip->id,
+            'id' => 'slot-'.$slot->id,
             'resourceId' => $boatRowId,
-            'title' => "Total: $totalRooms | Available: $available | Booked: $bookedCount",
-            'start' => $trip->start_date,
-            'end' => $trip->end_date,
-            'color' => $bookedCount > 0 ? '#dc3545' : '#198754',
+            'title' => $slot->slot_type.' | '.$slot->status,
+            'start' => $slot->start_date,
+            'end' => $slot->end_date,
+            'color' => $slot->isBlocked() ? '#6c757d' : '#198754', // gray if blocked, green otherwise
             'extendedProps' => [
-                'type' => 'trip',
-                'trip_id' => $trip->id,
+                'type' => 'slot',
+                'slot_id' => $slot->id,
+                'status' => $slot->status
             ]
         ];
 
-        // Booked rooms
-        foreach ($trip->bookings as $booking) {
-            $events[] = [
-                'id' => 'booking-'.$booking->id,
-                'resourceId' => 'room-'.$booking->room_id,
-                'title' => 'Booked',
-                'start' => $trip->start_date,
-                'end' => $trip->end_date,
-                'color' => '#dc3545',
-                'extendedProps' => [
-                    'type' => 'booking',
-                    'booking_id' => $booking->id
-                ]
-            ];
-        }
+        // --- ROOM BOOKINGS & Availability ---
+        foreach ($slot->boat->rooms as $room) {
+            $booking = $slot->bookings->firstWhere('room_id', $room->id);
 
-        // Available rooms
-        foreach ($trip->boat->rooms as $room) {
-            if (!$bookedRoomIds->contains($room->id)) {
+            if ($booking) {
+                // Booked room
                 $events[] = [
-                    'id' => 'available-'.$trip->id.'-'.$room->id,
+                    'id' => 'booking-'.$booking->id,
                     'resourceId' => 'room-'.$room->id,
-                    'start' => $trip->start_date,
-                    'end' => $trip->end_date,
+                    'title' => $booking->guest_name ?? 'Booked',
+                    'start' => $slot->start_date,
+                    'end' => $slot->end_date,
+                    'color' => '#dc3545', // red for booked
+                    'extendedProps' => [
+                        'type' => 'booking',
+                        'booking_id' => $booking->id,
+                        'room_id' => $room->id
+                    ]
+                ];
+            } else {
+                // Available room
+                $events[] = [
+                    'id' => 'available-'.$slot->id.'-'.$room->id,
+                    'resourceId' => 'room-'.$room->id,
+                    'start' => $slot->start_date,
+                    'end' => $slot->end_date,
                     'display' => 'background',
-                    'backgroundColor' => '#d1e7dd',
+                    'backgroundColor' => '#d1e7dd', // light green
                     'extendedProps' => [
                         'type' => 'available',
-                        'trip_id' => $trip->id,
+                        'slot_id' => $slot->id,
                         'room_id' => $room->id
                     ]
                 ];
@@ -199,6 +114,7 @@ public function fleetEvents()
 
     return response()->json($events);
 }
+
 
 
 
@@ -237,142 +153,78 @@ public function boatResources(Boat $boat) {
 }
 
 // Boat events (Open Trips + Private Trips + Bookings)
-    public function boatEvents(Boat $boat) {
+public function boatEvents(Boat $boat)
+{
     $events = [];
 
-    $trips = $boat->trip()->with('bookings')->get();
+    // Get all slots with bookings
+    $slots = $boat->slots()->with('bookings')->get();
 
-    foreach ($trips as $trip) {
+    foreach ($slots as $slot) {
+        $boatRowId = 'boat-' . $boat->id;
 
-        $boatRowId = 'boat-'.$boat->id;
-
-        // ================= OPEN TRIP =================
-        if ($trip->trip_type === 'open') {
-            $bookingCount = $trip->bookings->count();
-            $capacity = $trip->max_bookings ?? 10;
-
-            if ($bookingCount >= $capacity) { $color = '#198754'; $label = 'Fully Booked'; }
-            elseif ($bookingCount > 2) { $color = '#fd7e14'; $label = 'Limited Seats'; }
-            elseif ($bookingCount > 0) { $color = '#ffc107'; $label = 'Few Bookings'; }
-            else { $color = '#6f42c1'; $label = 'Available'; }
-
-            // OT bar on boat row
-            $events[] = [
-                'id'=>'open-trip-'.$trip->id,
-                'resourceId'=>$boatRowId,
-                'title'=>"Open Trip · $label ($bookingCount/$capacity)",
-                'start'=>$trip->start_date,
-                'end'=>$trip->end_date,
-                'color'=>$color,
-                'classNames'=>['open-trip'],
-                'extendedProps'=>[
-                    'type'=>'open-trip',
-                    'trip_id'=>$trip->id,
-                    'booking_count'=>$bookingCount,
-                    'capacity'=>$capacity
-                ]
-            ];
-
-            // Room-level OT
-            foreach ($boat->rooms as $room) {
-                $booking = $trip->booking->firstWhere('room_id',$room->id);
-                if ($booking) {
-                    $events[] = [
-                        'id'=>'open-booking-'.$booking->id,
-                        'resourceId'=>'room-'.$room->id,
-                        'title'=>$booking->customer_name,
-                        'start'=>$trip->start_date,
-                        'end'=>$trip->end_date,
-                        'color'=>'#dc3545', // OT color for booked
-                        'extendedProps'=>[
-                            'type'=>'booking',
-                            'booking_id'=>$booking->id,
-                            'room_id'=>$room->id,
-                            'customer_name'=>$booking->customer_name,
-                            'room_name'=>$room->room_name
-                        ]
-                    ];
-
-                } else {
-                    $events[] = [
-                        'id'=>'open-available-'.$trip->id.'-'.$room->id,
-                        'resourceId'=>'room-'.$room->id,
-                        'start'=>$trip->start_date,
-                        'end'=>$trip->end_date,
-                        'display'=>'background',
-                        'backgroundColor'=>'#d1e7dd',
-                        'extendedProps'=>[
-                            'type'=>'available',
-                            'trip_id'=>$trip->id,
-                            'room_id'=>$room->id
-                        ]
-                    ];
-                }
-            }
-
-            continue;
-        }
-
-        // ================= PRIVATE TRIP =================
+        // Slot-level summary for boat
         $totalRooms = $boat->rooms->count();
-        $bookedRoomIds = $trip->bookings->pluck('room_id')->unique();
+        $bookedRoomIds = $slot->bookings->pluck('room_id')->unique();
         $bookedCount = $bookedRoomIds->count();
-        $available = $totalRooms - $bookedCount;
+        $availableCount = $totalRooms - $bookedCount;
 
-        // Boat summary
         $events[] = [
-            'id'=>'trip-'.$trip->id,
-            'resourceId'=>$boatRowId,
-            'title'=>"Total: $totalRooms | Available: $available | Booked: $bookedCount",
-            'start'=>$trip->start_date,
-            'end'=>$trip->end_date,
-            'color'=>$bookedCount>0?'#dc3545':'#198754',
-            'extendedProps'=>[
-                'type'=>'trip',
-                'trip_id'=>$trip->id
-            ]
+            'id' => 'slot-' . $slot->id,
+            'resourceId' => $boatRowId,
+            'title' => "Slot: {$slot->title} | Booked: $bookedCount | Available: $availableCount",
+            'start' => $slot->start_date,
+            'end' => $slot->end_date,
+            'color' => $bookedCount > 0 ? '#dc3545' : '#198754',
+            'extendedProps' => [
+                'type' => 'slot',
+                'slot_id' => $slot->id,
+            ],
         ];
 
-        // Booked rooms
-        foreach ($trip->bookings as $booking) {
-            $events[] = [
-                'id'=>'booking-'.$booking->id,
-                'resourceId'=>'room-'.$booking->room_id,
-                'title'=>'Booked',
-                'start'=>$trip->start_date,
-                'end'=>$trip->end_date,
-                'color'=>'#dc3545',
-                'extendedProps'=>[
-                    'type'=>'booking',
-                    'booking_id'=>$booking->id,
-                    'customer_name'=>$booking->customer_name
-                ]
-            ];
-        }
-
-        // Available rooms
+        // Room-level events
         foreach ($boat->rooms as $room) {
-            if (!$bookedRoomIds->contains($room->id)) {
+            $roomBooking = $slot->bookings->firstWhere('room_id', $room->id);
+
+            // dd($roomBooking);
+            if ($roomBooking) {
                 $events[] = [
-                    'id'=>'available-'.$trip->id.'-'.$room->id,
-                    'resourceId'=>'room-'.$room->id,
-                    'start'=>$trip->start_date,
-                    'end'=>$trip->end_date,
-                    'display'=>'background',
-                    'backgroundColor'=>'#d1e7dd',
-                    'extendedProps'=>[
-                        'type'=>'available',
-                        'trip_id'=>$trip->id,
-                        'room_id'=>$room->id
-                    ]
+                    'id' => 'booking-' . $roomBooking->id,
+                    'resourceId' => 'room-' . $room->id,
+                    'title' => $roomBooking->guest_name,
+                    'start' => $slot->start_date,
+                    'end' => $slot->end_date,
+                    'color' => '#dc3545',
+                    'extendedProps' => [
+                        'type' => 'booking',
+                        'booking_id' => $roomBooking->id,
+                        'slot_id' => $slot->id,
+                        'room_id' => $room->id,
+                        'customer_name' => $roomBooking->guest_name,
+                        'room_name' => $roomBooking->room->room_name ?? 'Room ' . $room->id,
+                    ],
+                ];
+            } else {
+                $events[] = [
+                    'id' => 'available-' . $slot->id . '-' . $room->id,
+                    'resourceId' => 'room-' . $room->id,
+                    'start' => $slot->start_date,
+                    'end' => $slot->end_date,
+                    'display' => 'background',
+                    'backgroundColor' => '#d1e7dd',
+                    'extendedProps' => [
+                        'type' => 'available',
+                        'slot_id' => $slot->id,
+                        'room_id' => $room->id,
+                    ],
                 ];
             }
         }
-
     }
 
     return response()->json($events);
 }
+
 
 
 }
