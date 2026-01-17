@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Slot, Boat, Room, Region, Port, Template};
+use App\Models\{Slot, Boat, Company, Room, Region, Port, Template};
 use Illuminate\Http\Request;
 
 class SlotController extends Controller
@@ -13,9 +13,11 @@ class SlotController extends Controller
         $slots = Slot::with(['boat','template','region','departurePort','arrivalPort'])
             ->orderBy('start_date')
             ->get();
+            $companies = auth()->user()->hasRole('admin')
+                ? Company::all()
+                : Company::where('id', auth()->user()->company_id)->get();
 
-
-        return view('admin.slots.index', compact('slots'));
+        return view('admin.slots.index', compact('slots', 'companies'));
     }
 
     public function create()
@@ -25,6 +27,9 @@ class SlotController extends Controller
             'regions' => Region::orderBy('name')->get(),
             'ports' => Port::orderBy('name')->get(),
             'templates' => Template::orderBy('product_name')->get(),
+            'companies' => auth()->user()->hasRole('admin')
+                ? Company::all()
+                : Company::where('id', auth()->user()->company_id)->get(),
         ]);
     }
 
@@ -58,6 +63,7 @@ class SlotController extends Controller
             'available_rooms' => $request->rooms ?? [],
             'notes' => $request->notes,
             'created_from_template_id' => $request->template_id ?? null,
+            'company_id' => $request->company_id,
         ]);
 
         return redirect()->route('admin.slots.index')->with('success','Slot created successfully.');
@@ -71,6 +77,9 @@ class SlotController extends Controller
             'regions' => Region::orderBy('name')->get(),
             'ports' => Port::orderBy('name')->get(),
             'templates' => Template::orderBy('product_name')->get(),
+            'companies' => auth()->user()->hasRole('admin')
+                ? Company::all()
+                : Company::where('id', auth()->user()->company_id)->get(),
         ]);
     }
 
@@ -94,6 +103,7 @@ class SlotController extends Controller
             'available_rooms' => $request->rooms ?? [],
             'notes' => $request->notes,
             'created_from_template_id' => $request->template_id ?? null,
+            'company_id' => $request->company_id,
         ]);
 
         return redirect()->route('admin.slots.index')->with('success','Slot updated successfully.');

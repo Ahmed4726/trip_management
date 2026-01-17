@@ -15,8 +15,8 @@
             @endif
         @endforeach
 
-<table class="table table-bordered table-sm">
-<thead>
+<table class="table table-bordered table-striped align-middle">
+<thead class="table-light text-uppercase small">
 <tr>
     <th>ID</th>
     <th>Template</th>

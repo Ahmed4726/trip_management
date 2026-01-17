@@ -95,12 +95,23 @@
         <!-- rooms dynamically filtered by boat -->
     </select>
 </div>
-
-<div class="mb-3">
+<div class="row">
+<div class="col-md-6 mb-3">
     <label>Notes</label>
     <textarea name="notes" class="form-control">{{ old('notes') }}</textarea>
 </div>
-
+{{-- Company --}}
+@if (Auth::user()->hasRole('admin'))
+    <div class="col-md-6 mb-3">
+        <label>Company</label>
+        <select name="company_id" class="form-control" required>
+            @foreach($companies as $company)
+                <option value="{{ $company->id }}">{{ $company->name }}</option>
+            @endforeach
+        </select>
+    </div>
+@endif
+</div>
 <button class="btn btn-success">Create Slot</button>
 <a href="{{ route('admin.slots.index') }}" class="btn btn-secondary">Cancel</a>
 </form>

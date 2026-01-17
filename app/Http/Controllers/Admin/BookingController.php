@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Agent, Booking, Slot, Boat, CancellationPolicy, Company, Guest, PaymentPolicy, Port, RatePlan, Region, Room};
+use App\Models\{Agent, Booking, Slot, Boat, CancellationPolicy, Company, Guest, PaymentPolicy, Port, RatePlan, Region, Room, Salesperson};
 use Illuminate\Http\Request;
 
 class BookingController extends Controller
@@ -29,6 +29,7 @@ class BookingController extends Controller
 
             'regions' => Region::all(),
             'ports' => Port::all(),
+            'salespersons' => Salesperson::orderBy('name')->get(),
 
             'companies' => auth()->user()->hasRole('admin')
                 ? Company::all()
@@ -136,6 +137,9 @@ public function store(Request $request)
         'cancellation_policy_id' => $request->cancellation_policy_id,
         'notes' => $request->notes,
         'status' => 'Pending',
+        'price' => $request->price,
+        'currency' => $request->currency,
+        'salesperson_id' => $request->salesperson_id,
     ]);
 
     /*
@@ -165,6 +169,7 @@ public function store(Request $request)
             'boats' => Boat::withCount('rooms')->get(),
             'regions' => Region::all(),
             'ports' => Port::all(),
+            'salespersons' => Salesperson::orderBy('name')->get(),
             'companies' => auth()->user()->hasRole('admin')
                 ? Company::all()
                 : Company::where('id', auth()->user()->company_id)->get(),
@@ -264,6 +269,9 @@ public function store(Request $request)
             'cancellation_policy_id' => $request->cancellation_policy_id,
             'notes' => $request->notes,
             'status' => $booking->status, // keep current status
+            'price' => $request->price,
+            'currency' => $request->currency,
+            'salesperson_id' => $request->salesperson_id,
         ]);
 
         /*

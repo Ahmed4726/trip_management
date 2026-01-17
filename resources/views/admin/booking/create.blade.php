@@ -15,7 +15,8 @@
 @csrf
 
 {{-- Slot --}}
-<div class="mb-3">
+<div class="row">
+<div class="col-md-6 mb-3">
     <label>Slot</label>
     <select id="slotSelect" name="slot_id" class="form-control">
         <option value="">-- Select Slot (or create inline) --</option>
@@ -27,57 +28,9 @@
     </select>
 </div>
 
-{{-- Inline Slot Creation --}}
-<div id="inlineSlotWrapper" class="border p-3 mb-3 d-none">
-    <h5>Inline Slot Creation</h5>
-    <div class="mb-3">
-        <label>Boat</label>
-        <select name="boat_id" class="form-control">
-            <option value="">-- Select Boat --</option>
-            @foreach($boats as $boat)
-                <option value="{{ $boat->id }}">{{ $boat->name }}</option>
-            @endforeach
-        </select>
-    </div>
-    <div class="mb-3">
-        <label>Start Date</label>
-        <input type="date" name="start_date" class="form-control">
-    </div>
-    <div class="mb-3">
-        <label>End Date</label>
-        <input type="date" name="end_date" class="form-control">
-    </div>
-    <div class="mb-3">
-        <label>Region</label>
-        <select name="region_id" class="form-control">
-            <option value="">-- Select Region --</option>
-            @foreach($regions as $region)
-                <option value="{{ $region->id }}">{{ $region->name }}</option>
-            @endforeach
-        </select>
-    </div>
-    <div class="mb-3">
-        <label>Embarkation Port</label>
-        <select name="embarkation_port_id" class="form-control">
-            <option value="">-- Select Port --</option>
-            @foreach($ports as $port)
-                <option value="{{ $port->id }}">{{ $port->name }}</option>
-            @endforeach
-        </select>
-    </div>
-    <div class="mb-3">
-        <label>Disembarkation Port</label>
-        <select name="disembarkation_port_id" class="form-control">
-            <option value="">-- Select Port --</option>
-            @foreach($ports as $port)
-                <option value="{{ $port->id }}">{{ $port->name }}</option>
-            @endforeach
-        </select>
-    </div>
-</div>
 
 {{-- Source --}}
-<div class="mb-3">
+<div class="col-md-6 mb-3">
     <label>Source</label>
     <select name="source" id="sourceSelect" class="form-control">
         <option value="Direct">Direct</option>
@@ -86,7 +39,7 @@
 </div>
 
 {{-- Agent --}}
-<div class="mb-3 d-none" id="agentWrapper">
+<div class="col-md-6 mb-3 d-none" id="agentWrapper">
     <label>Agent</label>
     <select name="agent_id" class="form-control">
         <option value="">-- Select Agent --</option>
@@ -96,6 +49,89 @@
     </select>
 </div>
 
+    <div class="col-md-6 mb-3">
+        <label>Salesperson</label>
+        <select name="salesperson_id" class="form-control" required>
+            <option value="">-- Select Salesperson --</option>
+            @foreach($salespersons as $sp)
+                <option value="{{ $sp->id }}">{{ $sp->name }}</option>
+            @endforeach
+        </select>
+    </div>
+</div>
+
+{{-- Inline Slot Creation --}}
+<div id="inlineSlotWrapper" class="border p-3 mb-3 d-none">
+    <h5>Inline Slot Creation</h5>
+    <div class="row">
+    <div class="col-md-4 mb-3">
+        <label>Boat</label>
+        <select name="boat_id" class="form-control">
+            <option value="">-- Select Boat --</option>
+            @foreach($boats as $boat)
+                <option value="{{ $boat->id }}">{{ $boat->name }}</option>
+            @endforeach
+        </select>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label>Start Date</label>
+        <input type="date" name="start_date" class="form-control">
+    </div>
+    <div class="col-md-4 mb-3">
+        <label>End Date</label>
+        <input type="date" name="end_date" class="form-control">
+    </div>
+    </div>
+    <div class="row">
+    <div class="col-md-4 mb-3">
+        <label>Region</label>
+        <select name="region_id" class="form-control">
+            <option value="">-- Select Region --</option>
+            @foreach($regions as $region)
+                <option value="{{ $region->id }}">{{ $region->name }}</option>
+            @endforeach
+        </select>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label>Embarkation Port</label>
+        <select name="embarkation_port_id" class="form-control">
+            <option value="">-- Select Port --</option>
+            @foreach($ports as $port)
+                <option value="{{ $port->id }}">{{ $port->name }}</option>
+            @endforeach
+        </select>
+    </div>
+    <div class="col-md-4 mb-3">
+        <label>Disembarkation Port</label>
+        <select name="disembarkation_port_id" class="form-control">
+            <option value="">-- Select Port --</option>
+            @foreach($ports as $port)
+                <option value="{{ $port->id }}">{{ $port->name }}</option>
+            @endforeach
+        </select>
+    </div>
+    </div>
+</div>
+
+
+
+{{-- Price / Currency / Salesperson --}}
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label>Price</label>
+        <input type="number" name="price" step="0.01" class="form-control" required>
+    </div>
+
+    <div class="col-md-6 mb-3">
+        <label>Currency</label>
+        <select name="currency" class="form-control" required>
+            <option value="USD">USD – Dollar ($)</option>
+            <option value="EUR">EUR – Euro (€)</option>
+            <option value="IDR">IDR – Indonesian Rupiah (Rp)</option>
+        </select>
+    </div>
+</div>
+
 {{-- Rooms --}}
 <div class="mb-3">
     <label>Rooms</label>
@@ -103,17 +139,18 @@
 </div>
 
 {{-- Rate Plan --}}
-<div class="mb-3">
-    <label>Rate Plan</label>
-    <select name="rate_plan_id" class="form-control" required>
-        @foreach($ratePlans as $plan)
-            <option value="{{ $plan->id }}">{{ $plan->name }}</option>
+<div class="row">
+    <div class="col-md-6 mb-3">
+        <label>Rate Plan</label>
+        <select name="rate_plan_id" class="form-control" required>
+            @foreach($ratePlans as $plan)
+                <option value="{{ $plan->id }}">{{ $plan->name }}</option>
         @endforeach
     </select>
 </div>
 
 {{-- Payment Policy --}}
-<div class="mb-3">
+<div class="col-md-6 mb-3">
     <label>Payment Policy</label>
     <select name="payment_policy_id" class="form-control" required>
         @foreach($paymentPolicies as $policy)
@@ -123,13 +160,26 @@
 </div>
 
 {{-- Cancellation Policy --}}
-<div class="mb-3">
+<div class="col-md-6 mb-3">
     <label>Cancellation Policy</label>
     <select name="cancellation_policy_id" class="form-control" required>
         @foreach($cancellationPolicies as $policy)
             <option value="{{ $policy->id }}">{{ $policy->name }}</option>
         @endforeach
     </select>
+</div>
+
+{{-- Company --}}
+@if (Auth::user()->hasRole('admin'))
+    <div class="col-md-6 mb-3">
+        <label>Company</label>
+        <select name="company_id" class="form-control" required>
+            @foreach($companies as $company)
+                <option value="{{ $company->id }}">{{ $company->name }}</option>
+            @endforeach
+        </select>
+    </div>
+@endif
 </div>
 
 {{-- Guests --}}
@@ -152,15 +202,7 @@
     <textarea name="notes" class="form-control"></textarea>
 </div>
 
-{{-- Company --}}
-<div class="mb-3">
-    <label>Company</label>
-    <select name="company_id" class="form-control" required>
-        @foreach($companies as $company)
-            <option value="{{ $company->id }}">{{ $company->name }}</option>
-        @endforeach
-    </select>
-</div>
+
 
 <button class="btn btn-success">Create Booking</button>
 <a href="{{ route('admin.bookings.index') }}" class="btn btn-secondary">Cancel</a>

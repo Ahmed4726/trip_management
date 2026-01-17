@@ -18,6 +18,7 @@ class Slot extends Model
         'available_rooms',
         'notes',
         'created_from_template_id',
+        'company_id',
     ];
 
     protected $casts = [

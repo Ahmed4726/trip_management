@@ -1,4 +1,4 @@
-@extends(isset($iframe) ? 'layouts.app' : 'layouts.admin')
+@extends('layouts.admin')
 
 @section('content')
 <div class="content-wrapper">
@@ -6,72 +6,108 @@
 <div class="container-fluid">
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="mb-0">Fleet Calendar</h4>
-
-    {{-- @if(!isset($iframe))
-    <button id="copyEmbed" class="btn btn-sm btn-outline-primary">
-        Copy Embed Code
-    </button>
-    @endif --}}
+    <h4 class="mb-0">Fleet Calendar / List</h4>
 </div>
 
-<div class="card">
-<div class="card-body">
-    <div id="calendar" style="height:860px;"></div>
+<div class="d-flex mb-3 gap-3">
+    {{-- Boat Filter --}}
+    <div class="col-md-6">
+        <select id="boatFilter" class="form-control">
+            <option value="">All Boats</option>
+            @foreach($boats as $boat)
+                <option value="{{ $boat->id }}">{{ $boat->name }}</option>
+            @endforeach
+        </select>
+    </div>
+
+    {{-- BUTTON VIEW TOGGLE --}}
+    <div class="btn-group" role="group">
+        <button type="button" id="btnCalendarView" class="btn btn-primary active mx-2">Calendar View</button>
+        <button type="button" id="btnListView" class="btn btn-outline-primary">List View</button>
+    </div>
 </div>
+
+
+{{-- CALENDAR VIEW --}}
+<div id="calendarWrapper" class="card">
+    <div class="card-body">
+        <div id="calendar" style="height:500px;"></div>
+    </div>
+</div>
+
+{{-- LIST VIEW --}}
+<div id="listWrapper" class="card d-none mt-3">
+    <div class="card-body">
+        <table class="table table-bordered table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Boat</th>
+                    <th>Room</th>
+                    <th>Start Date</th>
+                    <th>End Date</th>
+                    <th>Type</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="listTableBody">
+                <tr>
+                    <td colspan="7" class="text-center text-muted">Loading...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 </div>
 
 </div>
 </section>
 </div>
 
-{{-- ================= STYLES ================= --}}
-<style>
-/* OPEN TRIP – visually distinct */
-.fc-event.open-trip {
-    border: 2px dashed rgba(255,255,255,.85);
-    font-weight: 600;
-    height: 36px;
-}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-.fc-event.open-trip .fc-event-title {
-    text-transform: uppercase;
-    letter-spacing: .4px;
-}
-
-/* Available room background */
-.fc-bg-event {
-    opacity: .6;
-}
-
-/* Improve row spacing */
-.fc-timeline-lane-frame {
-    padding-top: 4px;
-    padding-bottom: 4px;
-}
-</style>
-
-{{-- ================= SCRIPT ================= --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    const isIframe = {{ isset($iframe) ? 'true' : 'false' }};
-    const el = document.getElementById('calendar');
+    const boatFilter = document.getElementById('boatFilter');
+    const calendarEl = document.getElementById('calendar');
+    const calendarWrapper = document.getElementById('calendarWrapper');
+    const listWrapper = document.getElementById('listWrapper');
+    const listTableBody = document.getElementById('listTableBody');
 
-    window.initFleetCalendar(el, {
+    const btnCalendarView = document.getElementById('btnCalendarView');
+    const btnListView = document.getElementById('btnListView');
 
+    let calendar;
+    let lastEvents = [];
+
+    /* ================= CALENDAR INIT ================= */
+    calendar = window.initFleetCalendar(calendarEl, {
         schedulerLicenseKey: 'CC-Attribution-NonCommercial-NoDerivatives',
-
         initialView: 'resourceTimelineMonth',
 
-        resources: '/api/calendar/fleet/resources',
-        events: '/api/calendar/fleet/events',
+        resources(fetchInfo, success, failure) {
+            const boatId = boatFilter.value;
+            fetch(`/api/calendar/fleet/resources?boat_id=${boatId}`)
+                .then(r => r.json()).then(success).catch(failure);
+        },
+
+        events(fetchInfo, success, failure) {
+            const boatId = boatFilter.value;
+            fetch(`/api/calendar/fleet/events?boat_id=${boatId}`)
+                .then(r => r.json())
+                .then(data => {
+                    lastEvents = data;
+                    success(data);
+
+                    // If List view active, render it
+                    if(listWrapper.classList.contains('d-none') === false) renderListFromEvents(data);
+                })
+                .catch(failure);
+        },
 
         resourceAreaHeaderContent: 'Fleet',
         nowIndicator: true,
-
-        editable: !isIframe,
-        selectable: false,
+        editable: false,
 
         headerToolbar: {
             left: 'prev,next today',
@@ -79,69 +115,87 @@ document.addEventListener('DOMContentLoaded', function () {
             right: 'resourceTimelineMonth,resourceTimelineYear'
         },
 
-eventClick(info) {
-    if (isIframe) return;
-
-    const { type, slot_id, booking_id, room_id } = info.event.extendedProps;
-
-    /* SLOT ROW CLICK */
-    if (type === 'slot') {
-        window.location = `/admin/slots/${slot_id}/edit`;
-        return;
-    }
-
-    /* BOOKED ROOM CLICK */
-    if (type === 'booking') {
-        window.location = `/admin/bookings/${booking_id}/edit`;
-        return;
-    }
-
-    /* AVAILABLE ROOM CLICK */
-    if (type === 'available') {
-        window.location = `/admin/bookings/create?slot_id=${slot_id}&room_id=${room_id}`;
-        return;
-    }
-},
-
+        eventClick(info) {
+            const { type, slot_id, booking_id } = info.event.extendedProps;
+            if (type === 'slot') location = `/admin/slots/${slot_id}/edit`;
+            if (type === 'booking') location = `/admin/bookings/${booking_id}/edit`;
+        },
 
         eventDidMount(info) {
-            const { type, booking_count, capacity } = info.event.extendedProps;
-
-            /* Tooltip for Open Trips */
-            if (type === 'open') {
-                info.el.title =
-                    `Open Trip\nBookings: ${booking_count}/${capacity}`;
-            }
-
-            /* Tooltip for private trip rooms */
-            if (type === 'booking') {
-                info.el.title = `Booked Room`;
-            }
-
-            if (type === 'available') {
-                info.el.title = `Available Room`;
-            }
+            const { type, boat_name, room_name } = info.event.extendedProps;
+            const title = room_name ? `${boat_name} | ${room_name}` : boat_name;
+            info.el.setAttribute('title', `${title} (${type.toUpperCase()})`);
         }
     });
 
-    /* COPY EMBED CODE */
-    const btn = document.getElementById('copyEmbed');
-    if (btn) {
-        btn.addEventListener('click', () => {
-            const code =
-`<iframe
-    src="${location.origin}/embed/fleet"
-    width="100%"
-    height="900"
-    style="border:0"
-    loading="lazy">
-</iframe>`;
+    /* ================= BUTTON VIEW TOGGLE ================= */
+    btnCalendarView.addEventListener('click', () => {
+        calendarWrapper.classList.remove('d-none');
+        listWrapper.classList.add('d-none');
 
-            navigator.clipboard.writeText(code);
-            btn.innerText = 'Copied!';
-            setTimeout(() => btn.innerText = 'Copy Embed Code', 2000);
-        });
+        btnCalendarView.classList.add('btn-primary', 'active');
+        btnCalendarView.classList.remove('btn-outline-primary');
+        btnListView.classList.remove('btn-primary', 'active');
+        btnListView.classList.add('btn-outline-primary');
+
+        calendar.render();
+    });
+
+    btnListView.addEventListener('click', () => {
+        calendarWrapper.classList.add('d-none');
+        listWrapper.classList.remove('d-none');
+
+        btnListView.classList.add('btn-primary', 'active');
+        btnListView.classList.remove('btn-outline-primary');
+        btnCalendarView.classList.remove('btn-primary', 'active');
+        btnCalendarView.classList.add('btn-outline-primary');
+
+        renderListFromEvents(lastEvents);
+    });
+
+    /* ================= FILTER ================= */
+    boatFilter.addEventListener('change', () => {
+        calendar.refetchResources();
+        calendar.refetchEvents();
+    });
+
+    /* ================= LIST VIEW RENDER ================= */
+function renderListFromEvents(events) {
+    if(!events.length) {
+        listTableBody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">No records found</td></tr>`;
+        return;
     }
+
+    listTableBody.innerHTML = '';
+    events.forEach(e => {
+        const type = e.extendedProps.type;
+        const boatName = e.extendedProps.boat_name || '-';
+        const roomName = e.extendedProps.room_name || '-';
+        const startDate = e.start ? new Date(e.start).toLocaleDateString('en-GB') : '-';
+        const endDate = e.end ? new Date(e.end).toLocaleDateString('en-GB') : '-';
+
+        // Show "BOOKED" for bookings
+        const displayType = type === 'booking' ? 'BOOKED' : type === 'slot' ? 'SLOT' : type.toUpperCase();
+        const status = type === 'booking' ? 'Booked' : type === 'slot' ? e.extendedProps.status : 'Available';
+
+        const editUrl = type === 'booking' ? `/admin/bookings/${e.extendedProps.booking_id}/edit` :
+                        type === 'slot' ? `/admin/slots/${e.extendedProps.slot_id}/edit` : '#';
+
+        listTableBody.innerHTML += `
+            <tr>
+                <td>${boatName}</td>
+                <td>${roomName}</td>
+                <td>${startDate}</td>
+                <td>${endDate}</td>
+                <td><span class="badge ${type==='booking'?'bg-danger':type==='slot'?'bg-success':'bg-primary'}">${displayType}</span></td>
+                <td>${status}</td>
+                <td><a href="${editUrl}" class="btn btn-sm btn-outline-primary">Edit</a></td>
+            </tr>
+        `;
+    });
+}
+
+
 });
 </script>
 @endsection

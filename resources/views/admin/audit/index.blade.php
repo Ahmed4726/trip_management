@@ -11,8 +11,8 @@
         <div class="card">
             <div class="card-body">
 
-                <table class="table table-bordered table-striped">
-                    <thead>
+            <table class="table table-bordered table-striped align-middle">
+                <thead class="table-light text-uppercase small">
                         <tr>
                             <th>#</th>
                             <th>Model</th>

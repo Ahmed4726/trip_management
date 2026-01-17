@@ -12,7 +12,9 @@ class CalendarController extends Controller
     /* ================= FLEET ================= */
 
     public function fleet() {
-        return view('calendar.fleet');
+        return view('calendar.fleet', [
+            'boats' => Boat::orderBy('name')->get(),
+    ]);
     }
 
     public function fleetIframe() {
@@ -21,22 +23,27 @@ class CalendarController extends Controller
 
     /* ================= RESOURCES ================= */
 
-    public function fleetResources()
+    public function fleetResources(Request $request)
     {
-        $boats = Boat::with('rooms')->get();
+        $boatId = $request->boat_id;
+
+        $boats = Boat::with('rooms')
+            ->when($boatId, fn ($q) => $q->where('id', $boatId))
+            ->get();
 
         $resources = $boats->map(function ($boat) {
+
             $boatResource = [
-                'id' => 'boat-'.$boat->id,
+                'id' => 'boat-' . $boat->id,
                 'title' => $boat->name,
-                'expanded' => true, // rooms collapsed
+                'expanded' => true,
             ];
 
             $roomResources = $boat->rooms->map(function ($room) use ($boat) {
                 return [
-                    'id' => 'room-'.$room->id,
-                    'title' => $room->room_name.' (Cap: '.$room->capacity.')',
-                    'parentId' => 'boat-'.$boat->id
+                    'id' => 'room-' . $room->id,
+                    'title' => $room->room_name . ' (Cap: ' . $room->capacity . ')',
+                    'parentId' => 'boat-' . $boat->id,
                 ];
             });
 
@@ -46,67 +53,76 @@ class CalendarController extends Controller
         return response()->json($resources);
     }
 
-
     /* ================= EVENTS ================= */
 
-public function fleetEvents()
+public function fleetEvents(Request $request)
 {
+    $boatId = $request->boat_id;
     $events = [];
 
-    $slots = Slot::with(['boat.rooms', 'bookings'])->get();
+    $slots = Slot::with(['boat.rooms', 'bookings'])
+        ->when($boatId, fn ($q) => $q->where('boat_id', $boatId))
+        ->get();
 
     foreach ($slots as $slot) {
 
-        $boatRowId = 'boat-'.$slot->boat_id;
+        $boatRowId = 'boat-' . $slot->boat_id;
 
-        // --- SLOT BAR (background for boat row) ---
+        /* SLOT BAR */
         $events[] = [
-            'id' => 'slot-'.$slot->id,
+            'id' => 'slot-' . $slot->id,
             'resourceId' => $boatRowId,
-            'title' => $slot->slot_type.' | '.$slot->status,
+            'title' => $slot->slot_type . ' | ' . $slot->status,
             'start' => $slot->start_date,
             'end' => $slot->end_date,
-            'color' => $slot->isBlocked() ? '#6c757d' : '#198754', // gray if blocked, green otherwise
+            'color' => $slot->isBlocked() ? '#6c757d' : '#198754',
             'extendedProps' => [
                 'type' => 'slot',
                 'slot_id' => $slot->id,
-                'status' => $slot->status
-            ]
+                'status' => $slot->status,
+                'room_name' => null, // <-- no single room here
+                'boat_name' => $slot->boat->name,
+            ],
         ];
 
-        // --- ROOM BOOKINGS & Availability ---
+        /* ROOMS */
         foreach ($slot->boat->rooms as $room) {
+
             $booking = $slot->bookings->firstWhere('room_id', $room->id);
 
             if ($booking) {
                 // Booked room
                 $events[] = [
-                    'id' => 'booking-'.$booking->id,
-                    'resourceId' => 'room-'.$room->id,
+                    'id' => 'booking-' . $booking->id,
+                    'resourceId' => 'room-' . $room->id,
                     'title' => $booking->guest_name ?? 'Booked',
                     'start' => $slot->start_date,
                     'end' => $slot->end_date,
-                    'color' => '#dc3545', // red for booked
+                    'color' => '#dc3545',
                     'extendedProps' => [
                         'type' => 'booking',
                         'booking_id' => $booking->id,
-                        'room_id' => $room->id
-                    ]
+                        'room_id' => $room->id,
+                        'room_name' => $room->room_name,
+                        'boat_name' => $slot->boat->name,
+                    ],
                 ];
             } else {
                 // Available room
                 $events[] = [
-                    'id' => 'available-'.$slot->id.'-'.$room->id,
-                    'resourceId' => 'room-'.$room->id,
+                    'id' => 'available-' . $slot->id . '-' . $room->id,
+                    'resourceId' => 'room-' . $room->id,
                     'start' => $slot->start_date,
                     'end' => $slot->end_date,
                     'display' => 'background',
-                    'backgroundColor' => '#d1e7dd', // light green
+                    'backgroundColor' => '#d1e7dd',
                     'extendedProps' => [
                         'type' => 'available',
                         'slot_id' => $slot->id,
-                        'room_id' => $room->id
-                    ]
+                        'room_id' => $room->id,
+                        'room_name' => $room->room_name,
+                        'boat_name' => $slot->boat->name,
+                    ],
                 ];
             }
         }

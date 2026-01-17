@@ -141,18 +141,25 @@
 </li>
 
 <li class="nav-item">
+    <a href="{{ route('admin.bookings.index') }}" class="nav-link {{ request()->is('bookings','bookings/*','create-booking') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-clipboard"></i>
+        <p>Bookings</p>
+    </a>
+</li>
+
+<li class="nav-item">
     <a href="{{ route('admin.boats.index') }}" class="nav-link {{ request()->is('boats','boats/*') ? 'active' : '' }}">
         <i class="nav-icon fas fa-ship"></i>
         <p>Boats</p>
     </a>
 </li>
 
-{{-- <li class="nav-item">
-    <a href="{{ route('admin.rooms.index') }}" class="nav-link {{ request()->is('rooms','rooms/*') ? 'active' : '' }}">
-        <i class="nav-icon fas fa-bed"></i>
-        <p>Rooms</p>
+<li class="nav-item">
+    <a href="{{ route('admin.salespeople.index') }}" class="nav-link {{ request()->is('salespeople','salespeople/*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-user"></i>
+        <p>Sales Persons</p>
     </a>
-</li> --}}
+</li>
 
 <li class="nav-item">
     <a href="{{ route('admin.regions.index') }}" class="nav-link {{ request()->is('regions','regions/*') ? 'active' : '' }}">
@@ -168,12 +175,7 @@
     </a>
 </li>
 
-<li class="nav-item">
-    <a href="{{ route('admin.bookings.index') }}" class="nav-link {{ request()->is('bookings','bookings/*','create-booking') ? 'active' : '' }}">
-        <i class="nav-icon fas fa-clipboard"></i>
-        <p>Bookings</p>
-    </a>
-</li>
+
 
             @endcan
 

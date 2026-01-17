@@ -40,6 +40,9 @@ class Booking extends Model
         'payment_policy_snapshot_json',
         'cancellation_policy_snapshot_json',
         'terms_snapshot',
+        'price',
+        'currency',
+        'salesperson_id',
 
     ];
 

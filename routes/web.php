@@ -35,7 +35,8 @@ use App\Http\Controllers\Admin\{
     PortController,
     SlotController,
     BookingController as AdminBookingController,
-    TemplateController
+    TemplateController,
+    SalespersonController
 };
 
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
@@ -50,8 +51,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     Route::resource('slots', SlotController::class);
     Route::resource('bookings', AdminBookingController::class);
-        Route::post('guests', [GuestController::class, 'store'])->name('guests.store');
+    Route::post('guests', [GuestController::class, 'store'])->name('guests.store');
 
+    Route::resource('salespeople', SalespersonController::class)->middleware('auth');
 
 });
 

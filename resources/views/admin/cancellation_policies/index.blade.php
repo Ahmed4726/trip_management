@@ -11,8 +11,8 @@
 <script>Swal.fire({icon:'success',title:'Success',text:'{{ session('success') }}',confirmButtonColor:'#3085d6'});</script>
 @endif
 
-<table class="table table-bordered">
-<thead>
+<table class="table table-bordered table-striped align-middle">
+<thead class="table-light text-uppercase small">
 <tr>
 <th>Name</th>
 <th>Actions</th>
