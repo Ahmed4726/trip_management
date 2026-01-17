@@ -89,13 +89,16 @@
 <div class="row mb-3">
     <div class="col-md-6">
         <label>Start Date</label>
-        <input type="date" name="start_date" class="form-control" value="{{ old('start_date', $slot->start_date) }}" required>
+        <input type="date" name="start_date" class="form-control"
+            value="{{ old('start_date', $slot->start_date ? $slot->start_date->format('Y-m-d') : '') }}" required>
     </div>
     <div class="col-md-6">
         <label>End Date</label>
-        <input type="date" name="end_date" class="form-control" value="{{ old('end_date', $slot->end_date) }}" required>
+        <input type="date" name="end_date" class="form-control"
+            value="{{ old('end_date', $slot->end_date ? $slot->end_date->format('Y-m-d') : '') }}" required>
     </div>
 </div>
+
 
 {{-- Available Rooms --}}
 <div class="mb-3">
@@ -103,17 +106,30 @@
     <select name="rooms[]" class="form-control" multiple id="roomsSelect">
         @foreach($slot->boat->rooms as $room)
             <option value="{{ $room->id }}" {{ in_array($room->id, old('rooms', $slot->available_rooms ?? [])) ? 'selected' : '' }}>
-                {{ $room->name }}
+                {{ $room->room_name }}
             </option>
         @endforeach
     </select>
 </div>
 
 {{-- Notes --}}
-<div class="mb-3">
+<div class="row">
+<div class="col-md-6 mb-3">
     <label>Notes</label>
     <textarea name="notes" class="form-control">{{ old('notes', $slot->notes) }}</textarea>
 </div>
+
+{{-- Company --}}
+@if (Auth::user()->hasRole('admin'))
+    <div class="col-md-6 mb-3">
+        <label>Company</label>
+        <select name="company_id" class="form-control" required>
+            @foreach($companies as $company)
+                <option value="{{ $company->id }}">{{ $company->name }}</option>
+            @endforeach
+        </select>
+    </div>
+@endif
 
 <button class="btn btn-success">Update Slot</button>
 <a href="{{ route('admin.slots.index') }}" class="btn btn-secondary">Cancel</a>

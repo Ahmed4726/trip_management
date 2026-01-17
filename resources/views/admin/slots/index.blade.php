@@ -39,7 +39,7 @@
     <td>{{ $slot->boat->name ?? '-' }}</td>
     <td>{{ $slot->region->name ?? '-' }}</td>
     <td>{{ $slot->departurePort->name ?? '-' }} → {{ $slot->arrivalPort->name ?? '-' }}</td>
-    <td>{{ $slot->start_date }} → {{ $slot->end_date }}</td>
+    <td>{{ $slot->start_date->format('Y-m-d') }} → {{ $slot->end_date->format('Y-m-d') }}</td>
     <td>
         <a href="{{ route('admin.slots.edit', $slot) }}" class="btn btn-sm btn-warning">Edit</a>
         <form method="POST" action="{{ route('admin.slots.destroy', $slot) }}" class="d-inline" onsubmit="return confirm('Delete this slot?')">
