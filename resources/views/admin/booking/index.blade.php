@@ -39,7 +39,7 @@
     <td>{{ $booking->guest_name }}</td>
 <td>
     @if($booking->slot)
-        {{ $booking->slot->start_date->format('Y-m-d') }} → {{ $booking->slot->end_date->format('Y-m-d') }}
+        {{ $booking->slot->start_date->format('d-m-Y') }} → {{ $booking->slot->end_date->format('d-m-Y') }}
     @else
         -
     @endif

@@ -4,6 +4,9 @@ import resourceTimelinePlugin from '@fullcalendar/resource-timeline'
 import multiMonthPlugin from '@fullcalendar/multimonth'
 import listPlugin from '@fullcalendar/list'
 import interactionPlugin from '@fullcalendar/interaction'
+import $ from 'jquery';
+import 'select2';
+import 'select2/dist/css/select2.min.css';
 
 
 import Alpine from 'alpinejs';
@@ -47,3 +50,10 @@ window.initFleetCalendar = function (el, options) {
     calendar.render()
     return calendar
 }
+$(document).ready(function() {
+    $('#guestSelect').select2({
+        placeholder: 'Select guests',
+        width: '100%',
+        closeOnSelect: false
+    });
+});

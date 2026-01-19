@@ -136,7 +136,7 @@ public function store(Request $request)
         'payment_policy_id' => $request->payment_policy_id,
         'cancellation_policy_id' => $request->cancellation_policy_id,
         'notes' => $request->notes,
-        'status' => 'Pending',
+        'status' => $request->status,
         'price' => $request->price,
         'currency' => $request->currency,
         'salesperson_id' => $request->salesperson_id,
@@ -268,7 +268,7 @@ public function store(Request $request)
             'payment_policy_id' => $request->payment_policy_id,
             'cancellation_policy_id' => $request->cancellation_policy_id,
             'notes' => $request->notes,
-            'status' => $booking->status, // keep current status
+            'status' => $request->status, // keep current status
             'price' => $request->price,
             'currency' => $request->currency,
             'salesperson_id' => $request->salesperson_id,

@@ -61,6 +61,19 @@
         </select>
     </div>
 </div>
+<div class="row">
+{{-- Booking Status --}}
+<div class="col-md-6 mb-3">
+    <label>Status</label>
+    <select name="status" class="form-control" required>
+        <option value="Pending">Pending</option>
+        <option value="Available">Available</option>
+        <option value="Booked">Booked</option>
+        <option value="Completed">Completed</option>
+        <option value="Cancelled">Cancelled</option>
+    </select>
+</div>
+</div>
 
 {{-- Inline Slot Creation --}}
 <div id="inlineSlotWrapper" class="border p-3 mb-3 d-none">
@@ -136,9 +149,16 @@
 
 {{-- Rooms --}}
 <div class="mb-3">
-    <label>Rooms</label>
-    <select name="rooms[]" id="roomSelect" class="form-control" multiple required></select>
+    <label class="fw-bold">Rooms</label>
+
+    <div id="roomMessage" class="text-muted small mb-2">
+        Please select a slot or create an inline slot and select a boat to see rooms.
+    </div>
+
+    <div id="roomWrapper" class="row g-2"></div>
 </div>
+
+
 
 {{-- Rate Plan --}}
 <div class="row">
@@ -187,12 +207,13 @@
 {{-- Guests --}}
 <div class="mb-3">
     <label>Guests</label>
-    <select name="guests[]" id="guestSelect" class="form-control" multiple>
+    <select name="guests[]" id="guestSelect" multiple>
         @foreach($guests as $guest)
             <option value="{{ $guest->id }}">{{ $guest->name }}</option>
         @endforeach
     </select>
 </div>
+
 
 <button type="button" id="addGuestBtn" class="btn btn-sm btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#guestModal">
     + Add Guest
@@ -274,123 +295,239 @@
     </div>
   </div>
 </div>
-<!-- Bootstrap CSS -->
+<!-- jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+<!-- Choices.js CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+
+<!-- Choices.js JS -->
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
+
+<!-- Bootstrap 5 -->
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
-
-<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-
-
 <script>
-const slots = @json($slots);
-const boats = @json($boats);
-let roomCaps = {};
-let maxCap = 0;
+document.addEventListener('DOMContentLoaded', function () {
 
-// Populate room capacities
-slots.forEach(s => {
-    s.boat.rooms.forEach(r => {
-        roomCaps[r.id] = r.capacity + r.extra_beds;
+    const slots = @json($slots);
+    const boats = @json($boats);
+
+    const sourceSelect      = document.getElementById('sourceSelect');
+    const agentSelect       = document.getElementById('agentSelect');
+    const slotSelect        = document.getElementById('slotSelect');
+    const boatSelect        = document.getElementById('boatSelect');
+    const inlineSlotWrapper = document.getElementById('inlineSlotWrapper');
+    const roomWrapper       = document.getElementById('roomWrapper');
+    const roomMessage       = document.getElementById('roomMessage');
+    const addGuestBtn       = document.getElementById('addGuestBtn');
+    const guestSelectEl     = document.getElementById('guestSelect');
+
+    /*
+    |--------------------------------------------------------------------------
+    | GUEST MULTISELECT
+    |--------------------------------------------------------------------------
+    */
+    const guestChoices = new Choices(guestSelectEl, {
+        removeItemButton: true,
+        searchEnabled: true,
+        shouldSort: false,
+        placeholder: true,
+        placeholderValue: 'Select guests',
     });
-});
 
-// Enable / Disable Agent field
-const sourceSelect = document.getElementById('sourceSelect');
-const agentSelect = document.getElementById('agentSelect');
-
-function toggleAgentField() {
-    if (sourceSelect.value === 'Agent') {
-        agentSelect.disabled = false;
-    } else {
-        agentSelect.value = '';
-        agentSelect.disabled = true;
+    /*
+    |--------------------------------------------------------------------------
+    | AGENT TOGGLE
+    |--------------------------------------------------------------------------
+    */
+    function toggleAgentField() {
+        agentSelect.disabled = sourceSelect.value !== 'Agent';
+        if (agentSelect.disabled) agentSelect.value = '';
     }
-}
+    toggleAgentField();
+    sourceSelect.addEventListener('change', toggleAgentField);
 
-// Init on load
-toggleAgentField();
+    /*
+    |--------------------------------------------------------------------------
+    | ROOM HELPERS
+    |--------------------------------------------------------------------------
+    */
+    function getMaxCapacity() {
+        let total = 0;
+        document.querySelectorAll('.room-check:checked').forEach(cb => {
+            total += parseInt(cb.dataset.cap);
+        });
+        return total;
+    }
 
-// On change
-sourceSelect.addEventListener('change', toggleAgentField);
+    function showRoomMessage(show) {
+        roomMessage.style.display = show ? 'block' : 'none';
+    }
 
+    /*
+    |--------------------------------------------------------------------------
+    | RENDER ROOMS
+    |--------------------------------------------------------------------------
+    */
+    function renderRooms(rooms) {
+        roomWrapper.innerHTML = '';
 
-// Show/hide inline slot creation
-const slotSelect = document.getElementById('slotSelect');
-const inlineSlotWrapper = document.getElementById('inlineSlotWrapper');
-slotSelect.onchange = function () {
-    const roomSelect = document.getElementById('roomSelect');
-    roomSelect.innerHTML = '';
+        if (!rooms || !rooms.length) {
+            showRoomMessage(true);
+            return;
+        }
 
-    const slot = slots.find(s => s.id == this.value);
+        showRoomMessage(false);
 
-    // INLINE SLOT
-    if (!slot) {
-        inlineSlotWrapper.classList.remove('d-none');
+        rooms.forEach(room => {
+            const cap = room.capacity + room.extra_beds;
+
+            roomWrapper.innerHTML += `
+                <div class="col-md-4">
+                    <label class="card p-2 h-100">
+                        <input type="checkbox"
+                               class="form-check-input me-2 room-check"
+                               data-cap="${cap}"
+                               name="rooms[]"
+                               value="${room.id}">
+                        <strong>${room.room_name}</strong><br>
+                        <small class="text-muted">Max ${cap}</small>
+                    </label>
+                </div>
+            `;
+        });
+
+        bindRoomCapacity();
+        enforceGuestLimit();
+    }
+
+    /*
+    |--------------------------------------------------------------------------
+    | CAPACITY ENFORCEMENT (AUTO DESELECT)
+    |--------------------------------------------------------------------------
+    */
+function enforceGuestLimit() {
+    const maxCap = getMaxCapacity();
+    const selected = guestChoices.getValue(true);
+
+    // No capacity → disable but KEEP options
+    if (maxCap === 0) {
+        guestChoices.removeActiveItems(); // deselect only
+        guestChoices.disable();
+        addGuestBtn.style.display = 'none';
         return;
     }
 
-    // EXISTING SLOT
-    inlineSlotWrapper.classList.add('d-none');
+    guestChoices.enable();
 
-    slot.boat.rooms.forEach(r => {
-        roomSelect.innerHTML += `
-            <option value="${r.id}">
-                ${r.room_name} (Max ${r.capacity + r.extra_beds})
-            </option>`;
-    });
-};
+    // Auto-remove extra guests if capacity reduced
+    if (selected.length > maxCap) {
+        const allowed = selected.slice(0, maxCap);
+        guestChoices.removeActiveItems();
+        allowed.forEach(val => guestChoices.setChoiceByValue(val));
+    }
 
-const boatSelect = document.getElementById('boatSelect');
-
-boatSelect.onchange = function () {
-    const roomSelect = document.getElementById('roomSelect');
-    roomSelect.innerHTML = '';
-
-    const boat = boats.find(b => b.id == this.value);
-    if (!boat || !boat.rooms) return; // 🔒 safety
-
-    boat.rooms.forEach(r => {
-        roomSelect.innerHTML += `
-            <option value="${r.id}">
-                ${r.room_name} (Max ${r.capacity + r.extra_beds})
-            </option>`;
-    });
-};
-
-
-
-
-// Limit guest additions based on room capacity
-const roomSelect = document.getElementById('roomSelect');
-const guestSelect = document.getElementById('guestSelect');
-const addGuestBtn = document.getElementById('addGuestBtn');
-
-roomSelect.onchange = guestSelect.onchange = toggleGuestLimit;
-
-function toggleGuestLimit() {
-    maxCap = [...roomSelect.selectedOptions].reduce((t,o)=>t+roomCaps[o.value],0);
-    addGuestBtn.style.display = guestSelect.selectedOptions.length >= maxCap ? 'none' : 'inline-block';
+    addGuestBtn.style.display =
+        guestChoices.getValue(true).length >= maxCap
+            ? 'none'
+            : 'inline-block';
 }
 
-$('#guestForm').submit(function(e){
-    e.preventDefault();
-    let form = $(this);
-    $.ajax({
-        url: '{{ route("admin.guests.store") }}',
-        type: 'POST',
-        data: form.serialize(),
-        success: function(guest){
-            // Add new guest to multi-select
-            $('#guestSelect').append(`<option value="${guest.id}" selected>${guest.name}</option>`);
-            $('#guestModal').modal('hide');
-            form[0].reset();
-        },
-        error: function(xhr){
-            alert('Error: ' + (xhr.responseJSON?.message || 'Failed to create guest'));
+
+    function bindRoomCapacity() {
+        document.querySelectorAll('.room-check').forEach(cb => {
+            cb.addEventListener('change', enforceGuestLimit);
+        });
+    }
+
+    guestSelectEl.addEventListener('change', enforceGuestLimit);
+
+    /*
+    |--------------------------------------------------------------------------
+    | SLOT CHANGE
+    |--------------------------------------------------------------------------
+    */
+    slotSelect.addEventListener('change', function () {
+        const slot = slots.find(s => s.id == this.value);
+
+        if (!slot) {
+            inlineSlotWrapper.classList.remove('d-none');
+            roomWrapper.innerHTML = '';
+            showRoomMessage(true);
+            enforceGuestLimit();
+            return;
+        }
+
+        inlineSlotWrapper.classList.add('d-none');
+
+        if (slot.boat && slot.boat.rooms) {
+            renderRooms(slot.boat.rooms);
         }
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | BOAT CHANGE (INLINE)
+    |--------------------------------------------------------------------------
+    */
+    boatSelect.addEventListener('change', function () {
+        const boat = boats.find(b => b.id == this.value);
+
+        if (!boat || !boat.rooms) {
+            roomWrapper.innerHTML = '';
+            showRoomMessage(true);
+            enforceGuestLimit();
+            return;
+        }
+
+        renderRooms(boat.rooms);
+    });
+
+    /*
+    |--------------------------------------------------------------------------
+    | ADD GUEST (AJAX)
+    |--------------------------------------------------------------------------
+    */
+    $('#guestForm').on('submit', function (e) {
+        e.preventDefault();
+
+        const form = $(this);
+
+        $.ajax({
+            url: '{{ route("admin.guests.store") }}',
+            method: 'POST',
+            data: form.serialize(),
+            success: function (guest) {
+
+                guestChoices.setChoices(
+                    [{ value: guest.id, label: guest.name, selected: true }],
+                    'value',
+                    'label',
+                    false
+                );
+
+                $('#guestModal').modal('hide');
+                form[0].reset();
+
+                enforceGuestLimit();
+            },
+            error: function () {
+                alert('Failed to create guest');
+            }
+        });
+    });
+
+    // Initial state
+    showRoomMessage(true);
+    guestChoices.disable();
+    addGuestBtn.style.display = 'none';
+
 });
 </script>
+
+
+
+
 @endsection
