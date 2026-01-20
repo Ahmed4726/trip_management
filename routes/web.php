@@ -42,6 +42,7 @@ use App\Http\Controllers\Admin\{
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
 
     Route::resource('regions', RegionController::class);
+    Route::resource('currencies', CurrencyController::class);
     Route::resource('ports', PortController::class);
 
     Route::resource('boats', AdminBoatController::class);

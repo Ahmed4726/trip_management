@@ -26,6 +26,7 @@
                     <th>Name</th>
                     <th>Deck</th>
                     <th>Bed Type</th>
+                    <th>Capacity</th>
                     <th>Extra Beds</th>
                     <th width="160">Actions</th>
                 </tr>
@@ -36,6 +37,7 @@
                         <td>{{ $room->room_name }}</td>
                         <td>{{ $room->deck }}</td>
                         <td>{{ $room->bed_type }}</td>
+                        <td>{{ $room->capacity }}</td>
                         <td>{{ $room->extra_beds }}</td>
                         <td>
                             <a href="{{ route('admin.rooms.edit',$room) }}"

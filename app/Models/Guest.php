@@ -14,6 +14,7 @@ class Guest extends Model
         'emergencyName', 'emergencyRelation', 'emergencyPhone',
         'guestWhatsapp', 'guestEmail',
         'image_path', 'pdf_path', 'video_path','company_id'
+
     ];
 
     // public function otherGuests()
@@ -36,5 +37,15 @@ public function otherGuests()
         return $this->belongsTo(Booking::class, 'booking_id');
     }
 
+    public function roomAssignments()
+    {
+        return $this->hasMany(BookingGuestRoom::class);
+    }
+
+    public function rooms()
+    {
+        return $this->belongsToMany(Room::class, 'booking_guest_room')
+                    ->withPivot('booking_id');
+    }
 }
 

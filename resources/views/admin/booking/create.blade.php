@@ -4,6 +4,17 @@
 <div class="container mx-2 pt-3">
 
 <h4>Create Booking</h4>
+
+@if ($errors->any())
+    <div class="alert alert-danger">
+        <ul class="mb-0">
+            @foreach ($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+    </div>
+@endif
+
         @foreach (['success','error'] as $msg)
             @if(session($msg))
                 <div class="alert alert-{{ $msg == 'success' ? 'success' : 'danger' }}">
@@ -219,6 +230,16 @@
     + Add Guest
 </button>
 
+
+{{-- Guest → Room Assignment --}}
+<div class="mb-3">
+    <label class="fw-bold">Guest Room Assignment</label>
+    <div id="guestRoomWrapper" class="row g-2 text-muted small">
+        Select rooms and guests to assign.
+    </div>
+</div>
+
+
 {{-- Notes --}}
 <div class="mb-3">
     <label>Notes</label>
@@ -371,37 +392,72 @@ document.addEventListener('DOMContentLoaded', function () {
     | RENDER ROOMS
     |--------------------------------------------------------------------------
     */
-    function renderRooms(rooms) {
-        roomWrapper.innerHTML = '';
+function renderRooms(rooms) {
+    roomWrapper.innerHTML = '';
+    selectedRooms = [];
 
-        if (!rooms || !rooms.length) {
-            showRoomMessage(true);
-            return;
-        }
-
-        showRoomMessage(false);
-
-        rooms.forEach(room => {
-            const cap = room.capacity + room.extra_beds;
-
-            roomWrapper.innerHTML += `
-                <div class="col-md-4">
-                    <label class="card p-2 h-100">
-                        <input type="checkbox"
-                               class="form-check-input me-2 room-check"
-                               data-cap="${cap}"
-                               name="rooms[]"
-                               value="${room.id}">
-                        <strong>${room.room_name}</strong><br>
-                        <small class="text-muted">Max ${cap}</small>
-                    </label>
-                </div>
-            `;
-        });
-
-        bindRoomCapacity();
-        enforceGuestLimit();
+    if (!rooms || !rooms.length) {
+        showRoomMessage(true);
+        return;
     }
+
+    showRoomMessage(false);
+
+    rooms.forEach(room => {
+        const cap = parseInt(room.max_capacity ?? room.capacity ?? 0) + parseInt(room.extra_beds);
+
+        roomWrapper.innerHTML += `
+            <div class="col-md-4">
+                <label class="card p-2 h-100">
+                    <input type="checkbox"
+                           class="form-check-input me-2 room-check"
+                           data-cap="${cap}"
+                           data-room-name="${room.room_name}"
+                           value="${room.id}"
+                           name="rooms[${room.id}]">
+                    <strong>${room.room_name}</strong><br>
+                    <small class="text-muted">Max ${cap}</small>
+                </label>
+            </div>
+        `;
+    });
+
+    bindRoomCapacity();
+    enforceGuestLimit();
+    buildGuestRoomMapping();
+}
+
+
+
+function buildGuestRoomMapping() {
+    const wrapper = document.getElementById('guestRoomWrapper');
+    wrapper.innerHTML = '';
+
+    const guests = guestChoices.getValue();
+    const rooms = [...document.querySelectorAll('.room-check:checked')];
+
+    if (!guests.length || !rooms.length) {
+        wrapper.innerHTML = '<div class="text-muted">Select rooms and guests to assign.</div>';
+        return;
+    }
+
+    guests.forEach(g => {
+        let options = rooms.map(r =>
+            `<option value="${r.value}">${r.dataset.roomName}</option>`
+        ).join('');
+
+        wrapper.innerHTML += `
+            <div class="col-md-6">
+                <label>${g.label}</label>
+                <select name="guest_rooms[${g.value}]" class="form-control" required>
+                    <option value="">-- Assign Room --</option>
+                    ${options}
+                </select>
+            </div>
+        `;
+    });
+}
+
 
     /*
     |--------------------------------------------------------------------------
@@ -443,6 +499,17 @@ function enforceGuestLimit() {
     }
 
     guestSelectEl.addEventListener('change', enforceGuestLimit);
+
+    guestSelectEl.addEventListener('change', buildGuestRoomMapping);
+
+    function bindRoomCapacity() {
+        document.querySelectorAll('.room-check').forEach(cb => {
+            cb.addEventListener('change', () => {
+                enforceGuestLimit();
+                buildGuestRoomMapping();
+            });
+        });
+    }
 
     /*
     |--------------------------------------------------------------------------

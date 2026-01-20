@@ -54,8 +54,18 @@
                        min="0">
             </div>
 
+            <div class="mb-3">
+                <label class="form-label">Capacity</label>
+                <input type="number"
+                       name="capacity"
+                       class="form-control"
+                       value="{{ old('capacity', $room->capacity) }}"
+                       min="1"
+                       required>
+            </div>
+
             <button class="btn btn-success">Update</button>
-            <a href="{{ route('admin.rooms.index',['boat_id'=>$room->boat_id]) }}"
+            <a href="{{ route('admin.rooms.index', ['boat_id' => $room->boat_id]) }}"
                class="btn btn-secondary">
                 Cancel
             </a>
@@ -64,4 +74,3 @@
     </div>
 </div>
 @endsection
-

@@ -31,7 +31,7 @@ class RoomController extends Controller
         ]);
 
         Room::create($request->only(
-            'boat_id','name','deck','bed_type','extra_beds'
+            'boat_id','name','deck','bed_type','extra_beds','capacity'
         ));
 
         Boat::where('id',$request->boat_id)
@@ -50,7 +50,7 @@ class RoomController extends Controller
     public function update(Request $request, Room $room)
     {
         $room->update($request->only(
-            'name','deck','bed_type','extra_beds'
+            'name','deck','bed_type','extra_beds','capacity'
         ));
 
         return redirect()

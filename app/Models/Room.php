@@ -33,8 +33,20 @@ class Room extends Model
 
     public function bookings()
     {
-        return $this->hasMany(Booking::class);
+        return $this->belongsToMany(Booking::class);
     }
+
+    public function guestAssignments()
+    {
+        return $this->hasMany(BookingGuestRoom::class);
+    }
+
+    public function guests()
+    {
+        return $this->belongsToMany(Guest::class, 'booking_guest_room')
+                    ->withPivot('booking_id');
+    }
+
 
     public function trips()
     {

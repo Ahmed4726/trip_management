@@ -99,21 +99,18 @@ class Booking extends Model
         return $this->belongsTo(Company::class);
     }
 
-        // ✅ ROOMS
-    public function rooms()
-    {
-        return $this->belongsToMany(
-            Room::class,
-            'booking_rooms'   // pivot table
-        );
-    }
+  public function rooms()
+{
+    return $this->belongsToMany(Room::class);
+}
 
-        // ✅ GUESTS
-    public function guests()
-    {
-        return $this->belongsToMany(
-            Guest::class,
-            'booking_guests'   // pivot table
-        );
-    }
+public function guests()
+{
+    return $this->belongsToMany(Guest::class);
+}
+
+public function guestRoomAssignments()
+{
+    return $this->hasMany(BookingGuestRoom::class);
+}
 }

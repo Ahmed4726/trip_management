@@ -127,55 +127,60 @@
 
             @can('booking')
 <li class="nav-item">
-    <a href="{{ route('admin.templates.index') }}" class="nav-link {{ request()->is('templates','templates/*') ? 'active' : '' }}">
+    <a href="{{ route('admin.templates.index') }}" class="nav-link {{ request()->is('admin/templates','admin/templates/*') ? 'active' : '' }}">
         <i class="nav-icon fas fa-file-alt"></i>
         <p>Templates</p>
     </a>
 </li>
 
 <li class="nav-item">
-    <a href="{{ route('admin.slots.index') }}" class="nav-link {{ request()->is('slots','slots/*') ? 'active' : '' }}">
+    <a href="{{ route('admin.slots.index') }}" class="nav-link {{ request()->is('admin/slots','admin/slots/*') ? 'active' : '' }}">
         <i class="nav-icon fas fa-anchor"></i>
         <p>Slots</p>
     </a>
 </li>
 
 <li class="nav-item">
-    <a href="{{ route('admin.bookings.index') }}" class="nav-link {{ request()->is('bookings','bookings/*','create-booking') ? 'active' : '' }}">
+    <a href="{{ route('admin.bookings.index') }}" class="nav-link {{ request()->is('admin/bookings','admin/bookings/*','create-booking') ? 'active' : '' }}">
         <i class="nav-icon fas fa-clipboard"></i>
         <p>Bookings</p>
     </a>
 </li>
 
 <li class="nav-item">
-    <a href="{{ route('admin.boats.index') }}" class="nav-link {{ request()->is('boats','boats/*') ? 'active' : '' }}">
+    <a href="{{ route('admin.boats.index') }}" class="nav-link {{ request()->is('admin/boats','admin/boats/*') ? 'active' : '' }}">
         <i class="nav-icon fas fa-ship"></i>
         <p>Boats</p>
     </a>
 </li>
 
 <li class="nav-item">
-    <a href="{{ route('admin.salespeople.index') }}" class="nav-link {{ request()->is('salespeople','salespeople/*') ? 'active' : '' }}">
+    <a href="{{ route('admin.salespeople.index') }}" class="nav-link {{ request()->is('admin/salespeople','admin/salespeople/*') ? 'active' : '' }}">
         <i class="nav-icon fas fa-user"></i>
         <p>Sales Persons</p>
     </a>
 </li>
 
 <li class="nav-item">
-    <a href="{{ route('admin.regions.index') }}" class="nav-link {{ request()->is('regions','regions/*') ? 'active' : '' }}">
+    <a href="{{ route('admin.regions.index') }}" class="nav-link {{ request()->is('admin/regions','admin/regions/*') ? 'active' : '' }}">
         <i class="nav-icon fas fa-map-marker-alt"></i>
         <p>Regions</p>
     </a>
 </li>
 
 <li class="nav-item">
-    <a href="{{ route('admin.ports.index') }}" class="nav-link {{ request()->is('ports','ports/*') ? 'active' : '' }}">
+    <a href="{{ route('admin.ports.index') }}" class="nav-link {{ request()->is('admin/ports','admin/ports/*') ? 'active' : '' }}">
         <i class="nav-icon fas fa-map-pin"></i>
         <p>Ports</p>
     </a>
 </li>
 
-
+<li class="nav-item">
+    <a href="{{ route('admin.currencies.index') }}" class="nav-link {{ request()->is('admin/currencies','admin/currencies/*') ? 'active' : '' }}">
+        <i class="nav-icon fas fa-dollar-sign"></i>
+        <p>Currency</p>
+    </a>
+</li>
 
             @endcan
 

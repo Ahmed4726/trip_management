@@ -46,7 +46,7 @@
     <td class="text-center">
         <!-- Trigger Modal -->
         <button type="button"
-        class="btn btn-sm btn-primary"
+        class="btn btn-sm btn-warning"
         data-toggle="modal"
         data-target="#editUserModal{{ $user->id }}"
         data-id="{{ $user->id }}"
@@ -115,7 +115,7 @@
                         <select name="company_id" class="form-control" required>
                             <option value="" disabled>Select Company</option>
                             @foreach($companies as $company)
-                                <option value="{{ $company->id }}" 
+                                <option value="{{ $company->id }}"
                                     {{ $user->company_id == $company->id ? 'selected' : '' }}>
                                     {{ $company->name }}
                                 </option>

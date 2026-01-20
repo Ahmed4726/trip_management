@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Agent, Booking, Slot, Boat, CancellationPolicy, Company, Guest, PaymentPolicy, Port, RatePlan, Region, Room, Salesperson};
+use App\Models\{Agent, Booking, Slot, Boat, BookingGuestRoom, CancellationPolicy, Company, Guest, PaymentPolicy, Port, RatePlan, Region, Room, Salesperson};
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class BookingController extends Controller
 {
@@ -39,27 +40,30 @@ class BookingController extends Controller
 
 public function store(Request $request)
 {
-    $request->validate([
+    // dd($request->rooms);
+    $validator = Validator::make($request->all(), [
         'source' => 'required|in:Direct,Agent',
         'agent_id' => 'nullable|required_if:source,Agent',
-        'rooms' => 'required|array',
-        'guests' => 'array',
+        // 'rooms' => 'required|array',
+        'guests' => 'required|array',
+        'guest_rooms' => 'required|array',
     ]);
+
+    if ($validator->fails()) {
+        return back()
+            ->withErrors($validator)
+            ->withInput();
+    }
 
     /*
     |--------------------------------------------------------------------------
-    | STEP 1: Resolve Slot (existing OR inline-created)
+    | STEP 1: Resolve Slot
     |--------------------------------------------------------------------------
     */
-
     if ($request->slot_id) {
-
-        // Existing slot
         $slot = Slot::with('boat.rooms')->findOrFail($request->slot_id);
-
     } else {
 
-        // Inline slot creation
         $request->validate([
             'boat_id' => 'required|exists:boats,id',
             'start_date' => 'required|date',
@@ -69,7 +73,6 @@ public function store(Request $request)
             'disembarkation_port_id' => 'required|exists:ports,id',
         ]);
 
-        // Collision check
         $collision = Slot::where('boat_id', $request->boat_id)
             ->where(function ($q) use ($request) {
                 $q->whereBetween('start_date', [$request->start_date, $request->end_date])
@@ -78,11 +81,10 @@ public function store(Request $request)
 
         if ($collision) {
             return back()->withErrors([
-                'start_date' => 'Slot collision detected for this boat'
+                'start_date' => 'Slot collision detected'
             ])->withInput();
         }
 
-        // Create slot
         $slot = Slot::create([
             'boat_id' => $request->boat_id,
             'region_id' => $request->region_id,
@@ -92,44 +94,46 @@ public function store(Request $request)
             'end_date' => $request->end_date,
             'status' => 'Available',
         ]);
-
-        $slot->load('boat.rooms');
     }
 
     /*
     |--------------------------------------------------------------------------
-    | STEP 2: Capacity validation
+    | STEP 2: Capacity Validation (Per Room)
     |--------------------------------------------------------------------------
     */
+    $roomCounts = [];
 
-    $rooms = Room::whereIn('id', $request->rooms)->get();
-
-    $maxCapacity = $rooms->sum(fn ($r) =>
-        $r->capacity + $r->extra_bed_capacity
-    );
-
-    $guestCount = count($request->guests ?? []);
-
-    if ($guestCount > $maxCapacity) {
-        return back()->withErrors([
-            'guests' => "Guest count exceeds room capacity ({$maxCapacity})"
-        ])->withInput();
+    foreach ($request->guest_rooms as $guestId => $roomId) {
+        $roomCounts[$roomId] = ($roomCounts[$roomId] ?? 0) + 1;
     }
 
-    $leadGuest = Guest::find($request->guests[0] ?? null);
+    $rooms = Room::whereIn('id', array_keys($roomCounts))->get()->keyBy('id');
+
+    foreach ($roomCounts as $roomId => $count) {
+        $capacity = $rooms[$roomId]->capacity + $rooms[$roomId]->extra_beds;
+        if ($count > $capacity) {
+            return back()->withErrors([
+                'guest_rooms' => "Room {$rooms[$roomId]->room_name} capacity exceeded"
+            ])->withInput();
+        }
+    }
 
     /*
     |--------------------------------------------------------------------------
     | STEP 3: Create Booking
     |--------------------------------------------------------------------------
     */
+    $leadGuest = Guest::find($request->guests[0]);
+
+    $roomIds = array_values($request->rooms);
+
     $booking = Booking::create([
         'company_id' => auth()->user()->company_id,
         'slot_id' => $slot->id,
         'boat_id' => $slot->boat_id,
-        'room_id' => $request->rooms[0], // handled in pivot
-        'guest_name' => $leadGuest?->name,
-        'guest_count' => $guestCount,
+        'room_id' => $roomIds[0],
+        'guest_name' => $leadGuest->name,
+        'guest_count' => count($request->guests),
         'source' => $request->source,
         'agent_id' => $request->agent_id,
         'rate_plan_id' => $request->rate_plan_id,
@@ -144,12 +148,19 @@ public function store(Request $request)
 
     /*
     |--------------------------------------------------------------------------
-    | STEP 4: Attach Rooms & Guests
+    | STEP 4: Attach Relations
     |--------------------------------------------------------------------------
     */
-
     $booking->rooms()->sync($request->rooms);
-    $booking->guests()->sync($request->guests ?? []);
+    $booking->guests()->sync($request->guests);
+
+    foreach ($request->guest_rooms as $guestId => $roomId) {
+        BookingGuestRoom::create([
+            'booking_id' => $booking->id,
+            'guest_id' => $guestId,
+            'room_id' => $roomId,
+        ]);
+    }
 
     return redirect()
         ->route('admin.bookings.index')
@@ -160,6 +171,8 @@ public function store(Request $request)
     {
         return view('admin.booking.edit', [
             'booking' => $booking->load(['rooms', 'guests', 'slot.boat.rooms']),
+            'bookingRoomIds' => $booking->rooms->pluck('id'),
+            'guestRoomMapping' => $booking->guestRoomAssignments()->pluck('room_id', 'guest_id'),
             'slots' => Slot::with('boat.rooms')->get(),
             'agents' => Agent::orderBy('first_name')->get(),
             'guests' => Guest::orderBy('name')->get(),
