@@ -148,14 +148,15 @@
         <input type="number" name="price" step="0.01" class="form-control" required>
     </div>
 
-    <div class="col-md-6 mb-3">
-        <label>Currency</label>
-        <select name="currency" class="form-control" required>
-            <option value="USD">USD – Dollar ($)</option>
-            <option value="EUR">EUR – Euro (€)</option>
-            <option value="IDR">IDR – Indonesian Rupiah (Rp)</option>
-        </select>
-    </div>
+<div class="col-md-6 mb-3">
+    <label>Currency</label>
+    <select name="currency" class="form-control" required>
+        @foreach($currencies as $curr)
+            <option value="{{ $curr->id }}" {{ isset($booking) && $booking->currency == $curr->id ? 'selected' : '' }}>{{ $curr->symbol }} - {{ $curr->name }}</option>
+        @endforeach
+    </select>
+</div>
+
 </div>
 
 {{-- Rooms --}}

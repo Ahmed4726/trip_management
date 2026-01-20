@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\{Agent, Booking, Slot, Boat, BookingGuestRoom, CancellationPolicy, Company, Guest, PaymentPolicy, Port, RatePlan, Region, Room, Salesperson};
+use App\Models\{Agent, Booking, Slot, Boat, BookingGuestRoom, CancellationPolicy, Company, Currency, Guest, PaymentPolicy, Port, RatePlan, Region, Room, Salesperson};
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -31,6 +31,8 @@ class BookingController extends Controller
             'regions' => Region::all(),
             'ports' => Port::all(),
             'salespersons' => Salesperson::orderBy('name')->get(),
+            'currencies' => Currency::all(), // fetch all currencies from DB
+
 
             'companies' => auth()->user()->hasRole('admin')
                 ? Company::all()
@@ -181,6 +183,7 @@ public function store(Request $request)
             'cancellationPolicies' => CancellationPolicy::with('rules')->get(),
             'boats' => Boat::withCount('rooms')->get(),
             'regions' => Region::all(),
+            'currencies' => Currency::all(), // fetch all currencies from DB
             'ports' => Port::all(),
             'salespersons' => Salesperson::orderBy('name')->get(),
             'companies' => auth()->user()->hasRole('admin')

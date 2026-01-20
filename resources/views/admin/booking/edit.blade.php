@@ -151,11 +151,14 @@
         </div>
         <div class="col-md-6 mb-3">
             <label>Currency</label>
-            <select name="currency" class="form-control" required>
-                @foreach(['USD','EUR','IDR'] as $curr)
-                    <option value="{{ $curr }}" {{ $booking->currency == $curr ? 'selected' : '' }}>{{ $curr }}</option>
-                @endforeach
-            </select>
+                <select name="currency" class="form-control" required>
+                    @foreach($currencies as $curr)
+                        <option value="{{ $curr->id }}" {{ $booking->currency == $curr->id ? 'selected' : '' }}>
+                            {{ $curr->symbol }} - {{ $curr->name }}
+                        </option>
+                    @endforeach
+                </select>
+
         </div>
     </div>
 

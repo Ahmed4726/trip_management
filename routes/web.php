@@ -35,6 +35,7 @@ use App\Http\Controllers\Admin\{
     PortController,
     SlotController,
     BookingController as AdminBookingController,
+    CurrencyController,
     TemplateController,
     SalespersonController
 };
