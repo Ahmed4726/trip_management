@@ -63,6 +63,7 @@ class SlotController extends Controller
             'end_date' => $request->end_date,
             'notes' => $request->notes,
             'created_from_template_id' => $request->template_id ?? null,
+            'duration_nights' => $request->duration_nights ?? null,
             'company_id' => $request->company_id,
         ]);
 
@@ -75,6 +76,14 @@ class SlotController extends Controller
 
     public function edit(Slot $slot)
     {
+        $slot->load([
+            'boats',
+            'template',
+            'region',
+            'departurePort',
+            'arrivalPort',
+        ]);
+
         return view('admin.slots.edit', [
             'slot' => $slot,
             'boats' => Boat::with('rooms')->get(),
@@ -87,31 +96,43 @@ class SlotController extends Controller
         ]);
     }
 
+
     public function update(Request $request, Slot $slot)
     {
+        // dd($request->all());
         $status = $request->status;
-        if (in_array($request->slot_type,['Maintenance','Docking'])) $status='Blocked';
+        if (in_array($request->slot_type,['Maintenance','Docking'])) {
+            $status = 'Blocked';
+        }
 
-        if(in_array($status,['Blocked','On-Hold']) && empty($request->notes))
-            return back()->withErrors(['notes'=>'Notes are required for this status.'])->withInput();
+        if (in_array($status,['Blocked','On-Hold']) && empty($request->notes)) {
+            return back()->withErrors([
+                'notes' => 'Notes are required for this status.'
+            ])->withInput();
+        }
 
         $slot->update([
             'slot_type' => $request->slot_type,
             'status' => $status,
-            'boat_id' => $request->boat_id,
             'region_id' => $request->region_id,
             'departure_port_id' => $request->departure_port_id,
             'arrival_port_id' => $request->arrival_port_id,
             'start_date' => $request->start_date,
             'end_date' => $request->end_date,
-            'available_rooms' => $request->rooms ?? [],
+            'duration_nights' => $request->duration_nights ?? null,
             'notes' => $request->notes,
             'created_from_template_id' => $request->template_id ?? null,
             'company_id' => $request->company_id,
         ]);
 
-        return redirect()->route('admin.slots.index')->with('success','Slot updated successfully.');
+        // ✅ Sync vessels correctly
+        $slot->boats()->sync($request->boats_allowed);
+
+        return redirect()
+            ->route('admin.slots.index')
+            ->with('success','Slot updated successfully.');
     }
+
 
     public function destroy(Slot $slot)
     {

@@ -3,7 +3,8 @@
 <div class="content-wrapper">
 <div class="container pt-3">
 
-<h4>Edit Slot #{{ $slot->id }}</h4>
+<h4>Edit Slot</h4>
+
 @if ($errors->any())
     <div class="alert alert-danger">
         <ul class="mb-0">
@@ -13,188 +14,199 @@
         </ul>
     </div>
 @endif
-<form method="POST" action="{{ route('admin.slots.update', $slot) }}">
+
+<form method="POST" action="{{ route('admin.slots.update', $slot->id) }}">
 @csrf
 @method('PUT')
 
-{{-- Template Dropdown --}}
 <div class="mb-3">
     <label>Template (optional)</label>
-    <select id="templateSelect" name="template_id" class="form-control">
+    <select id="templateSelect" class="form-control" name="template_id">
         <option value="">-- Select Template --</option>
         @foreach($templates as $template)
-            <option value="{{ $template->id }}" data-json='@json($template)' {{ $slot->created_from_template_id==$template->id?'selected':'' }}>
+            <option value="{{ $template->id }}"
+                data-json='@json($template)'
+                {{ old('template_id', $slot->created_from_template_id) == $template->id ? 'selected' : '' }}>
                 {{ $template->product_name }} ({{ $template->product_type }})
             </option>
         @endforeach
     </select>
 </div>
 
-{{-- Slot Type & Status --}}
 <div class="row mb-3">
     <div class="col-md-6">
         <label>Slot Type</label>
         <select name="slot_type" class="form-control" required>
             @foreach(['Open Trip','Private Charter','Maintenance','Docking','Crossing'] as $type)
-                <option value="{{ $type }}" {{ old('slot_type', $slot->slot_type)==$type?'selected':'' }}>{{ $type }}</option>
-            @endforeach
-        </select>
-    </div>
-    <div class="col-md-6">
-        <label>Status</label>
-        <select name="status" class="form-control" required>
-            @foreach(['Available','On Hold','Blocked'] as $status)
-                <option value="{{ $status }}" {{ old('status', $slot->status)==$status?'selected':'' }}>{{ $status }}</option>
-            @endforeach
-        </select>
-    </div>
-</div>
-
-{{-- Boat & Region --}}
-<div class="row mb-3">
-    <div class="col-md-6">
-        <label>Boat</label>
-        <select name="boat_id" class="form-control" id="boatSelect" required>
-            <option value="">-- Select Boat --</option>
-            @foreach($boats as $boat)
-                <option value="{{ $boat->id }}" {{ old('boat_id', $slot->boat_id)==$boat->id?'selected':'' }}>
-                    {{ $boat->name }} ({{ $boat->rooms->count() }} rooms)
+                <option value="{{ $type }}"
+                    {{ old('slot_type', $slot->slot_type) == $type ? 'selected' : '' }}>
+                    {{ $type }}
                 </option>
             @endforeach
         </select>
     </div>
+
     <div class="col-md-6">
-        <label>Region</label>
-        <select name="region_id" class="form-control" required>
-            @foreach($regions as $region)
-                <option value="{{ $region->id }}" {{ old('region_id', $slot->region_id)==$region->id?'selected':'' }}>{{ $region->name }}</option>
+        <label>Status</label>
+        <select name="status" class="form-control" required>
+            @foreach(['Available','On-Hold','Blocked'] as $status)
+                <option value="{{ $status }}"
+                    {{ old('status', $slot->status) == $status ? 'selected' : '' }}>
+                    {{ $status }}
+                </option>
             @endforeach
         </select>
     </div>
 </div>
 
-{{-- Departure & Arrival Ports --}}
+<div class="row mb-3">
+    <div class="col-md-6">
+        <label>Vessels</label>
+        <select name="boats_allowed[]" id="boatsAllowed" class="form-control" multiple required>
+            @foreach($boats as $boat)
+                <option value="{{ $boat->id }}"
+                    {{ in_array($boat->id, old('boats_allowed', $slot->boats->pluck('id')->toArray())) ? 'selected' : '' }}>
+                    {{ $boat->name }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+
+    <div class="col-md-6">
+        <label>Region</label>
+        <select name="region_id" class="form-control" required>
+            @foreach($regions as $region)
+                <option value="{{ $region->id }}"
+                    {{ old('region_id', $slot->region_id) == $region->id ? 'selected' : '' }}>
+                    {{ $region->name }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+</div>
+
 <div class="row mb-3">
     <div class="col-md-6">
         <label>Departure Port</label>
         <select name="departure_port_id" class="form-control" required>
             @foreach($ports as $port)
-                <option value="{{ $port->id }}" {{ old('departure_port_id', $slot->departure_port_id)==$port->id?'selected':'' }}>{{ $port->name }}</option>
+                <option value="{{ $port->id }}"
+                    {{ old('departure_port_id', $slot->departure_port_id) == $port->id ? 'selected' : '' }}>
+                    {{ $port->name }}
+                </option>
             @endforeach
         </select>
     </div>
+
     <div class="col-md-6">
         <label>Arrival Port</label>
         <select name="arrival_port_id" class="form-control" required>
             @foreach($ports as $port)
-                <option value="{{ $port->id }}" {{ old('arrival_port_id', $slot->arrival_port_id)==$port->id?'selected':'' }}>{{ $port->name }}</option>
+                <option value="{{ $port->id }}"
+                    {{ old('arrival_port_id', $slot->arrival_port_id) == $port->id ? 'selected' : '' }}>
+                    {{ $port->name }}
+                </option>
             @endforeach
         </select>
     </div>
 </div>
 
-{{-- Start & End Dates --}}
 <div class="row mb-3">
     <div class="col-md-6">
         <label>Start Date</label>
-        <input type="date" name="start_date" class="form-control"
-            value="{{ old('start_date', $slot->start_date ? $slot->start_date->format('Y-m-d') : '') }}" required>
+        <input type="date" name="start_date" id="startDate"
+               class="form-control"
+               value="{{ old('start_date', $slot->start_date) }}" required>
     </div>
-    <div class="col-md-6">
+
+    <div class="col-md-3">
+        <label>Duration (Nights)</label>
+        <input type="number" name="duration_nights" id="durationNights"
+               class="form-control"
+               value="{{ $slot->duration_nights }}"
+               min="0" required>
+    </div>
+
+    <div class="col-md-3">
         <label>End Date</label>
-        <input type="date" name="end_date" class="form-control"
-            value="{{ old('end_date', $slot->end_date ? $slot->end_date->format('Y-m-d') : '') }}" required>
+        <input type="date" name="end_date" id="endDate"
+               class="form-control"
+               value="{{ old('end_date', $slot->end_date) }}" readonly>
     </div>
 </div>
 
-
-{{-- Available Rooms --}}
 <div class="mb-3">
-    <label>Available Rooms</label>
-    <select name="rooms[]" class="form-control" multiple id="roomsSelect">
-        @foreach($slot->boat->rooms as $room)
-            <option value="{{ $room->id }}" {{ in_array($room->id, old('rooms', $slot->available_rooms ?? [])) ? 'selected' : '' }}>
-                {{ $room->room_name }}
-            </option>
-        @endforeach
-    </select>
-</div>
-
-{{-- Notes --}}
-<div class="row">
-<div class="col-md-6 mb-3">
     <label>Notes</label>
     <textarea name="notes" class="form-control">{{ old('notes', $slot->notes) }}</textarea>
 </div>
 
-{{-- Company --}}
-@if (Auth::user()->hasRole('admin'))
-    <div class="col-md-6 mb-3">
-        <label>Company</label>
-        <select name="company_id" class="form-control" required>
-            @foreach($companies as $company)
-                <option value="{{ $company->id }}">{{ $company->name }}</option>
-            @endforeach
-        </select>
-    </div>
-@endif
-
-<button class="btn btn-success">Update Slot</button>
+<button class="btn btn-primary">Update Slot</button>
 <a href="{{ route('admin.slots.index') }}" class="btn btn-secondary">Cancel</a>
 
 </form>
 </div>
 </div>
 
+<!-- Choices.js -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+<script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+
 <script>
-const boats = @json($boats);
-const roomsSelect = document.getElementById('roomsSelect');
+document.addEventListener('DOMContentLoaded', function(){
 
-// Filter rooms when boat changes
-document.getElementById('boatSelect').addEventListener('change', function() {
-    const boatId = parseInt(this.value);
-    roomsSelect.innerHTML = '';
-    if (!boatId) return;
-    const boat = boats.find(b => b.id === boatId);
-    boat.rooms.forEach(r => {
-        const opt = document.createElement('option');
-        opt.value = r.id;
-        opt.textContent = r.room_name;
-        opt.selected = true;
-        roomsSelect.appendChild(opt);
+    const vesselsSelect = document.getElementById('boatsAllowed');
+    const vesselsChoices = new Choices(vesselsSelect, {
+        removeItemButton: true,
+        searchEnabled: true,
+        shouldSort: false,
+        placeholder: true,
+        placeholderValue: 'Select vessels'
     });
-});
 
-// Template auto-fill
-document.getElementById('templateSelect').addEventListener('change', function () {
-    const opt = this.selectedOptions[0];
-    if (!opt || !opt.dataset.json) return;
-    const data = JSON.parse(opt.dataset.json);
+    const startInput = document.getElementById('startDate');
+    const durationInput = document.getElementById('durationNights');
+    const endInput = document.getElementById('endDate');
 
-    // Region
-    document.querySelector('[name=region_id]').value = data.region_id;
-
-    // Boat & Rooms
-    if (data.vessels_allowed.length) {
-        document.querySelector('[name=boat_id]').value = data.vessels_allowed[0];
-        document.querySelector('#boatSelect').dispatchEvent(new Event('change'));
+    function calculateEndDate(){
+        if(!startInput.value || durationInput.value === '') return;
+        const startDate = new Date(startInput.value);
+        const nights = parseInt(durationInput.value);
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + nights);
+        endInput.valueAsDate = endDate;
     }
 
-    // Ports
-    if (data.departure_ports.length) document.querySelector('[name=departure_port_id]').value = data.departure_ports[0];
-    if (data.arrival_ports.length) document.querySelector('[name=arrival_port_id]').value = data.arrival_ports[0];
+    startInput.addEventListener('change', calculateEndDate);
+    durationInput.addEventListener('input', calculateEndDate);
+    calculateEndDate();
 
-    // Slot Type
-    document.querySelector('[name=slot_type]').value = data.product_type;
+    // Template auto-fill
+    document.getElementById('templateSelect').addEventListener('change', function () {
+        const opt = this.selectedOptions[0];
+        if (!opt || !opt.dataset.json) return;
+        const data = JSON.parse(opt.dataset.json);
 
-    // Duration → calculate end_date
-    const startInput = document.querySelector('[name=start_date]');
-    const endInput = document.querySelector('[name=end_date]');
-    if (startInput.value) {
-        const start = new Date(startInput.value);
-        start.setDate(start.getDate() + data.duration_days);
-        endInput.valueAsDate = start;
-    }
+        if(data.region_id) document.querySelector('[name=region_id]').value = data.region_id;
+
+        vesselsChoices.removeActiveItems();
+        if(data.vessels_allowed?.length){
+            data.vessels_allowed.forEach(id => vesselsChoices.setChoiceByValue(String(id)));
+        }
+
+        if(data.departure_ports?.length)
+            document.querySelector('[name=departure_port_id]').value = data.departure_ports[0];
+
+        if(data.arrival_ports?.length)
+            document.querySelector('[name=arrival_port_id]').value = data.arrival_ports[0];
+
+        if(data.duration_nights){
+            durationInput.value = data.duration_nights;
+            calculateEndDate();
+        }
+
+        if(data.product_type)
+            document.querySelector('[name=slot_type]').value = data.product_type;
+    });
 });
 </script>
 @endsection

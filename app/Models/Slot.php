@@ -22,6 +22,7 @@ class Slot extends Model
         'notes',
         'created_from_template_id',
         'company_id',
+        'duration_nights',
     ];
 
     protected $casts = [
