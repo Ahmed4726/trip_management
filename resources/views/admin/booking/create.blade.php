@@ -327,10 +327,32 @@ function renderAssignedGuests(selectedGuests) {
         span.className = 'badge bg-primary me-1 mb-1';
         span.style.cursor = 'pointer';
         span.textContent = opt.text + ' ×';
-        span.addEventListener('click', () => {
+span.addEventListener('click', () => {
+    Swal.fire({
+        title: 'Remove guest?',
+        text: `Are you sure you want to remove ${opt.text} from this room?`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, remove',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
             choices.removeActiveItemsByValue(opt.value);
             updateRoomState();
-        });
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Removed',
+                text: `${opt.text} has been removed.`,
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+    });
+});
+
         assignedDiv.appendChild(span);
     });
 }

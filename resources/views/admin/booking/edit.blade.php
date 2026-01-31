@@ -343,9 +343,22 @@ document.addEventListener('DOMContentLoaded', function () {
                         span.style.cursor = 'pointer';
                         span.textContent = guest.name + ' ×';
                         span.addEventListener('click', () => {
-                            choices.removeActiveItemsByValue(id);
-                            updateRoomState();
+                            Swal.fire({
+                                title: 'Remove Guest?',
+                                text: `Are you sure you want to remove ${guest.name} from this room?`,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#d33',
+                                cancelButtonColor: '#6c757d',
+                                confirmButtonText: 'Yes, remove'
+                            }).then((result) => {
+                                if (result.isConfirmed) {
+                                    choices.removeActiveItemsByValue(id);
+                                    updateRoomState();
+                                }
+                            });
                         });
+
                         assignedDiv.appendChild(span);
                     });
 

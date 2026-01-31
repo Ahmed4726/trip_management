@@ -213,14 +213,14 @@
               </li>
             @endcan
 
-            {{-- @can('guests')
+            @can('guests')
               <li class="nav-item">
-                <a href="/guests" class="nav-link {{ request()->is('guests','guest/*') ? 'active' : '' }}">
+                <a href="{{ route('admin.guests.index') }}" class="nav-link {{ request()->is('admin/guests','admin/guests/*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-user-friends"></i>
                     <p>Guests</p>
                 </a>
             </li>
-            @endcan --}}
+            @endcan
 
             {{-- @can('boats')
               <li class="nav-item">

@@ -53,13 +53,14 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
 
     Route::resource('slots', SlotController::class);
     Route::resource('bookings', AdminBookingController::class);
+    Route::resource('guests', GuestController::class);
     Route::post('guests', [GuestController::class, 'store'])->name('guests.store');
 
     Route::resource('salespeople', SalespersonController::class)->middleware('auth');
 
 });
 
-    Route::post('/guests', [GuestController::class, 'store'])->name('guests.store');
+    Route::post('guests', [GuestController::class, 'store'])->name('guests.store');
 
 Route::domain('{slug}.' . env('DOMAIN_NAME'))->middleware(['tenantresolver'])->group(function () {
 // Public routes
@@ -132,9 +133,19 @@ Route::middleware('auth')->group(function () {
     // ================== Guests ==================
     Route::middleware(['role:admin|sales|companies'])->group(function () {
         Route::get('/guests', [GuestController::class, 'guest_index'])->name('guest.index');
-        Route::post('/guest-store', [GuestController::class, 'store'])->name('guest.store');
-        Route::get('/guest/{id}', [GuestController::class, 'show_guest'])->name('guest.show');
-        Route::get('/guest/{id}/pdf', [GuestController::class, 'download_pdf'])->name('guest.download.pdf');
+
+        Route::get('/guests/create', [GuestController::class, 'create'])
+            ->name('guest.create');
+
+        Route::post('/guest-store', [GuestController::class, 'store'])
+            ->name('guest.store');
+
+        Route::get('/guests/{guest}/edit', [GuestController::class, 'edit'])
+            ->name('guest.edit');
+
+        Route::post('/guests/{guest}/update', [GuestController::class, 'update'])
+            ->name('guest.update');
+
     });
 
     // ================== Bookings ==================
@@ -315,13 +326,6 @@ Route::middleware('auth')->group(function () {
         Route::delete('finances/{id}', [FinanceController::class, 'destroy_finance'])->name('finances.destroy');
     });
 
-    // ================== Guests ==================
-    Route::middleware(['role:admin|sales'])->group(function () {
-        Route::get('/guests', [GuestController::class, 'guest_index'])->name('guest.index');
-        Route::post('/guest-store', [GuestController::class, 'store'])->name('guest.store');
-        Route::get('/guest/{id}', [GuestController::class, 'show_guest'])->name('guest.show');
-        Route::get('/guest/{id}/pdf', [GuestController::class, 'download_pdf'])->name('guest.download.pdf');
-    });
 
     // ================== Bookings ==================
     Route::middleware(['role:admin|sales'])->group(function () {

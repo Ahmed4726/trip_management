@@ -70,7 +70,7 @@
 <div class="row mb-3">
     <div class="col-md-6">
         <label>Departure Ports</label>
-        <select name="departure_ports[]" class="form-control" multiple>
+        <select name="departure_ports[]" class="form-control">
             @foreach($ports as $port)
                 <option value="{{ $port->id }}">{{ $port->name }}</option>
             @endforeach
@@ -78,7 +78,7 @@
     </div>
     <div class="col-md-6">
         <label>Arrival Ports</label>
-        <select name="arrival_ports[]" class="form-control" multiple>
+        <select name="arrival_ports[]" class="form-control">
             @foreach($ports as $port)
                 <option value="{{ $port->id }}">{{ $port->name }}</option>
             @endforeach
