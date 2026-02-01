@@ -30,21 +30,30 @@
 <div class="row">
 <div class="col-md-6 mb-3">
     <label>Slot</label>
-    <select id="slotSelect" name="slot_id" class="form-control">
-        <option value="1">-- Select Slot (or create inline) --</option>
-        @foreach($slots as $slot)
-            <option value="{{ $slot['id'] }}" data-json='@json($slot)'>
-                @if(!empty($slot['boats']) && count($slot['boats']) > 1)
-                    {{ implode(', ', array_map(fn($b) => $b['name'], $slot['boats'])) }}
-                @elseif(!empty($slot['boat']))
-                    {{ $slot['boat']['name'] }}
-                @else
-                    -
-                @endif
-                | {{ \Carbon\Carbon::parse($slot['start_date'])->format('d-m-Y') }} → {{ \Carbon\Carbon::parse($slot['end_date'])->format('d-m-Y') }}
-            </option>
-        @endforeach
-    </select>
+<select id="slotSelect" name="slot_id" class="form-control">
+    <option value="12">-- Select Slot --</option>
+
+    @foreach($slots as $slot)
+        <option value="{{ $slot['id'] }}" data-json='@json($slot)'>
+
+            {{-- Multiple or single boats via boats[] --}}
+            @if(!empty($slot['boats']) && count($slot['boats']) >= 1)
+                {{ collect($slot['boats'])->pluck('name')->join(', ') }}
+
+            {{-- Legacy single boat --}}
+            @elseif(!empty($slot['boat']))
+                {{ $slot['boat']['name'] }}
+
+            @else
+                -
+            @endif
+
+            | {{ \Carbon\Carbon::parse($slot['start_date'])->format('d-m-Y') }}
+            → {{ \Carbon\Carbon::parse($slot['end_date'])->format('d-m-Y') }}
+        </option>
+    @endforeach
+</select>
+
 </div>
 
 {{-- Source --}}
@@ -277,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function(){
                     <select multiple class="form-control room-guests mt-2"
                         name="guest_rooms[${room.id}][]"
                         data-cap="${cap}"
-                        ${optionalRooms ? '' : 'required'}></select>
+                        ${optionalRooms ? '' : ''}></select>
                     <div class="assigned-guests mt-1 text-muted"></div>
                     <div class="room-full text-danger mt-1" style="display:none;">Room is full!</div>
                 </label>
