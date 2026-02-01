@@ -114,26 +114,36 @@
 <div class="row mb-3">
     <div class="col-md-6">
         <label>Start Date</label>
-        <input type="date" name="start_date" id="startDate"
+        <input type="date"
+               name="start_date"
+               id="startDate"
                class="form-control"
-               value="{{ old('start_date', $slot->start_date) }}" required>
+               value="{{ old('start_date', optional($slot->start_date)->format('Y-m-d')) }}"
+               required>
     </div>
 
     <div class="col-md-3">
         <label>Duration (Nights)</label>
-        <input type="number" name="duration_nights" id="durationNights"
+        <input type="number"
+               name="duration_nights"
+               id="durationNights"
                class="form-control"
-               value="{{ $slot->duration_nights }}"
-               min="0" required>
+               value="{{ old('duration_nights', $slot->duration_nights) }}"
+               min="0"
+               required>
     </div>
 
     <div class="col-md-3">
         <label>End Date</label>
-        <input type="date" name="end_date" id="endDate"
+        <input type="date"
+               name="end_date"
+               id="endDate"
                class="form-control"
-               value="{{ old('end_date', $slot->end_date) }}" readonly>
+               value="{{ old('end_date', optional($slot->end_date)->format('Y-m-d')) }}"
+               readonly>
     </div>
 </div>
+
 
 <div class="mb-3">
     <label>Notes</label>
