@@ -301,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <select multiple class="form-control room-guests mt-2"
                             name="guest_rooms[${room.id}][]"
                             data-cap="${cap}"
-                            ${optionalRooms ? '' : 'required'}>
+                            ${optionalRooms ? '' : ''}>
                         </select>
                         <div class="assigned-guests mt-1 text-muted"></div>
                         <div class="room-full text-danger mt-1" style="display:none;">Room is full!</div>
