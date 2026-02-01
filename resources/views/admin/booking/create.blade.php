@@ -31,16 +31,23 @@
 <div class="col-md-6 mb-3">
     <label>Slot</label>
 <select id="slotSelect" name="slot_id" class="form-control">
-    <option value="12">-- Select Slot --</option>
+    <option value="">-- Select Slot --</option>
 
     @foreach($slots as $slot)
-        <option value="{{ $slot['id'] }}" data-json='@json($slot)'>
+        @php
+            $isBooked = in_array($slot['id'], $bookedSlotIds);
+        @endphp
 
-            {{-- Multiple or single boats via boats[] --}}
+        <option value="{{ $slot['id'] }}"
+                data-json='@json($slot)'
+                @if($isBooked) disabled style="color: gray;" @endif
+        >
+
+            {{-- Multiple boats --}}
             @if(!empty($slot['boats']) && count($slot['boats']) >= 1)
                 {{ collect($slot['boats'])->pluck('name')->join(', ') }}
 
-            {{-- Legacy single boat --}}
+            {{-- Single boat (legacy) --}}
             @elseif(!empty($slot['boat']))
                 {{ $slot['boat']['name'] }}
 
@@ -50,9 +57,14 @@
 
             | {{ \Carbon\Carbon::parse($slot['start_date'])->format('d-m-Y') }}
             → {{ \Carbon\Carbon::parse($slot['end_date'])->format('d-m-Y') }}
+
+            @if($isBooked)
+                (Already Booked)
+            @endif
         </option>
     @endforeach
 </select>
+
 
 </div>
 

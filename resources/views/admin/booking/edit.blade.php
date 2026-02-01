@@ -31,24 +31,37 @@
 <div class="row">
 <div class="col-md-6 mb-3">
     <label>Slot</label>
-    <select id="slotSelect" name="slot_id" class="form-control">
-        <option value="">-- Select Slot (or create inline) --</option>
-        @foreach($slots as $slot)
-            <option value="{{ $slot['id'] }}"
-                data-json='@json($slot)'
-                {{ old('slot_id', $booking->slot_id) == $slot['id'] ? 'selected' : '' }}>
-                @if(!empty($slot['boats']) && count($slot['boats']) > 1)
-                    {{ implode(', ', array_map(fn($b) => $b['name'], $slot['boats'])) }}
-                @elseif(!empty($slot['boat']))
-                    {{ $slot['boat']['name'] }}
-                @else
-                    -
-                @endif
-                | {{ \Carbon\Carbon::parse($slot['start_date'])->format('d-m-Y') }} → {{ \Carbon\Carbon::parse($slot['end_date'])->format('d-m-Y') }}
-            </option>
-        @endforeach
-    </select>
+
+    @php
+        $currentSlot = collect($slots)->firstWhere('id', $booking->slot_id);
+        $slotName = '-';
+
+        if ($currentSlot) {
+            // Show multiple boats
+            if (!empty($currentSlot['boats']) && count($currentSlot['boats']) >= 1) {
+                $slotName = collect($currentSlot['boats'])->pluck('name')->join(', ');
+            }
+            // Single boat (legacy)
+            elseif (!empty($currentSlot['boat'])) {
+                $slotName = $currentSlot['boat']['name'];
+            }
+
+            // Add dates
+            $slotName .= ' | ' . \Carbon\Carbon::parse($currentSlot['start_date'])->format('d-m-Y')
+                        . ' → ' . \Carbon\Carbon::parse($currentSlot['end_date'])->format('d-m-Y');
+
+            // Indicate current
+            $slotName .= ' (Current)';
+        }
+    @endphp
+
+    {{-- Disabled input showing current slot --}}
+    <input type="text" class="form-control" value="{{ $slotName }}" disabled>
+
+    {{-- Hidden input to submit slot_id --}}
+    <input type="hidden" name="slot_id" value="{{ $booking->slot_id }}">
 </div>
+
 
 {{-- Source --}}
 <div class="col-md-6 mb-3">
