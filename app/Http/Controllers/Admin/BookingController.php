@@ -427,9 +427,9 @@ class BookingController extends Controller
     public function destroy(Booking $booking)
     {
         // Prevent deletion if slot already started
-        if ($booking->slot && Carbon::parse($booking->slot->start_date)->isPast()) {
-            return back()->withErrors(['booking' => 'Cannot delete booking because the slot has already started.']);
-        }
+        // if ($booking->slot && Carbon::parse($booking->slot->start_date)->isPast()) {
+        //     return back()->withErrors(['error' => 'Cannot delete booking because the slot has already started.']);
+        // }
 
         $booking->delete();
         return back()->with('success', 'Booking deleted successfully.');
