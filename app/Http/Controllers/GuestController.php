@@ -10,7 +10,7 @@ class GuestController extends Controller
     // INDEX
     public function index()
     {
-        $guests = Guest::latest()->simplePaginate(10);
+        $guests = Guest::latest()->Paginate(10);
         return view('admin.guests.index', compact('guests'));
     }
 

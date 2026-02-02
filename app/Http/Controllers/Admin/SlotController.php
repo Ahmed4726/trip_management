@@ -52,6 +52,19 @@ class SlotController extends Controller
         if(in_array($status,['Blocked','On-Hold']) && empty($request->notes))
             return back()->withErrors(['notes'=>'Notes are required for this status.'])->withInput();
 
+        // ❌ BOAT + DATE COLLISION CHECK
+        if ($this->hasBoatDateCollision(
+                $request->boats_allowed,
+                $request->start_date,
+                $request->end_date
+            )) {
+            return back()->withErrors([
+                'boats_allowed' => 'Collision detected: a selected vessel already has a slot between '
+                    . $request->start_date . ' and ' . $request->end_date
+            ])->withInput();
+        }
+
+
         // Create Slot
         $slot = Slot::create([
             'slot_type' => $request->slot_type,
@@ -111,6 +124,19 @@ class SlotController extends Controller
             ])->withInput();
         }
 
+        // ❌ BOAT + DATE COLLISION CHECK (ignore current slot)
+        if ($this->hasBoatDateCollision(
+                $request->boats_allowed,
+                $request->start_date,
+                $request->end_date,
+                $slot->id
+            )) {
+            return back()->withErrors([
+                'boats_allowed' => 'Collision detected: a selected vessel already has a slot between '
+                    . $request->start_date . ' and ' . $request->end_date
+            ])->withInput();
+        }
+
         $slot->update([
             'slot_type' => $request->slot_type,
             'status' => $status,
@@ -142,4 +168,24 @@ class SlotController extends Controller
         $slot->delete();
         return back()->with('success','Slot deleted successfully.');
     }
+
+    private function hasBoatDateCollision(
+        array $boatIds,
+        string $startDate,
+        string $endDate,
+        ?int $ignoreSlotId = null
+    ): bool {
+        return Slot::whereHas('boats', function ($q) use ($boatIds) {
+                $q->whereIn('boats.id', $boatIds);
+            })
+            ->when($ignoreSlotId, fn ($q) =>
+                $q->where('id', '!=', $ignoreSlotId)
+            )
+            ->where(function ($q) use ($startDate, $endDate) {
+                $q->whereDate('start_date', '<=', $endDate)
+                ->whereDate('end_date', '>=', $startDate);
+            })
+            ->exists();
+    }
+
 }

@@ -23,7 +23,9 @@
     <select id="templateSelect" class="form-control" name="template_id">
         <option value="">-- Select Template --</option>
         @foreach($templates as $template)
-            <option value="{{ $template->id }}" data-json='@json($template)'>
+            <option value="{{ $template->id }}"
+                {{ old('template_id') == $template->id ? 'selected' : '' }}
+                data-json='@json($template)'>
                 {{ $template->product_name }} ({{ $template->product_type }})
             </option>
         @endforeach
@@ -54,17 +56,25 @@
         <label>Vessels</label>
         <select name="boats_allowed[]" id="boatsAllowed" class="form-control" multiple required>
             @foreach($boats as $boat)
-                <option value="{{ $boat->id }}">{{ $boat->name }}</option>
+                <option value="{{ $boat->id }}"
+                    {{ collect(old('boats_allowed', []))->contains($boat->id) ? 'selected' : '' }}>
+                    {{ $boat->name }}
+                </option>
             @endforeach
         </select>
+
     </div>
     <div class="col-md-6">
         <label>Region</label>
         <select name="region_id" class="form-control" required>
             @foreach($regions as $region)
-                <option value="{{ $region->id }}">{{ $region->name }}</option>
+                <option value="{{ $region->id }}"
+                    {{ old('region_id') == $region->id ? 'selected' : '' }}>
+                    {{ $region->name }}
+                </option>
             @endforeach
         </select>
+
     </div>
 </div>
 
@@ -73,7 +83,10 @@
         <label>Departure Port</label>
         <select name="departure_port_id" class="form-control" required>
             @foreach($ports as $port)
-                <option value="{{ $port->id }}">{{ $port->name }}</option>
+                <option value="{{ $port->id }}"
+                    {{ old('departure_port_id') == $port->id ? 'selected' : '' }}>
+                    {{ $port->name }}
+                </option>
             @endforeach
         </select>
     </div>
@@ -81,9 +94,12 @@
         <label>Arrival Port</label>
         <select name="arrival_port_id" class="form-control" required>
             @foreach($ports as $port)
-                <option value="{{ $port->id }}">{{ $port->name }}</option>
+                <option value="{{ $port->id }}"
+                    {{ old('arrival_port_id') == $port->id ? 'selected' : '' }}>
+                    {{ $port->name }}
+                </option>
             @endforeach
-        </select>
+</select>
     </div>
 </div>
 
@@ -118,9 +134,13 @@
 <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', function(){
-    // Initialize Vessels multiselect
+document.addEventListener('DOMContentLoaded', function () {
+
+    /* ===============================
+       Choices.js Init
+    =============================== */
     const vesselsSelect = document.getElementById('boatsAllowed');
+
     const vesselsChoices = new Choices(vesselsSelect, {
         removeItemButton: true,
         searchEnabled: true,
@@ -129,13 +149,27 @@ document.addEventListener('DOMContentLoaded', function(){
         placeholderValue: 'Select vessels'
     });
 
-    // Auto-calculate End Date
+    /* ===============================
+       Restore OLD vessels (Laravel)
+    =============================== */
+    const oldVessels = @json(old('boats_allowed', []));
+
+    if (oldVessels.length) {
+        vesselsChoices.removeActiveItems();
+        oldVessels.forEach(id => {
+            vesselsChoices.setChoiceByValue(id.toString());
+        });
+    }
+
+    /* ===============================
+       Auto-calc End Date
+    =============================== */
     const startInput = document.getElementById('startDate');
     const durationInput = document.getElementById('durationNights');
     const endInput = document.getElementById('endDate');
 
-    function calculateEndDate(){
-        if(!startInput.value || !durationInput.value) return;
+    function calculateEndDate() {
+        if (!startInput.value || !durationInput.value) return;
         const startDate = new Date(startInput.value);
         const nights = parseInt(durationInput.value);
         const endDate = new Date(startDate);
@@ -146,45 +180,43 @@ document.addEventListener('DOMContentLoaded', function(){
     startInput.addEventListener('change', calculateEndDate);
     durationInput.addEventListener('input', calculateEndDate);
 
-    // Template auto-fill
+    // Restore end date on validation error
+    calculateEndDate();
+
+    /* ===============================
+       Template Auto-fill
+    =============================== */
     document.getElementById('templateSelect').addEventListener('change', function () {
         const opt = this.selectedOptions[0];
         if (!opt || !opt.dataset.json) return;
+
         const data = JSON.parse(opt.dataset.json);
 
-        // Region
-        if(data.region_id) document.querySelector('[name=region_id]').value = data.region_id;
+        if (data.region_id)
+            document.querySelector('[name=region_id]').value = data.region_id;
 
-        // Vessels multiselect
-        if(data.vessels_allowed && data.vessels_allowed.length){
-            vesselsChoices.removeActiveItems(); // clear previous selections
-            data.vessels_allowed.forEach(id => {
-                const option = vesselsSelect.querySelector(`option[value='${id}']`);
-                if(option) vesselsChoices.setChoiceByValue(option.value);
-            });
-        } else {
+        if (data.vessels_allowed?.length) {
             vesselsChoices.removeActiveItems();
+            data.vessels_allowed.forEach(id => {
+                vesselsChoices.setChoiceByValue(id.toString());
+            });
         }
 
-        // Departure Port
-        if(data.departure_ports && data.departure_ports.length){
+        if (data.departure_ports?.length)
             document.querySelector('[name=departure_port_id]').value = data.departure_ports[0];
-        }
 
-        // Arrival Port
-        if(data.arrival_ports && data.arrival_ports.length){
+        if (data.arrival_ports?.length)
             document.querySelector('[name=arrival_port_id]').value = data.arrival_ports[0];
-        }
 
-        // Duration → calculate end date
-        if(data.duration_nights){
+        if (data.duration_nights) {
             durationInput.value = data.duration_nights;
             calculateEndDate();
         }
 
-        // Slot Type
-        if(data.product_type) document.querySelector('[name=slot_type]').value = data.product_type;
+        if (data.product_type)
+            document.querySelector('[name=slot_type]').value = data.product_type;
     });
+
 });
 </script>
 @endsection
