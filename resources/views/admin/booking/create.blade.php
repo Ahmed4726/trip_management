@@ -35,22 +35,19 @@
 
     @foreach($slots as $slot)
         @php
-            $isBooked = in_array($slot['id'], $bookedSlotIds);
+            $isDisabled = in_array($slot['id'], $bookedSlotIds);
+            $slotType = $slot['slot_type'] ?? 'Open Trip';
         @endphp
 
         <option value="{{ $slot['id'] }}"
                 data-json='@json($slot)'
-                @if($isBooked) disabled style="color: gray;" @endif
+                @if($isDisabled) disabled style="color: gray;" @endif
         >
-
-            {{-- Multiple boats --}}
+            {{-- Boat names --}}
             @if(!empty($slot['boats']) && count($slot['boats']) >= 1)
                 {{ collect($slot['boats'])->pluck('name')->join(', ') }}
-
-            {{-- Single boat (legacy) --}}
             @elseif(!empty($slot['boat']))
                 {{ $slot['boat']['name'] }}
-
             @else
                 -
             @endif
@@ -58,12 +55,13 @@
             | {{ \Carbon\Carbon::parse($slot['start_date'])->format('d-m-Y') }}
             → {{ \Carbon\Carbon::parse($slot['end_date'])->format('d-m-Y') }}
 
-            @if($isBooked)
-                (Already Booked)
+            @if($isDisabled && $slotType === 'Private Charter')
+                (Booked)
             @endif
         </option>
     @endforeach
 </select>
+
 
 
 </div>
@@ -272,12 +270,11 @@ document.addEventListener('DOMContentLoaded', function(){
     const choicesInstances = [];
 
     // Render rooms grouped by boat
- function renderRoomsByBoat(slot){
+function renderRoomsByBoat(slot){
     roomWrapper.innerHTML = '';
     let roomsExist = false;
 
-    // Check if Private Charter
-    const optionalRooms = slot.slot_type === 'Private Charter';
+    const isPrivate = slot.slot_type === 'Private Charter';
 
     function addRooms(boat){
         if(!boat.rooms || !boat.rooms.length) return;
@@ -289,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function(){
         roomWrapper.appendChild(boatHeader);
 
         boat.rooms.forEach(room=>{
-            const cap = parseInt(room.capacity||0)+parseInt(room.extra_beds||0);
+            const cap = parseInt(room.capacity||0) + parseInt(room.extra_beds||0);
             const div = document.createElement('div');
             div.className='col-md-4';
             div.innerHTML=`
@@ -299,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function(){
                     <select multiple class="form-control room-guests mt-2"
                         name="guest_rooms[${room.id}][]"
                         data-cap="${cap}"
-                        ${optionalRooms ? '' : ''}></select>
+                        ${isPrivate ? '' : ''}></select>
                     <div class="assigned-guests mt-1 text-muted"></div>
                     <div class="room-full text-danger mt-1" style="display:none;">Room is full!</div>
                 </label>
@@ -324,77 +321,75 @@ document.addEventListener('DOMContentLoaded', function(){
                 placeholderValue:'Select guests'
             });
 
-function updateRoomState() {
-    const selectedGuests = Array.from(select.selectedOptions);
-    const selectedCount = selectedGuests.length;
+            function updateRoomState() {
+                const selectedGuests = Array.from(select.selectedOptions);
+                const selectedCount = selectedGuests.length;
 
-    renderAssignedGuests(selectedGuests);
+                renderAssignedGuests(selectedGuests);
 
-    if (selectedCount >= cap) {
-        select.closest('label').querySelector('.choices').style.display = 'none';
-        fullMsg.style.display = 'block';
-    } else {
-        select.closest('label').querySelector('.choices').style.display = 'block';
-        fullMsg.style.display = 'none';
-    }
-}
-
-// Render assigned guests with remove button
-function renderAssignedGuests(selectedGuests) {
-    const assignedDiv = div.querySelector('.assigned-guests');
-    assignedDiv.innerHTML = '';
-
-    selectedGuests.forEach(opt => {
-        const span = document.createElement('span');
-        span.className = 'badge bg-primary me-1 mb-1';
-        span.style.cursor = 'pointer';
-        span.textContent = opt.text + ' ×';
-        span.addEventListener('click', () => {
-            Swal.fire({
-                title: 'Remove guest?',
-                text: `Are you sure you want to remove ${opt.text} from this room?`,
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#d33',
-                cancelButtonColor: '#3085d6',
-                confirmButtonText: 'Yes, remove',
-                cancelButtonText: 'Cancel'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    choices.removeActiveItemsByValue(opt.value);
-                    updateRoomState();
-
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Removed',
-                        text: `${opt.text} has been removed.`,
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
+                if (!isPrivate && selectedCount >= cap) {
+                    select.closest('label').querySelector('.choices').style.display = 'none';
+                    fullMsg.style.display = 'block';
+                } else {
+                    select.closest('label').querySelector('.choices').style.display = 'block';
+                    fullMsg.style.display = 'none';
                 }
-            });
-        });
+            }
 
-        assignedDiv.appendChild(span);
-    });
-}
+            function renderAssignedGuests(selectedGuests) {
+                const assignedDiv = div.querySelector('.assigned-guests');
+                assignedDiv.innerHTML = '';
 
+                selectedGuests.forEach(opt => {
+                    const span = document.createElement('span');
+                    span.className = 'badge bg-primary me-1 mb-1';
+                    span.style.cursor = 'pointer';
+                    span.textContent = opt.text + ' ×';
+                    span.addEventListener('click', () => {
+                        Swal.fire({
+                            title: 'Remove guest?',
+                            text: `Are you sure you want to remove ${opt.text}?`,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#3085d6',
+                            confirmButtonText: 'Yes, remove',
+                            cancelButtonText: 'Cancel'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                choices.removeActiveItemsByValue(opt.value);
+                                updateRoomState();
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Removed',
+                                    text: `${opt.text} has been removed.`,
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                });
+                            }
+                        });
+                    });
+                    assignedDiv.appendChild(span);
+                });
+            }
 
             select.addEventListener('change',updateRoomState);
             select.addEventListener('removeItem',updateRoomState);
         });
     }
 
-    // Old single boat
     if(slot.boat_id && slot.boat) addRooms(slot.boat);
+    if(slot.boats && slot.boats.length) slot.boats.forEach(addRooms);
 
-    // Multiple boats
-    if(slot.boats && slot.boats.length){
-        slot.boats.forEach(addRooms);
+    if(isPrivate){
+        roomMessage.textContent = 'Private Charter: rooming optional.';
+        roomMessage.style.display = 'block';
+    } else {
+        roomMessage.textContent = 'Please assign all rooms for Open Trip.';
+        roomMessage.style.display = roomsExist ? 'none' : 'block';
     }
+}
 
-    roomMessage.style.display = roomsExist ? 'none' : 'block';
-    }
 
 
     // On slot change
