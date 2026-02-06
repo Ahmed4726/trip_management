@@ -35,12 +35,22 @@ class GuestController extends Controller
             'dob'        => 'nullable|date',
         ]);
 
-        Guest::create($data);
+        $guest = Guest::create($data);
 
+        // Check if AJAX request
+        if ($request->ajax()) {
+            return response()->json([
+                'id' => $guest->id,
+                'name' => $guest->first_name . ' ' . $guest->last_name,
+            ]);
+        }
+
+        // Fallback for normal form submission
         return redirect()
             ->route('admin.guests.index')
             ->with('success', 'Guest created successfully');
     }
+
 
     // EDIT
     public function edit(Guest $guest)

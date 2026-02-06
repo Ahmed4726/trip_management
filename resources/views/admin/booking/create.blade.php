@@ -247,9 +247,12 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function(){
+
     const slots = @json($slots);
-    const boats = @json($boats);
     const guests = @json($guests);
+    const roomUsageBySlot = @json($roomUsageBySlot);
+    const choicesInstances = []; // declare globally
+
 
     const slotSelect = document.getElementById('slotSelect');
     const roomWrapper = document.getElementById('roomWrapper');
@@ -258,7 +261,9 @@ document.addEventListener('DOMContentLoaded', function(){
     const sourceSelect = document.getElementById('sourceSelect');
     const inlineSlotWrapper = document.getElementById('inlineSlotWrapper');
 
-    // Enable/Disable Agent select based on Source
+    /* -----------------------------
+       SOURCE / AGENT TOGGLE
+    ------------------------------ */
     function toggleAgent(){
         agentSelect.disabled = sourceSelect.value !== 'Agent';
         if(agentSelect.disabled) agentSelect.value = '';
@@ -266,39 +271,58 @@ document.addEventListener('DOMContentLoaded', function(){
     toggleAgent();
     sourceSelect.addEventListener('change', toggleAgent);
 
-    // Keep Choices instances for all room selects
-    const choicesInstances = [];
-
-    // Render rooms grouped by boat
-function renderRoomsByBoat(slot){
+    /* -----------------------------
+       RENDER ROOMS
+    ------------------------------ */
+function renderRoomsByBoat(slot) {
     roomWrapper.innerHTML = '';
-    let roomsExist = false;
 
     const isPrivate = slot.slot_type === 'Private Charter';
 
-    function addRooms(boat){
-        if(!boat.rooms || !boat.rooms.length) return;
-        roomsExist = true;
+    if (isPrivate) {
+        roomMessage.textContent = 'Private Charter: room assignment is optional.';
+    } else {
+        roomMessage.textContent = 'Open Trip: assign any available rooms.';
+    }
+    roomMessage.style.display = 'block';
+
+    function addRooms(boat) {
+        if (!boat.rooms || !boat.rooms.length) return;
 
         const boatHeader = document.createElement('div');
         boatHeader.className = 'col-12 mb-2';
         boatHeader.innerHTML = `<strong>Boat: ${boat.name}</strong>`;
         roomWrapper.appendChild(boatHeader);
 
-        boat.rooms.forEach(room=>{
-            const cap = parseInt(room.capacity||0) + parseInt(room.extra_beds||0);
+        boat.rooms.forEach(room => {
+            const cap = parseInt(room.capacity || 0) + parseInt(room.extra_beds || 0);
+            const usage = roomUsageBySlot?.[slot.id]?.[room.id] || {};
+            const used = usage.used || 0;
+            const remaining = cap - used;
+            const assignedGuests = usage.guests || [];
+
             const div = document.createElement('div');
-            div.className='col-md-4';
-            div.innerHTML=`
+            div.className = 'col-md-4';
+            div.innerHTML = `
                 <label class="card p-2 h-100">
                     <strong>${room.room_name}</strong><br>
-                    <small class="text-muted">Max ${cap}</small>
-                    <select multiple class="form-control room-guests mt-2"
+                    <small class="text-muted">
+                        ${remaining > 0 ? `Remaining ${remaining} of ${cap}` : 'Fully booked'}
+                    </small>
+
+                    <select
+                        multiple
+                        class="form-control room-guests mt-2"
                         name="guest_rooms[${room.id}][]"
                         data-cap="${cap}"
-                        ${isPrivate ? '' : ''}></select>
+                        data-remaining="${remaining}"
+                        ${(!isPrivate && remaining <= 0) ? 'disabled' : ''}
+                    ></select>
+
                     <div class="assigned-guests mt-1 text-muted"></div>
-                    <div class="room-full text-danger mt-1" style="display:none;">Room is full!</div>
+                    <div class="room-full text-danger mt-1" style="display:${remaining <= 0 ? 'block' : 'none'};">
+                        Room fully booked for this trip
+                    </div>
                 </label>
             `;
             roomWrapper.appendChild(div);
@@ -306,170 +330,211 @@ function renderRoomsByBoat(slot){
             const select = div.querySelector('select.room-guests');
             const fullMsg = div.querySelector('.room-full');
 
-            // Add guests
-            guests.forEach(g=>{
-                const opt=document.createElement('option');
-                opt.value=g.id; opt.text=g.name;
+            // Add all guests to select, preselect already assigned ones
+            guests.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g.id;
+                opt.text = ((g.first_name || '') + ' ' + (g.last_name || '')).trim() || g.name;
+
+                // Preselect if guest is already assigned
+                if (assignedGuests.includes(g.id)) {
+                    opt.selected = true;
+                }
+
                 select.add(opt);
             });
 
-            const choices = new Choices(select,{
-                removeItemButton:true,
-                searchEnabled:true,
-                shouldSort:false,
-                placeholder:true,
-                placeholderValue:'Select guests'
+            // Initialize Choices.js
+            const choices = new Choices(select, {
+                removeItemButton: true,
+                searchEnabled: true,
+                shouldSort: false,
+                placeholder: true,
+                placeholderValue: 'Select guests'
             });
 
+            // Disable select if fully booked
+            if (!isPrivate && remaining <= 0) {
+                select.disabled = true;
+            }
+
+            choicesInstances.push(choices);
+
+            function renderAssignedGuests() {
+                const container = div.querySelector('.assigned-guests');
+                container.innerHTML = '';
+
+                // Show all selected guests as badges
+                Array.from(select.selectedOptions).forEach(opt => {
+                    const guestId = parseInt(opt.value, 10);
+                    const isPreAssigned = assignedGuests.includes(guestId);
+
+                    const badge = document.createElement('span');
+                    badge.className = 'badge ' + (isPreAssigned ? 'bg-secondary' : 'bg-primary') + ' me-1 mb-1';
+                    badge.style.cursor = 'pointer';
+                    badge.textContent = opt.text + ' ×';
+
+                    // Only allow removing if room has capacity or private
+                    if (remaining > 0 || isPrivate) {
+                        badge.onclick = () => {
+                            Swal.fire({
+                                title: 'Remove guest?',
+                                text: opt.text,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonText: 'Remove'
+                            }).then(res => {
+                                if (res.isConfirmed) {
+                                    choices.removeActiveItemsByValue(opt.value);
+                                    updateRoomState();
+                                }
+                            });
+                        };
+                    }
+
+                    container.appendChild(badge);
+                });
+            }
+
             function updateRoomState() {
-                const selectedGuests = Array.from(select.selectedOptions);
-                const selectedCount = selectedGuests.length;
+                renderAssignedGuests();
 
-                renderAssignedGuests(selectedGuests);
+                const selectedCount = select.selectedOptions.length;
 
-                if (!isPrivate && selectedCount >= cap) {
+                if (!isPrivate && selectedCount >= remaining) {
                     select.closest('label').querySelector('.choices').style.display = 'none';
                     fullMsg.style.display = 'block';
                 } else {
                     select.closest('label').querySelector('.choices').style.display = 'block';
-                    fullMsg.style.display = 'none';
+                    if (remaining > 0) fullMsg.style.display = 'none';
                 }
             }
 
-            function renderAssignedGuests(selectedGuests) {
-                const assignedDiv = div.querySelector('.assigned-guests');
-                assignedDiv.innerHTML = '';
+            // Initial render
+            updateRoomState();
 
-                selectedGuests.forEach(opt => {
-                    const span = document.createElement('span');
-                    span.className = 'badge bg-primary me-1 mb-1';
-                    span.style.cursor = 'pointer';
-                    span.textContent = opt.text + ' ×';
-                    span.addEventListener('click', () => {
-                        Swal.fire({
-                            title: 'Remove guest?',
-                            text: `Are you sure you want to remove ${opt.text}?`,
-                            icon: 'warning',
-                            showCancelButton: true,
-                            confirmButtonColor: '#d33',
-                            cancelButtonColor: '#3085d6',
-                            confirmButtonText: 'Yes, remove',
-                            cancelButtonText: 'Cancel'
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                choices.removeActiveItemsByValue(opt.value);
-                                updateRoomState();
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Removed',
-                                    text: `${opt.text} has been removed.`,
-                                    timer: 1500,
-                                    showConfirmButton: false
-                                });
-                            }
-                        });
+            select.addEventListener('change', () => {
+                if (!isPrivate && select.selectedOptions.length > remaining) {
+                    choices.removeActiveItemsByValue(
+                        select.selectedOptions[select.selectedOptions.length - 1].value
+                    );
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Room Full',
+                        text: 'This room has no remaining capacity.'
                     });
-                    assignedDiv.appendChild(span);
-                });
-            }
-
-            select.addEventListener('change',updateRoomState);
-            select.addEventListener('removeItem',updateRoomState);
+                }
+                updateRoomState();
+            });
         });
     }
 
-    if(slot.boat_id && slot.boat) addRooms(slot.boat);
-    if(slot.boats && slot.boats.length) slot.boats.forEach(addRooms);
-
-    if(isPrivate){
-        roomMessage.textContent = 'Private Charter: rooming optional.';
-        roomMessage.style.display = 'block';
-    } else {
-        roomMessage.textContent = 'Please assign all rooms for Open Trip.';
-        roomMessage.style.display = roomsExist ? 'none' : 'block';
-    }
+    if (slot.boat) addRooms(slot.boat);
+    if (slot.boats && slot.boats.length) slot.boats.forEach(addRooms);
 }
 
 
 
-    // On slot change
+
+
+    /* -----------------------------
+       SLOT CHANGE
+    ------------------------------ */
     slotSelect.addEventListener('change', function(){
-        const slot = slots.find(s=>s.id==this.value);
+        const slot = slots.find(s => s.id == this.value);
+
         if(!slot){
             inlineSlotWrapper.classList.remove('d-none');
-            roomWrapper.innerHTML='';
-            roomMessage.style.display='block';
+            roomWrapper.innerHTML = '';
+            roomMessage.style.display = 'block';
             return;
         }
+
         inlineSlotWrapper.classList.add('d-none');
         renderRoomsByBoat(slot);
     });
 
-    // Add Guest via modal
-    $('#guestForm').on('submit', function(e){
-        e.preventDefault();
-        const form = $(this);
 
-        $.ajax({
-            url: '{{ route("admin.guests.store") }}',
-            method: 'POST',
-            data: form.serialize(),
-            success: function(guest){
-                guests.push(guest);
+   // Add Guest via modal
+$('#guestForm').on('submit', function (e) {
+    e.preventDefault();
 
-                // Add new guest to all Choices selects dynamically
-                choicesInstances.forEach(instance=>{
-                    instance.setChoices([{
-                        value: guest.id,
-                        label: guest.name,
-                        selected: false,
-                        disabled: false
-                    }], 'value', 'label', false);
-                });
+    const form = $(this);
 
-                $('#guestModal').modal('hide');
-                form[0].reset();
+    $.ajax({
+        url: '{{ route("admin.guests.store") }}',
+        method: 'POST',
+        data: form.serialize(),
 
-                // SweetAlert notification
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Guest Added',
-                    text: `${guest.name} has been added successfully.`,
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-            },
-            error: function(xhr){
-                let msg = 'Failed to create guest';
-                if(xhr.responseJSON && xhr.responseJSON.errors){
-                    msg = Object.values(xhr.responseJSON.errors).flat().join('\n');
-                }
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: msg
-                });
+        success: function (guest) {
+            guests.push(guest);
+
+            choicesInstances.forEach(instance => {
+                instance.setChoices(
+                    [
+                        {
+                            value: String(guest.id),
+                            label: guest.name,
+                            selected: false,
+                            disabled: false
+                        }
+                    ],
+                    'value',
+                    'label',
+                    false // append, do not replace
+                );
+            });
+
+            $('#guestModal').modal('hide');
+            form[0].reset();
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Guest Added',
+                text: `${guest.name} has been added successfully.`,
+                timer: 2000,
+                showConfirmButton: false
+            });
+        },
+
+        error: function (xhr) {
+            let msg = 'Failed to create guest';
+
+            if (xhr.responseJSON && xhr.responseJSON.errors) {
+                msg = Object.values(xhr.responseJSON.errors).flat().join('\n');
             }
-        });
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: msg
+            });
+        }
     });
+});
 
-    roomMessage.style.display='block';
+roomMessage.style.display = 'block';
 
-    // Price USD
+    /* -----------------------------
+       PRICE USD
+    ------------------------------ */
     const priceInput = document.getElementById('price');
     const currencySelect = document.getElementById('currency');
     const priceUsdInput = document.getElementById('price_usd');
+
     function updateUSD(){
         const rate = parseFloat(currencySelect.selectedOptions[0].dataset.rate);
-        const price = parseFloat(priceInput.value)||0;
-        priceUsdInput.value=(price*rate).toFixed(2);
+        const price = parseFloat(priceInput.value) || 0;
+        priceUsdInput.value = (price * rate).toFixed(2);
     }
+
     priceInput.addEventListener('input', updateUSD);
     currencySelect.addEventListener('change', updateUSD);
     updateUSD();
+
 });
-
-
-
 </script>
+
+
+
 @endsection
