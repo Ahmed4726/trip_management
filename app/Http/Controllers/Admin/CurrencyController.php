@@ -55,4 +55,17 @@ class CurrencyController extends Controller
         $currency->delete();
         return redirect()->route('admin.currencies.index')->with('success', 'Currency deleted successfully.');
     }
+
+    public function updateRate(Request $request, Currency $currency)
+    {
+        $request->validate([
+            'rate' => 'required|numeric|min:0',
+        ]);
+
+        $currency->rate = $request->rate;
+        $currency->save();
+
+        return redirect()->back()->with('success', 'Currency rate updated successfully!');
+    }
+
 }

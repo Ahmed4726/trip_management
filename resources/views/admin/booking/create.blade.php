@@ -102,10 +102,9 @@
     <label>Status</label>
     <select name="status" class="form-control" required>
         <option value="Pending">Pending</option>
-        <option value="Available">Available</option>
-        <option value="Booked">Booked</option>
-        <option value="Completed">Completed</option>
-        <option value="Cancelled">Cancelled</option>
+        <option value="DP Paid">DP Paid</option>
+        <option value="Waiting List">Waiting List</option>
+        <option value="Canceled">Canceled</option>
     </select>
 </div>
 </div>
@@ -145,7 +144,7 @@
         <select id="currency" name="currency" class="form-control" required>
             @foreach($currencies as $curr)
                 <option value="{{ $curr->id }}" data-rate="{{ $curr->rate }}" {{ old('currency')==$curr->id?'selected':'' }}>
-                    {{ $curr->symbol }} - {{ $curr->name }}
+                    {{ $curr->symbol }} - {{ $curr->name }} Rate: {{ $curr->rate }} USD
                 </option>
             @endforeach
         </select>
@@ -444,7 +443,7 @@ function renderRoomsByBoat(slot) {
         const slot = slots.find(s => s.id == this.value);
 
         if(!slot){
-            inlineSlotWrapper.classList.remove('d-none');
+            // inlineSlotWrapper.classList.remove('d-none');
             roomWrapper.innerHTML = '';
             roomMessage.style.display = 'block';
             return;

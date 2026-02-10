@@ -188,4 +188,11 @@ class SlotController extends Controller
             ->exists();
     }
 
+        public function show(Slot $slot)
+        {
+            $slot->load(['boats','template','region','departurePort','arrivalPort','bookings']);
+
+            return view('admin.slots.show', compact('slot'));
+        }
+
 }

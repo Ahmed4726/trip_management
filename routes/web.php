@@ -56,6 +56,9 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::resource('guests', GuestController::class);
     Route::post('guests', [GuestController::class, 'store'])->name('guests.store');
 
+    Route::put('currencies/{currency}/rate', [CurrencyController::class, 'updateRate'])->name('currencies.updateRate');
+
+
     Route::resource('salespeople', SalespersonController::class)->middleware('auth');
 
 });
