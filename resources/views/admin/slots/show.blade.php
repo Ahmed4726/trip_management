@@ -44,6 +44,8 @@
         <tr>
             <th>ID</th>
             <th>Guest Name</th>
+            <th>Room(s)</th>
+            <th>Pax</th>
             <th>Status</th>
             <th>Price (USD)</th>
             <th>Actions</th>
@@ -54,6 +56,31 @@
             <tr>
                 <td>{{ $booking->id }}</td>
                 <td>{{ $booking->guest_name }}</td>
+
+                {{-- Rooms --}}
+                <td>
+                    @php
+                        // Get all rooms assigned via BookingGuestRoom
+                        $assignedRooms = $booking->guestRoomAssignments->pluck('room.room_name')->unique();
+                        // Include single room if exists
+                        if($booking->room) $assignedRooms->push($booking->room->room_name);
+                    @endphp
+                    {{ $assignedRooms->join(', ') ?: '-' }}
+                </td>
+
+                {{-- Pax (Total Guests) --}}
+                <td>
+    @php
+        $pax = collect($booking->guestRoomAssignments)->count();
+        if(!$pax) {
+            $pax = collect($booking->guests)->count() ?: 1;
+        }
+    @endphp
+    {{ $pax }}
+</td>
+
+
+                {{-- Status --}}
                 <td>
                     @if($booking->status == 'DP Paid')
                         <span class="badge bg-success">DP Paid</span>
@@ -63,6 +90,7 @@
                         <span class="badge bg-danger">Canceled</span>
                     @endif
                 </td>
+
                 <td>${{ $booking->price }}</td>
                 <td>
                     <a href="{{ route('admin.bookings.edit', $booking) }}" class="btn btn-sm btn-warning">Edit</a>
@@ -70,17 +98,18 @@
             </tr>
         @empty
             <tr>
-                <td colspan="5" class="text-center">No bookings found for this slot.</td>
+                <td colspan="7" class="text-center">No bookings found for this slot.</td>
             </tr>
         @endforelse
     </tbody>
     <tfoot>
         <tr>
-            <th colspan="3" class="text-end">Total Price:</th>
+            <th colspan="5" class="text-end">Total Price:</th>
             <th colspan="2">${{ $slot->bookings->sum('price') }}</th>
         </tr>
     </tfoot>
 </table>
+
 
 </div>
 </div>
