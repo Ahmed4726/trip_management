@@ -51,6 +51,8 @@ Route::get('/about', [HomeController::class, 'about']);
 Route::get('/trips', [HomeController::class, 'trips']);
 Route::get('/blog', [HomeController::class, 'blog']);
 Route::get('/contact', [HomeController::class, 'contact']);
+                Route::get('/dashboard', [CalendarController::class, 'fleet'])->name('dashboard');
+
 
 /*
 |--------------------------------------------------------------------------
@@ -71,21 +73,6 @@ Route::prefix('public')->name('public.')->group(function () {
 */
 Route::get('guest/form/{token}', [GuestController::class, 'show'])->name('guest.form');
 Route::post('guest/form/{token}', [GuestController::class, 'submit'])->name('guest.form.submit');
-
-/*
-|--------------------------------------------------------------------------
-| Tenant Routes
-|--------------------------------------------------------------------------
-*/
-Route::domain('{slug}.' . env('DOMAIN_NAME'))
-    ->middleware('tenantresolver')
-    ->group(function () {
-
-        /*
-        |--------------------------------------------------------------------------
-        | Authenticated Users
-        |--------------------------------------------------------------------------
-        */
         Route::middleware('auth')->group(function () {
 
             /* Profile */
@@ -116,6 +103,7 @@ Route::domain('{slug}.' . env('DOMAIN_NAME'))
                         'templates'  => TemplateController::class,
                         'bookings'   => AdminBookingController::class,
                         'salespeople'=> SalespersonController::class,
+                        'guests'     => GuestController::class,
                     ]);
 
                     Route::put('currencies/{currency}/rate', [CurrencyController::class, 'updateRate'])
@@ -140,7 +128,11 @@ Route::domain('{slug}.' . env('DOMAIN_NAME'))
                 Route::get('roles-permissions', [RolePermissionController::class, 'index'])->name('roles.permissions.index');
                 Route::post('roles-permissions/{role}', [RolePermissionController::class, 'update'])->name('roles.permissions.update');
 
-                Route::resource('users', AdminController::class)->except('show');
+                Route::get('/users', [AdminController::class, 'index'])->name('users.index');
+                Route::get('/create-user', [AdminController::class, 'create'])->name('users.create');
+                Route::post('/store-user', [AdminController::class, 'store'])->name('users.store');
+                Route::post('users/{id}', [AdminController::class, 'update'])->name('users.update');
+                Route::delete('users/{id}', [AdminController::class, 'destroy'])->name('users.destroy');
             });
 
             /*
@@ -173,7 +165,7 @@ Route::domain('{slug}.' . env('DOMAIN_NAME'))
             |--------------------------------------------------------------------------
             */
             Route::middleware('role:admin|super-admin')->group(function () {
-                Route::resource('companies', CompanyController::class);
+                Route::resource('company', CompanyController::class);
             });
 
             /*
@@ -236,7 +228,24 @@ Route::domain('{slug}.' . env('DOMAIN_NAME'))
             |--------------------------------------------------------------------------
             */
             Route::get('audits', [AuditController::class, 'index'])->name('audit.index');
+
         });
-    });
+
+        /*
+        |--------------------------------------------------------------------------
+        | Tenant Routes
+        |--------------------------------------------------------------------------
+        */
+        Route::domain('{slug}.' . env('DOMAIN_NAME'))
+            ->middleware('tenantresolver')
+            ->group(function () {
+
+                /*
+                |--------------------------------------------------------------------------
+                | Authenticated Users
+                |--------------------------------------------------------------------------
+                */
+
+            });
 
 require __DIR__ . '/auth.php';

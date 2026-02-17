@@ -11,7 +11,7 @@ use App\Models\Company;
 class CompanyController extends Controller
 {
     // Companies
-    public function create_company()
+    public function create()
     {
         return view('admin.companies.create');
     }
@@ -36,20 +36,20 @@ class CompanyController extends Controller
 
 
 
-      public function company_index()
+    public function index()
     {
         $companies = Company::all();
         return view('admin.companies.index', compact('companies'));
     }
 
-     public function show_company($id)
+     public function show($id)
     {
-        
+
         $company = Company::findOrFail($id);
         return view('admin.companies.detail', compact('company'));
     }
 
-    public function update_company(Request $request, $id)
+    public function update(Request $request, $id)
     {
         $company = Company::findOrFail($id);
 
@@ -69,7 +69,7 @@ class CompanyController extends Controller
             ->with('success', 'Company updated successfully.');
     }
 
-    public function destroy_company($id)
+    public function destroy($id)
     {
         $company = Company::findOrFail($id);
         $company->delete();

@@ -5,7 +5,7 @@
 
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2 class="h4">Audit & Logging</h2>
-            <a href="{{ route('boat.index') }}" class="btn btn-secondary">Back</a>
+            {{-- <a href="{{ route('boat.index') }}" class="btn btn-secondary">Back</a> --}}
         </div>
 
         <div class="card">
@@ -41,17 +41,27 @@
                                 @endif
                             </td>
                             <td>{{ $audit->user?->name ?? 'System' }}</td>
-                            <td>
+                           <td>
                                 @if(is_array($audit->changes))
                                     <ul class="mb-0">
                                         @foreach($audit->changes as $key => $value)
-                                            <li><strong>{{ $key }}:</strong> {{ $value }}</li>
+                                            <li>
+                                                <strong>{{ $key }}:</strong>
+
+                                                @if(is_array($value))
+                                                    <pre class="mb-0">{{ json_encode($value, JSON_PRETTY_PRINT) }}</pre>
+                                                @else
+                                                    {{ $value }}
+                                                @endif
+
+                                            </li>
                                         @endforeach
                                     </ul>
                                 @else
                                     {{ $audit->changes }}
                                 @endif
                             </td>
+
                             <td>{{ $audit->created_at->format('Y-m-d H:i:s') }}</td>
                         </tr>
                         @empty
