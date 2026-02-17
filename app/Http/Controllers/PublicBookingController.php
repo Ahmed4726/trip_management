@@ -10,24 +10,24 @@ use Illuminate\Http\Request;
 class PublicBookingController extends Controller
 {
     // Show the iframe widget (calendar or list view)
-public function widget(Request $request)
-{
-    $tripId  = $request->query('trip');
-    $company = $request->query('company');
-    $boatSlug = $request->query('boat');
+    public function widget(Request $request)
+    {
+        $tripId  = $request->query('trip');
+        $company = $request->query('company');
+        $boatSlug = $request->query('boat');
 
-    $trip = Trip::with([
-        'paymentPolicy',
-        'cancellationPolicy.rules'
-    ])->findOrFail($tripId);
+        $trip = Trip::with([
+            'paymentPolicy',
+            'cancellationPolicy.rules'
+        ])->findOrFail($tripId);
 
-    $company_id = Company::where('name', $company)->first();
+        $company_id = Company::where('name', $company)->first();
 
-    // If trip has a boat relation or column, get the name
-    $boatName = $trip->boat_name ?? ($trip->boat['name'] ?? $boatSlug ?? 'N/A');
+        // If trip has a boat relation or column, get the name
+        $boatName = $trip->boat_name ?? ($trip->boat['name'] ?? $boatSlug ?? 'N/A');
 
-    return view('public.widget', compact('trip', 'company', 'boatName', 'company_id','tripId'));
-}
+        return view('public.widget', compact('trip', 'company', 'boatName', 'company_id','tripId'));
+    }
 
 
     // Fetch single availability details

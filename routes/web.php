@@ -143,7 +143,7 @@ Route::post('guest/form/{token}', [GuestController::class, 'submit'])->name('gue
             Route::middleware('role:admin|sales|companies')->group(function () {
                 Route::get('agents', [AgentController::class, 'index_agent'])->name('agents.index');
                 Route::get('agents/create', [AgentController::class, 'create_agent'])->name('agents.create');
-                Route::post('agents', [AgentController::class, 'store_agent'])->name('agents.store');
+                Route::post('agents', [AgentController::class, 'store_agent'])->name('agent.store');
                 Route::post('agents/{id}', [AgentController::class, 'update_agent'])->name('agents.update');
                 Route::delete('agents/{id}', [AgentController::class, 'destroy_agent'])->name('agents.destroy');
                 Route::get('agents/filter', [AgentController::class, 'filter_agent'])->name('agents.filter');

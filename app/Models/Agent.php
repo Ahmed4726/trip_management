@@ -6,30 +6,19 @@ use Illuminate\Database\Eloquent\Model;
 
 class Agent extends Model
 {
-        protected $fillable = [
-            'first_name',
-            'last_name',
-            'email',
-            'commission',
-            'phone',
-            'company', 
-            'company_id'
-        ];
-
-    public function trips()
+    protected $fillable = [
+        'first_name',
+        'last_name',
+        'email',
+        'commission',
+        'phone',
+        'company_id'
+    ];
+    public function slots()
     {
-        return $this->hasMany(Trip::class);
+        return $this->belongsToMany(Slot::class, 'agent_slot')
+                    ->withTimestamps()
+                    ->withPivot('company_id');
     }
-
-    public function trip()
-    {
-        return $this->belongsToMany(Trip::class);
-    }
-
-    // public function agents()
-    // {
-    //     return $this->belongsToMany(Booking::class);
-    // }
-
 }
 

@@ -68,56 +68,56 @@ class BookingController extends Controller
     // ==========================
     // CREATE
     // ==========================
- public function create_booking()
-{
-    $companyId = null;
-    $companies = null;
+    public function create_booking()
+    {
+        $companyId = null;
+        $companies = null;
 
-    if (auth()->user()->hasRole('admin')) {
-        $companies = Company::all();
-    } else {
-        $companyId = auth()->user()->company_id;
+        if (auth()->user()->hasRole('admin')) {
+            $companies = Company::all();
+        } else {
+            $companyId = auth()->user()->company_id;
+        }
+
+        $agents = $companyId
+            ? Agent::where('company_id', $companyId)->get()
+            : Agent::all();
+
+        // Fetch trips where not all rooms are booked
+        $trips = Trip::with(['boat.rooms', 'bookings'])
+            ->when($companyId, fn($q) => $q->where('company_id', $companyId))
+            ->get()
+            ->filter(function($trip) {
+                $totalRooms = $trip->boat->rooms->count();     // total rooms of the boat
+                $bookedRooms = $trip->bookings->count();      // number of bookings for this trip
+                return $bookedRooms < $totalRooms;            // only trips with available rooms
+            });
+
+        $boats = $companyId
+            ? Boat::withCount(['rooms as available_rooms_count' => function ($q) {
+                $q->whereDoesntHave('bookings');
+            }])->where('company_id', $companyId)->get()
+            : Boat::withCount(['rooms as available_rooms_count' => function ($q) {
+                $q->whereDoesntHave('bookings');
+            }])->get();
+
+        $ratePlans = $companyId
+            ? RatePlan::where('company_id', $companyId)->get()
+            : RatePlan::all();
+
+        $paymentPolicies = $companyId
+            ? PaymentPolicy::where('company_id', $companyId)->get()
+            : PaymentPolicy::all();
+
+        $cancellationPolicies = $companyId
+            ? CancellationPolicy::where('company_id', $companyId)->get()
+            : CancellationPolicy::all();
+
+        return view('admin.bookings.create', compact(
+            'agents', 'trips', 'companies', 'companyId',
+            'boats', 'ratePlans', 'paymentPolicies', 'cancellationPolicies'
+        ));
     }
-
-    $agents = $companyId
-        ? Agent::where('company_id', $companyId)->get()
-        : Agent::all();
-
-    // Fetch trips where not all rooms are booked
-    $trips = Trip::with(['boat.rooms', 'bookings'])
-        ->when($companyId, fn($q) => $q->where('company_id', $companyId))
-        ->get()
-        ->filter(function($trip) {
-            $totalRooms = $trip->boat->rooms->count();     // total rooms of the boat
-            $bookedRooms = $trip->bookings->count();      // number of bookings for this trip
-            return $bookedRooms < $totalRooms;            // only trips with available rooms
-        });
-
-    $boats = $companyId
-        ? Boat::withCount(['rooms as available_rooms_count' => function ($q) {
-            $q->whereDoesntHave('bookings');
-        }])->where('company_id', $companyId)->get()
-        : Boat::withCount(['rooms as available_rooms_count' => function ($q) {
-            $q->whereDoesntHave('bookings');
-        }])->get();
-
-    $ratePlans = $companyId
-        ? RatePlan::where('company_id', $companyId)->get()
-        : RatePlan::all();
-
-    $paymentPolicies = $companyId
-        ? PaymentPolicy::where('company_id', $companyId)->get()
-        : PaymentPolicy::all();
-
-    $cancellationPolicies = $companyId
-        ? CancellationPolicy::where('company_id', $companyId)->get()
-        : CancellationPolicy::all();
-
-    return view('admin.bookings.create', compact(
-        'agents', 'trips', 'companies', 'companyId', 
-        'boats', 'ratePlans', 'paymentPolicies', 'cancellationPolicies'
-    ));
-}
 
 
 
@@ -129,21 +129,18 @@ class BookingController extends Controller
     {
         if ($request->inline_trip) {
 
-            // dd($request);
             // Validate inline trip fields
             $tripValidated = $request->validate([
                 'trip_title' => 'required|string|max:255',
-                // 'region' => 'required|string|max:255',
                 'boat_id' => 'required|exists:boats,id',
                 'trip_type' => 'required|string',
                 'start_date' => 'required|date',
                 'end_date' => 'required|date|after_or_equal:start_date',
-                // 'guests' => 'required|integer|min:1',
                 'price' => 'nullable|numeric',
                 'rate_plan_id' => 'required',
                 'payment_policy_id' => 'required',
                 'cancellation_policy_id' => 'required',
-                'notes' => 'nullable|string', 
+                'notes' => 'nullable|string',
                 'company_id' => 'required'
             ]);
 
@@ -158,9 +155,7 @@ class BookingController extends Controller
                 'trip_type' => $tripValidated['trip_type'],
                 'start_date' => $tripValidated['start_date'],
                 'end_date' => $tripValidated['end_date'],
-                // 'guests' => $tripValidated['guests'],
                 'price' => $tripValidated['price'],
-                // 'region' => $tripValidated['region'],
                 'rate_plan_id' => $tripValidated['rate_plan_id'],
                 'payment_policy_id' => $tripValidated['payment_policy_id'],
                 'cancellation_policy_id' => $tripValidated['cancellation_policy_id'],
@@ -440,7 +435,7 @@ public function getEvents(Request $request)
         $events[] = [
             'id' => $trip->id,
             'title' => $trip->title,
-            'start' => $trip->start_date, 
+            'start' => $trip->start_date,
             'end' => \Carbon\Carbon::parse($trip->end_date)->addDay()->format('Y-m-d'), // add 1 day for FC display
             'color' => $availableRooms > 0 ? '#34d399' : '#f87171', // green if available, red if fully booked
             'extendedProps' => [

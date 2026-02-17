@@ -35,16 +35,10 @@ class Boat extends Model
         return $this->hasMany(Room::class);
     }
 
-    public function trip()
-    {
-        return $this->hasMany(Trip::class);
-    }
-
     public function bookings()
     {
         return $this->belongsToMany(Booking::class, 'boat_booking');
     }
-
 
     public function booking()
     {

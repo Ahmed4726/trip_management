@@ -63,7 +63,7 @@
                                     <td>{{ $agent->commission }}</td>
 
                                     @php
-                                        $tripCount = DB::table('agent_trip')
+                                        $tripCount = DB::table('agent_slot')
                                             ->where('agent_id', $agent->id)
                                             ->count();
                                     @endphp
@@ -203,9 +203,10 @@
                                                                 type="checkbox"
                                                                 name="trips[]"
                                                                 value="{{ $trip->id }}"
-                                                                {{ $agent->trip->contains($trip->id) ? 'checked' : '' }}>
-                                                            <label class="form-check-label">
-                                                                {{ $trip->title }}
+                                                                {{ $agent->slots->contains($trip->id) ? 'checked' : '' }}>
+                                                                <label class="form-check-label">
+                                                                {{ $trip->slot_type }} - {{ $trip->boat->name ?? 'No Boat Assigned' }} ({{ $trip->start_date->format('Y-m-d H:i') }} to {{ $trip->end_date->format('Y-m-d H:i') }})
+
                                                             </label>
                                                         </div>
                                                     @endforeach

@@ -12,9 +12,7 @@ class Template extends Model
     protected $fillable = [
         'product_name', 'product_type', 'region_id', 'vessels_allowed',
         'duration_days', 'duration_nights', 'departure_ports', 'arrival_ports',
-        'min_bookings', 'default_checkin_from', 'default_checkin_to',
-        'default_checkout_from', 'default_checkout_to',
-        'inclusions', 'exclusions', 'obligatory_surcharges',
+        'min_bookings','inclusions', 'exclusions', 'obligatory_surcharges',
         'experience_level', 'requirements_description',
         'public_comment', 'internal_comment'
     ];
@@ -30,7 +28,7 @@ class Template extends Model
     }
 
     public function vessels_allowed_names() {
-        return \App\Models\Boat::whereIn('id', $this->vessels_allowed)->pluck('name')->toArray();
+        return Boat::whereIn('id', $this->vessels_allowed)->pluck('name')->toArray();
     }
 
     public function boats()

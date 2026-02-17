@@ -23,7 +23,6 @@
                             <tr>
                                 <th>#</th>
                                 <th>Name</th>
-                                {{-- <th>Location</th> --}}
                                 <th>Status</th>
                                 <th>Rooms</th>
                                 <th>Created At</th>
@@ -35,7 +34,6 @@
                                 <tr>
                                     <td>{{ $loop->iteration }}</td>
                                     <td>{{ $boat->name }}</td>
-                                    {{-- <td>{{ $boat->location ?? '-' }}</td> --}}
                                     <td>
                                         <span class="badge {{ $boat->status === 'active' ? 'bg-success' : 'bg-secondary' }}">
                                             {{ ucfirst($boat->status) }}

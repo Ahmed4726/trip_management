@@ -14,11 +14,6 @@ class WaitingList extends Model
         'notes','source','status'
     ];
 
-    public function availability()
-    {
-        return $this->belongsTo(Trip::class);
-    }
-
     public function company()
     {
         return $this->belongsTo(Company::class);

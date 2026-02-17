@@ -168,7 +168,7 @@
 
             @can('company')
               <li class="nav-item">
-                <a href="/companies" class="nav-link {{ request()->is('companies','create-company','company/*') ? 'active' : '' }}">
+                <a href="/company" class="nav-link {{ request()->is('company','create-company','company/*') ? 'active' : '' }}">
                     <i class="nav-icon fas fa-building"></i>
                     <p>Companies</p>
                 </a>

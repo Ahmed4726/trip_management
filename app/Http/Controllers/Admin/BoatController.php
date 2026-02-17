@@ -68,23 +68,24 @@ class BoatController extends Controller
 
         return back()->with('success', 'Boat deleted.');
     }
-public function show(Boat $boat)
-{
-    $boat->load('rooms', 'slots', 'slots.bookings');
+    
+    public function show(Boat $boat)
+    {
+        $boat->load('rooms', 'slots', 'slots.bookings');
 
-    $bookings = Booking::where('boat_id', $boat->id)->with('room','slot')->get();
+        $bookings = Booking::where('boat_id', $boat->id)->with('room','slot')->get();
 
-    $nightsBooked = $bookings->sum(fn($b) => $b->trip?->nights ?? 0);
-    $occupancyRate = $boat->rooms->count() ? round($nightsBooked / ($boat->rooms->count() * 30) * 100) : 0;
+        $nightsBooked = $bookings->sum(fn($b) => $b->trip?->nights ?? 0);
+        $occupancyRate = $boat->rooms->count() ? round($nightsBooked / ($boat->rooms->count() * 30) * 100) : 0;
 
-    $directCount = $bookings->where('source','Direct')->count();
-    $agentCount = $bookings->where('source','Agent')->count();
-    $revenue = $bookings->sum('price');
+        $directCount = $bookings->where('source','Direct')->count();
+        $agentCount = $bookings->where('source','Agent')->count();
+        $revenue = $bookings->sum('price');
 
-    return view('admin.boats.show', compact(
-        'boat','bookings','nightsBooked','occupancyRate','directCount','agentCount','revenue'
-    ));
-}
+        return view('admin.boats.show', compact(
+            'boat','bookings','nightsBooked','occupancyRate','directCount','agentCount','revenue'
+        ));
+    }
 
 
 

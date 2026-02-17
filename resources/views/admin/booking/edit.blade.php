@@ -1,251 +1,251 @@
 @extends('layouts.admin')
 @section('content')
-<div class="content-wrapper">
-<div class="container mx-2 pt-3">
+    <div class="content-wrapper">
+        <div class="container mx-2 pt-3">
 
-<h4>Edit Booking</h4>
+            <h4>Edit Booking</h4>
 
-@if ($errors->any())
-    <div class="alert alert-danger">
-        <ul class="mb-0">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
-    </div>
-@endif
+                @if ($errors->any())
+                    <div class="alert alert-danger">
+                        <ul class="mb-0">
+                            @foreach ($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
 
-@foreach (['success','error'] as $msg)
-    @if(session($msg))
-        <div class="alert alert-{{ $msg == 'success' ? 'success' : 'danger' }}">
-            {{ session($msg) }}
-        </div>
-    @endif
-@endforeach
-
-<form method="POST" action="{{ route('admin.bookings.update', $booking->id) }}">
-@csrf
-@method('PUT')
-
-{{-- Slot --}}
-<div class="row">
-<div class="col-md-6 mb-3">
-    <label>Slot</label>
-
-    @php
-        $currentSlot = collect($slots)->firstWhere('id', $booking->slot_id);
-        $slotName = '-';
-
-        if ($currentSlot) {
-            // Show multiple boats
-            if (!empty($currentSlot['boats']) && count($currentSlot['boats']) >= 1) {
-                $slotName = collect($currentSlot['boats'])->pluck('name')->join(', ');
-            }
-            // Single boat (legacy)
-            elseif (!empty($currentSlot['boat'])) {
-                $slotName = $currentSlot['boat']['name'];
-            }
-
-            // Add dates
-            $slotName .= ' | ' . \Carbon\Carbon::parse($currentSlot['start_date'])->format('d-m-Y')
-                        . ' → ' . \Carbon\Carbon::parse($currentSlot['end_date'])->format('d-m-Y');
-
-            // Indicate current
-            $slotName .= ' (Current)';
-        }
-    @endphp
-
-    {{-- Disabled input showing current slot --}}
-    <input type="text" class="form-control" value="{{ $slotName }}" disabled>
-
-    {{-- Hidden input to submit slot_id --}}
-    <input type="hidden" name="slot_id" value="{{ $booking->slot_id }}">
-</div>
-
-
-{{-- Source --}}
-<div class="col-md-6 mb-3">
-    <label>Source</label>
-    <select name="source" id="sourceSelect" class="form-control">
-        <option value="Direct" {{ old('source', $booking->source)=='Direct'?'selected':'' }}>Direct</option>
-        <option value="Agent" {{ old('source', $booking->source)=='Agent'?'selected':'' }}>Agent</option>
-    </select>
-</div>
-
-{{-- Agent --}}
-<div class="col-md-6 mb-3" id="agentWrapper">
-    <label>Agent</label>
-    <select name="agent_id" id="agentSelect" class="form-control" {{ old('source', $booking->source)!='Agent'?'disabled':'' }}>
-        <option value="">-- Select Agent --</option>
-        @foreach($agents as $agent)
-            <option value="{{ $agent->id }}" {{ old('agent_id', $booking->agent_id)==$agent->id?'selected':'' }}>
-                {{ $agent->first_name }} {{ $agent->last_name }}
-            </option>
-        @endforeach
-    </select>
-</div>
-
-<div class="col-md-6 mb-3">
-    <label>Salesperson</label>
-    <select name="salesperson_id" class="form-control" required>
-        <option value="">-- Select Salesperson --</option>
-        @foreach($salespersons as $sp)
-            <option value="{{ $sp->id }}" {{ old('salesperson_id', $booking->salesperson_id)==$sp->id?'selected':'' }}>
-                {{ $sp->name }}
-            </option>
-        @endforeach
-    </select>
-</div>
-</div>
-
-{{-- Status --}}
-<div class="row">
-<div class="col-md-6 mb-3">
-    <label>Status</label>
-    <select name="status" class="form-control" required>
-        @foreach(['Pending','DP Paid','Full Paid','Waiting List','Canceled'] as $status)
-            <option value="{{ $status }}" {{ old('status', $booking->status)==$status?'selected':'' }}>
-                {{ $status }}
-            </option>
-        @endforeach
-    </select>
-</div>
-</div>
-
-{{-- Inline Slot Creation --}}
-<div id="inlineSlotWrapper" class="border p-3 mb-3 d-none">
-    <h5>Inline Slot Creation</h5>
-    <div class="row">
-        <div class="col-md-4 mb-3">
-            <label>Boat</label>
-            <select name="boat_id" id="inlineBoatSelect" class="form-control">
-                <option value="">-- Select Boat --</option>
-                @foreach($boats as $boat)
-                    <option value="{{ $boat->id }}" {{ old('boat_id', $booking->boat_id)==$boat->id?'selected':'' }}>
-                        {{ $boat->name }}
-                    </option>
+                @foreach (['success','error'] as $msg)
+                    @if(session($msg))
+                        <div class="alert alert-{{ $msg == 'success' ? 'success' : 'danger' }}">
+                            {{ session($msg) }}
+                        </div>
+                    @endif
                 @endforeach
-            </select>
+
+                <form method="POST" action="{{ route('admin.bookings.update', $booking->id) }}">
+                    @csrf
+                    @method('PUT')
+
+                    {{-- Slot --}}
+                    <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label>Slot</label>
+
+                        @php
+                            $currentSlot = collect($slots)->firstWhere('id', $booking->slot_id);
+                            $slotName = '-';
+
+                            if ($currentSlot) {
+                                // Show multiple boats
+                                if (!empty($currentSlot['boats']) && count($currentSlot['boats']) >= 1) {
+                                    $slotName = collect($currentSlot['boats'])->pluck('name')->join(', ');
+                                }
+                                // Single boat (legacy)
+                                elseif (!empty($currentSlot['boat'])) {
+                                    $slotName = $currentSlot['boat']['name'];
+                                }
+
+                                // Add dates
+                                $slotName .= ' | ' . \Carbon\Carbon::parse($currentSlot['start_date'])->format('d-m-Y')
+                                            . ' → ' . \Carbon\Carbon::parse($currentSlot['end_date'])->format('d-m-Y');
+
+                                // Indicate current
+                                $slotName .= ' (Current)';
+                            }
+                        @endphp
+
+                        {{-- Disabled input showing current slot --}}
+                        <input type="text" class="form-control" value="{{ $slotName }}" disabled>
+
+                        {{-- Hidden input to submit slot_id --}}
+                        <input type="hidden" name="slot_id" value="{{ $booking->slot_id }}">
+                    </div>
+
+
+                    {{-- Source --}}
+                    <div class="col-md-6 mb-3">
+                        <label>Source</label>
+                        <select name="source" id="sourceSelect" class="form-control">
+                            <option value="Direct" {{ old('source', $booking->source)=='Direct'?'selected':'' }}>Direct</option>
+                            <option value="Agent" {{ old('source', $booking->source)=='Agent'?'selected':'' }}>Agent</option>
+                        </select>
+                    </div>
+
+                    {{-- Agent --}}
+                    <div class="col-md-6 mb-3" id="agentWrapper">
+                        <label>Agent</label>
+                        <select name="agent_id" id="agentSelect" class="form-control" {{ old('source', $booking->source)!='Agent'?'disabled':'' }}>
+                            <option value="">-- Select Agent --</option>
+                            @foreach($agents as $agent)
+                                <option value="{{ $agent->id }}" {{ old('agent_id', $booking->agent_id)==$agent->id?'selected':'' }}>
+                                    {{ $agent->first_name }} {{ $agent->last_name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label>Salesperson</label>
+                        <select name="salesperson_id" class="form-control" required>
+                            <option value="">-- Select Salesperson --</option>
+                            @foreach($salespersons as $sp)
+                                <option value="{{ $sp->id }}" {{ old('salesperson_id', $booking->salesperson_id)==$sp->id?'selected':'' }}>
+                                    {{ $sp->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    </div>
+
+                    {{-- Status --}}
+                    <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label>Status</label>
+                        <select name="status" class="form-control" required>
+                            @foreach(['Pending','DP Paid','Full Paid','Waiting List','Canceled'] as $status)
+                                <option value="{{ $status }}" {{ old('status', $booking->status)==$status?'selected':'' }}>
+                                    {{ $status }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    </div>
+
+                    {{-- Inline Slot Creation --}}
+                    <div id="inlineSlotWrapper" class="border p-3 mb-3 d-none">
+                        <h5>Inline Slot Creation</h5>
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label>Boat</label>
+                                <select name="boat_id" id="inlineBoatSelect" class="form-control">
+                                    <option value="">-- Select Boat --</option>
+                                    @foreach($boats as $boat)
+                                        <option value="{{ $boat->id }}" {{ old('boat_id', $booking->boat_id)==$boat->id?'selected':'' }}>
+                                            {{ $boat->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label>Start Date</label>
+                                <input type="date" name="start_date" id="inlineStartDate" class="form-control" value="{{ old('start_date', $booking->slot->start_date ?? '') }}">
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label>End Date</label>
+                                <input type="date" name="end_date" id="inlineEndDate" class="form-control" readonly value="{{ old('end_date', $booking->slot->end_date ?? '') }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Price / Currency --}}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Price (Selected Currency)</label>
+                            <input type="number" id="price" name="price" step="0.01" class="form-control" required value="{{ old('price', $booking->price) }}">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Currency</label>
+                            <select id="currency" name="currency" class="form-control" required>
+                                @foreach($currencies as $curr)
+                                    <option value="{{ $curr->id }}" data-rate="{{ $curr->rate }}"
+                                        {{ old('currency', $booking->currency)==$curr->id?'selected':'' }}>
+                                        {{ $curr->symbol }} - {{ $curr->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Price in USD</label>
+                            <input type="number" name="price_usd" id="price_usd" class="form-control" readonly value="{{ old('price_usd', $booking->price_usd) }}">
+                        </div>
+                    </div>
+
+                    {{-- Rooms & Guests --}}
+                    <div class="mb-3">
+                        <label class="fw-bold">Rooms & Guests</label>
+                        <div id="roomMessage" class="text-muted small mb-2">
+                            Please select a slot or create an inline slot and select a boat to see rooms.
+                        </div>
+                        <div id="roomWrapper" class="row g-2"></div>
+                    </div>
+
+                    {{-- Guest Modal Trigger --}}
+                    <button type="button" id="addGuestBtn" class="btn btn-sm btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#guestModal">
+                        + Add Guest
+                    </button>
+
+                    {{-- Rate / Payment / Cancellation --}}
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Rate Plan</label>
+                            <select name="rate_plan_id" class="form-control" required>
+                                @foreach($ratePlans as $plan)
+                                    <option value="{{ $plan->id }}" {{ old('rate_plan_id', $booking->rate_plan_id)==$plan->id?'selected':'' }}>
+                                        {{ $plan->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Payment Policy</label>
+                            <select name="payment_policy_id" class="form-control" required>
+                                @foreach($paymentPolicies as $policy)
+                                    <option value="{{ $policy->id }}" {{ old('payment_policy_id', $booking->payment_policy_id)==$policy->id?'selected':'' }}>
+                                        {{ $policy->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label>Cancellation Policy</label>
+                            <select name="cancellation_policy_id" class="form-control" required>
+                                @foreach($cancellationPolicies as $policy)
+                                    <option value="{{ $policy->id }}" {{ old('cancellation_policy_id', $booking->cancellation_policy_id)==$policy->id?'selected':'' }}>
+                                        {{ $policy->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    {{-- Notes --}}
+                    <div class="mb-3">
+                        <label>Notes</label>
+                        <textarea name="notes" class="form-control">{{ old('notes', $booking->notes) }}</textarea>
+                    </div>
+
+                    <button class="btn btn-success">Update Booking</button>
+                    <a href="{{ route('admin.bookings.index') }}" class="btn btn-secondary">Cancel</a>
+                </form>
         </div>
-        <div class="col-md-4 mb-3">
-            <label>Start Date</label>
-            <input type="date" name="start_date" id="inlineStartDate" class="form-control" value="{{ old('start_date', $booking->slot->start_date ?? '') }}">
+    </div>
+
+    {{-- Guest Modal --}}
+    <div class="modal fade" id="guestModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+        <form id="guestForm">@csrf
+            <div class="modal-header">
+            <h5 class="modal-title">Add Guest</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+            <div class="mb-3"><label>Name</label><input type="text" name="name" class="form-control" required></div>
+            <div class="mb-3"><label>Gender</label><select name="gender" class="form-control" required>
+                <option value="">-- Select Gender --</option><option value="Male">Male</option><option value="Female">Female</option></select></div>
+            <div class="mb-3"><label>Date of Birth</label><input type="date" name="dob" class="form-control" required></div>
+            <div class="mb-3"><label>Email</label><input type="email" name="email" class="form-control"></div>
+            <div class="mb-3"><label>Passport</label><input type="text" name="passport" class="form-control"></div>
+            <div class="mb-3"><label>Phone</label><input type="text" name="phone" class="form-control"></div>
+            <div class="mb-3"><label>Address</label><input type="text" name="address" class="form-control"></div>
+            <input type="hidden" name="company_id" value="{{ auth()->user()->company_id }}">
+            </div>
+            <div class="modal-footer"><button type="submit" class="btn btn-primary">Save Guest</button></div>
+        </form>
         </div>
-        <div class="col-md-4 mb-3">
-            <label>End Date</label>
-            <input type="date" name="end_date" id="inlineEndDate" class="form-control" readonly value="{{ old('end_date', $booking->slot->end_date ?? '') }}">
-        </div>
     </div>
-</div>
-
-{{-- Price / Currency --}}
-<div class="row">
-    <div class="col-md-6 mb-3">
-        <label>Price (Selected Currency)</label>
-        <input type="number" id="price" name="price" step="0.01" class="form-control" required value="{{ old('price', $booking->price) }}">
     </div>
-    <div class="col-md-6 mb-3">
-        <label>Currency</label>
-        <select id="currency" name="currency" class="form-control" required>
-            @foreach($currencies as $curr)
-                <option value="{{ $curr->id }}" data-rate="{{ $curr->rate }}"
-                    {{ old('currency', $booking->currency)==$curr->id?'selected':'' }}>
-                    {{ $curr->symbol }} - {{ $curr->name }}
-                </option>
-            @endforeach
-        </select>
-    </div>
-    <div class="col-md-6 mb-3">
-        <label>Price in USD</label>
-        <input type="number" name="price_usd" id="price_usd" class="form-control" readonly value="{{ old('price_usd', $booking->price_usd) }}">
-    </div>
-</div>
-
-{{-- Rooms & Guests --}}
-<div class="mb-3">
-    <label class="fw-bold">Rooms & Guests</label>
-    <div id="roomMessage" class="text-muted small mb-2">
-        Please select a slot or create an inline slot and select a boat to see rooms.
-    </div>
-    <div id="roomWrapper" class="row g-2"></div>
-</div>
-
-{{-- Guest Modal Trigger --}}
-<button type="button" id="addGuestBtn" class="btn btn-sm btn-primary mb-3" data-bs-toggle="modal" data-bs-target="#guestModal">
-    + Add Guest
-</button>
-
-{{-- Rate / Payment / Cancellation --}}
-<div class="row">
-    <div class="col-md-6 mb-3">
-        <label>Rate Plan</label>
-        <select name="rate_plan_id" class="form-control" required>
-            @foreach($ratePlans as $plan)
-                <option value="{{ $plan->id }}" {{ old('rate_plan_id', $booking->rate_plan_id)==$plan->id?'selected':'' }}>
-                    {{ $plan->name }}
-                </option>
-            @endforeach
-        </select>
-    </div>
-    <div class="col-md-6 mb-3">
-        <label>Payment Policy</label>
-        <select name="payment_policy_id" class="form-control" required>
-            @foreach($paymentPolicies as $policy)
-                <option value="{{ $policy->id }}" {{ old('payment_policy_id', $booking->payment_policy_id)==$policy->id?'selected':'' }}>
-                    {{ $policy->name }}
-                </option>
-            @endforeach
-        </select>
-    </div>
-    <div class="col-md-6 mb-3">
-        <label>Cancellation Policy</label>
-        <select name="cancellation_policy_id" class="form-control" required>
-            @foreach($cancellationPolicies as $policy)
-                <option value="{{ $policy->id }}" {{ old('cancellation_policy_id', $booking->cancellation_policy_id)==$policy->id?'selected':'' }}>
-                    {{ $policy->name }}
-                </option>
-            @endforeach
-        </select>
-    </div>
-</div>
-
-{{-- Notes --}}
-<div class="mb-3">
-    <label>Notes</label>
-    <textarea name="notes" class="form-control">{{ old('notes', $booking->notes) }}</textarea>
-</div>
-
-<button class="btn btn-success">Update Booking</button>
-<a href="{{ route('admin.bookings.index') }}" class="btn btn-secondary">Cancel</a>
-</form>
-</div>
-</div>
-
-{{-- Guest Modal --}}
-<div class="modal fade" id="guestModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form id="guestForm">@csrf
-        <div class="modal-header">
-          <h5 class="modal-title">Add Guest</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body">
-          <div class="mb-3"><label>Name</label><input type="text" name="name" class="form-control" required></div>
-          <div class="mb-3"><label>Gender</label><select name="gender" class="form-control" required>
-            <option value="">-- Select Gender --</option><option value="Male">Male</option><option value="Female">Female</option></select></div>
-          <div class="mb-3"><label>Date of Birth</label><input type="date" name="dob" class="form-control" required></div>
-          <div class="mb-3"><label>Email</label><input type="email" name="email" class="form-control"></div>
-          <div class="mb-3"><label>Passport</label><input type="text" name="passport" class="form-control"></div>
-          <div class="mb-3"><label>Phone</label><input type="text" name="phone" class="form-control"></div>
-          <div class="mb-3"><label>Address</label><input type="text" name="address" class="form-control"></div>
-          <input type="hidden" name="company_id" value="{{ auth()->user()->company_id }}">
-        </div>
-        <div class="modal-footer"><button type="submit" class="btn btn-primary">Save Guest</button></div>
-      </form>
-    </div>
-  </div>
-</div>
 
 
 
@@ -468,6 +468,4 @@ document.addEventListener('DOMContentLoaded', function () {
     updateUSD();
 });
 </script>
-
-
 @endsection

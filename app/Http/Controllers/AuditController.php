@@ -12,7 +12,7 @@ class AuditController extends Controller
         // Fetch all audits with the related user
         $audits = Audit::with('user')
             ->orderBy('created_at', 'desc')
-            ->paginate(20); // paginate 20 per page
+            ->paginate(10);
 
         return view('admin.audit.index', compact('audits'));
     }

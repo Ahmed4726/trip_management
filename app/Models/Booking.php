@@ -7,39 +7,20 @@ use App\Traits\Auditable;
 class Booking extends Model
 {
     use Auditable;
+    
     protected $fillable = [
-        'trip_id',
-        'customer_name',
-        'guests',
         'source',
-        'email',
-        'phone_number',
-        'nationality',
-        'passport_number',
-        'booking_status',
-        'pickup_location_time',
-        'addons',
-        'room_preference',
         'agent_id',
-        'comments',
         'notes',
-        'token',
         'company_id',
-        'dp_paid',
         'room_id',
         'boat_id',
         'slot_id',
         'guest_name',
-        'guest_email',
-        'guest_phone',
         'status',
         'rate_plan_id',
         'payment_policy_id',
         'cancellation_policy_id',
-        'pricing_snapshot_json',
-        'payment_policy_snapshot_json',
-        'cancellation_policy_snapshot_json',
-        'terms_snapshot',
         'price',
         'currency',
         'salesperson_id',
@@ -47,13 +28,6 @@ class Booking extends Model
     ];
 
 
-       /**
-     * Get the trip that this booking belongs to.
-     */
-    public function trip()
-    {
-        return $this->belongsTo(Trip::class, 'trip_id');
-    }
 
     /**
      * Get the agent assigned to this booking.
@@ -104,18 +78,18 @@ class Booking extends Model
         return $this->belongsTo(Company::class);
     }
 
-  public function rooms()
-{
-    return $this->belongsToMany(Room::class);
-}
+    public function rooms()
+    {
+        return $this->belongsToMany(Room::class);
+    }
 
-public function guests()
-{
-    return $this->belongsToMany(Guest::class);
-}
+    public function guests()
+    {
+        return $this->belongsToMany(Guest::class);
+    }
 
-public function guestRoomAssignments()
-{
-    return $this->hasMany(BookingGuestRoom::class);
-}
+    public function guestRoomAssignments()
+    {
+        return $this->hasMany(BookingGuestRoom::class);
+    }
 }

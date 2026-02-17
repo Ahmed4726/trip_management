@@ -17,11 +17,11 @@ class BoatController extends Controller
     /**
      * Show all boats
      */
-public function boat_index()
-{
-    $boats = Boat::with(['rooms.bookings'])->latest()->paginate(10);
-    return view('admin.boats.index', compact('boats'));
-}
+    public function boat_index()
+    {
+        $boats = Boat::with(['rooms.bookings'])->latest()->paginate(10);
+        return view('admin.boats.index', compact('boats'));
+    }
 
     /**
      * Show create boat form
@@ -36,13 +36,6 @@ public function boat_index()
      */
     public function store_boat(Request $request)
     {
-        // $request->validate([
-        //     'name'        => 'required|string|max:255',
-        //     'location'    => 'required|string|max:255',
-        //     'status'      => 'required|in:active,inactive',
-        //     'description' => 'nullable|string',
-        // ]);
-
         Boat::create([
             'name'        => $request->name,
             'location'    => $request->location,
@@ -68,13 +61,6 @@ public function boat_index()
      */
     public function update_boat(Request $request, Boat $boat)
     {
-            // $request->validate([
-            //     'name'        => 'required|string|max:255',
-            //     'location'    => 'required|string|max:255',
-            //     'status'      => 'required|in:active,inactive',
-            //     'description' => 'nullable|string',
-            // ]);
-
         $boat->update([
             'name'        => $request->name,
             'location'    => $request->location,
@@ -125,7 +111,6 @@ public function boat_index()
                 }),
             ];
         });
-    // dd($roomsData);
 
         return response()->json(['rooms' => $roomsData]);
     }

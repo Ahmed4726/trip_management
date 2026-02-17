@@ -8,6 +8,7 @@ use App\Models\Agent;
 use App\Models\Company;
 use App\Models\Trip;
 use App\Models\Booking;
+use App\Models\Slot;
 use Spatie\Permission\Models\Role;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -25,15 +26,15 @@ class AgentController extends Controller
     public function index_agent()
     {
         if ($this->tenant) {
-            $agents = Agent::with('trips')->where('company_id', $this->tenant->id)->get();
-            $allTrips = Trip::where('company_id', $this->tenant->id)->get();
+            $agents = Agent::with('slots')->where('company_id', $this->tenant->id)->get();
+            $allTrips = Slot::where('company_id', $this->tenant->id)->get();
         } else {
-            $agents = Agent::with('trips')->get();
-            $allTrips = Trip::all();
+            $agents = Agent::with('slots')->get();
+            $allTrips = Slot::all();
         }
 
-        $agent = Agent::with('trips')->get();
-        $allTrips = Trip::all();
+        $agent = Agent::with('slots')->get();
+        $allTrips = Slot::all();
 
         return view('admin.agents.index', compact('agent', 'agents', 'allTrips'));
     }
@@ -51,28 +52,28 @@ class AgentController extends Controller
 
         // Only allow trips belonging to the tenant
         if ($this->tenant) {
-            $tripIds = Trip::whereIn('id', $tripIds)->where('company_id', $this->tenant->id)->pluck('id')->toArray();
+            $tripIds = Slot::whereIn('id', $tripIds)->where('company_id', $this->tenant->id)->pluck('id')->toArray();
         }
 
         // Remove old assignments
-        DB::table('agent_trip')->where('agent_id', $agentId)->delete();
+        DB::table('agent_slot')->where('agent_id', $agentId)->delete();
 
         // Insert new assignments
         $insertData = [];
         foreach ($tripIds as $tripId) {
             $insertData[] = [
                 'agent_id' => $agentId,
-                'trip_id'  => $tripId,
+                'slot_id'  => $tripId,
                 'created_at' => now(),
                 'updated_at' => now(),
             ];
         }
 
         if (!empty($insertData)) {
-            DB::table('agent_trip')->insert($insertData);
+            DB::table('agent_slot')->insert($insertData);
         }
 
-        return redirect()->back()->with('success', 'Trips assigned successfully.');
+        return redirect()->back()->with('success', 'Slots assigned successfully.');
     }
 
     public function create_agent()

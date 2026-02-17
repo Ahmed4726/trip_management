@@ -50,12 +50,6 @@ class Room extends Model
                     ->withPivot('booking_id');
     }
 
-
-    public function trips()
-    {
-        return $this->belongsTo(Trip::class);
-    }
-
     public function maxCapacity()
     {
         return $this->capacity + $this->extra_beds;
