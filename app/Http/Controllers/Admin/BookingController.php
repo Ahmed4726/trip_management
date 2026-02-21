@@ -50,7 +50,7 @@ public function create()
     foreach ($slots as $slot) {
         // Only active bookings (exclude cancelled)
         $bookingIds = Booking::where('slot_id', $slot->id)
-            ->whereIn('status', ['pending', 'confirmed'])
+            ->whereIn('status', ['Pending', 'DP Paid', 'Full Paid'])
             ->pluck('id');
 
         // Room usage counts per room
