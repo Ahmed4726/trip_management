@@ -32,112 +32,112 @@ class BookingController extends Controller
         return view('admin.booking.index', compact('bookings'));
     }
 
-public function create()
-{
-    $slots = Slot::with(['boat.rooms', 'boats.rooms'])->get();
+    public function create()
+    {
+        $slots = Slot::with(['boat.rooms', 'boats.rooms'])->get();
 
-    // Slots already booked by PRIVATE CHARTER only
-    $bookedSlotIds = Booking::leftJoin('slots', 'bookings.slot_id', '=', 'slots.id')
-        ->whereNotNull('bookings.slot_id')
-        ->where('slots.slot_type', 'Private Charter')
-        ->pluck('bookings.slot_id')
-        ->unique()
-        ->toArray();
-
-    // Room usage per slot (per booking) including guest IDs
-    $roomUsageBySlot = [];
-
-    foreach ($slots as $slot) {
-        // Only active bookings (exclude cancelled)
-        $bookingIds = Booking::where('slot_id', $slot->id)
-            ->whereIn('status', ['Pending', 'DP Paid', 'Full Paid'])
-            ->pluck('id');
-
-        // Room usage counts per room
-        $roomUsage = BookingGuestRoom::whereIn('booking_id', $bookingIds)
-            ->select('room_id', DB::raw('COUNT(*) as used'))
-            ->groupBy('room_id')
-            ->pluck('used', 'room_id')
+        // Slots already booked by PRIVATE CHARTER only
+        $bookedSlotIds = Booking::leftJoin('slots', 'bookings.slot_id', '=', 'slots.id')
+            ->whereNotNull('bookings.slot_id')
+            ->where('slots.slot_type', 'Private Charter')
+            ->pluck('bookings.slot_id')
+            ->unique()
             ->toArray();
 
-        // Guest IDs per room per booking
-        $roomGuests = BookingGuestRoom::whereIn('booking_id', $bookingIds)
-            ->get()
-            ->groupBy(function ($item) {
-                return $item->booking_id . '_' . $item->room_id;
-            })
-            ->map(function ($items) {
-                return $items->pluck('guest_id')->toArray();
-            })
-            ->toArray();
+        // Room usage per slot (per booking) including guest IDs
+        $roomUsageBySlot = [];
 
-        // Initialize room usage for this slot
-        $roomUsageBySlot[$slot->id] = [];
+        foreach ($slots as $slot) {
+            // Only active bookings (exclude cancelled)
+            $bookingIds = Booking::where('slot_id', $slot->id)
+                ->whereIn('status', ['Pending', 'DP Paid', 'Full Paid'])
+                ->pluck('id');
 
-        // Process rooms for main boat
-        foreach ($slot->boat->rooms ?? [] as $room) {
-            $roomId = $room->id;
-            $roomUsageBySlot[$slot->id][$roomId] = [
-                'used' => $roomUsage[$roomId] ?? 0,
-                'guests' => [],
-            ];
+            // Room usage counts per room
+            $roomUsage = BookingGuestRoom::whereIn('booking_id', $bookingIds)
+                ->select('room_id', DB::raw('COUNT(*) as used'))
+                ->groupBy('room_id')
+                ->pluck('used', 'room_id')
+                ->toArray();
 
-            // Merge guest IDs per booking
-            foreach ($bookingIds as $bookingId) {
-                $key = $bookingId . '_' . $roomId;
-                if (isset($roomGuests[$key])) {
-                    $roomUsageBySlot[$slot->id][$roomId]['guests'] = array_merge(
-                        $roomUsageBySlot[$slot->id][$roomId]['guests'],
-                        $roomGuests[$key]
-                    );
+            // Guest IDs per room per booking
+            $roomGuests = BookingGuestRoom::whereIn('booking_id', $bookingIds)
+                ->get()
+                ->groupBy(function ($item) {
+                    return $item->booking_id . '_' . $item->room_id;
+                })
+                ->map(function ($items) {
+                    return $items->pluck('guest_id')->toArray();
+                })
+                ->toArray();
+
+            // Initialize room usage for this slot
+            $roomUsageBySlot[$slot->id] = [];
+
+            // Process rooms for main boat
+            foreach ($slot->boat->rooms ?? [] as $room) {
+                $roomId = $room->id;
+                $roomUsageBySlot[$slot->id][$roomId] = [
+                    'used' => $roomUsage[$roomId] ?? 0,
+                    'guests' => [],
+                ];
+
+                // Merge guest IDs per booking
+                foreach ($bookingIds as $bookingId) {
+                    $key = $bookingId . '_' . $roomId;
+                    if (isset($roomGuests[$key])) {
+                        $roomUsageBySlot[$slot->id][$roomId]['guests'] = array_merge(
+                            $roomUsageBySlot[$slot->id][$roomId]['guests'],
+                            $roomGuests[$key]
+                        );
+                    }
                 }
             }
-        }
 
-        // Process rooms for any additional boats linked to the slot
-        if ($slot->boats) {
-            foreach ($slot->boats as $boat) {
-                foreach ($boat->rooms ?? [] as $room) {
-                    $roomId = $room->id;
-                    $roomUsageBySlot[$slot->id][$roomId] = [
-                        'used' => $roomUsage[$roomId] ?? 0,
-                        'guests' => [],
-                    ];
+            // Process rooms for any additional boats linked to the slot
+            if ($slot->boats) {
+                foreach ($slot->boats as $boat) {
+                    foreach ($boat->rooms ?? [] as $room) {
+                        $roomId = $room->id;
+                        $roomUsageBySlot[$slot->id][$roomId] = [
+                            'used' => $roomUsage[$roomId] ?? 0,
+                            'guests' => [],
+                        ];
 
-                    foreach ($bookingIds as $bookingId) {
-                        $key = $bookingId . '_' . $roomId;
-                        if (isset($roomGuests[$key])) {
-                            $roomUsageBySlot[$slot->id][$roomId]['guests'] = array_merge(
-                                $roomUsageBySlot[$slot->id][$roomId]['guests'],
-                                $roomGuests[$key]
-                            );
+                        foreach ($bookingIds as $bookingId) {
+                            $key = $bookingId . '_' . $roomId;
+                            if (isset($roomGuests[$key])) {
+                                $roomUsageBySlot[$slot->id][$roomId]['guests'] = array_merge(
+                                    $roomUsageBySlot[$slot->id][$roomId]['guests'],
+                                    $roomGuests[$key]
+                                );
+                            }
                         }
                     }
                 }
             }
         }
+
+        return view('admin.booking.create', [
+            'slots' => $slots->toArray(),
+            'agents' => Agent::orderBy('first_name')->get(),
+            'guests' => Guest::orderBy('name')->get(),
+            'ratePlans' => RatePlan::with('rules')->get(),
+            'paymentPolicies' => PaymentPolicy::all(),
+            'cancellationPolicies' => CancellationPolicy::with('rules')->get(),
+            'boats' => Boat::with('rooms')->get(),
+            'regions' => Region::all(),
+            'ports' => Port::all(),
+            'salespersons' => Salesperson::orderBy('name')->get(),
+            'currencies' => Currency::all(),
+            'companies' => auth()->user()->hasRole('admin')
+                ? Company::all()
+                : Company::where('id', auth()->user()->company_id)->get(),
+
+            'bookedSlotIds' => $bookedSlotIds,
+            'roomUsageBySlot' => $roomUsageBySlot,
+        ]);
     }
-
-    return view('admin.booking.create', [
-        'slots' => $slots->toArray(),
-        'agents' => Agent::orderBy('first_name')->get(),
-        'guests' => Guest::orderBy('name')->get(),
-        'ratePlans' => RatePlan::with('rules')->get(),
-        'paymentPolicies' => PaymentPolicy::all(),
-        'cancellationPolicies' => CancellationPolicy::with('rules')->get(),
-        'boats' => Boat::with('rooms')->get(),
-        'regions' => Region::all(),
-        'ports' => Port::all(),
-        'salespersons' => Salesperson::orderBy('name')->get(),
-        'currencies' => Currency::all(),
-        'companies' => auth()->user()->hasRole('admin')
-            ? Company::all()
-            : Company::where('id', auth()->user()->company_id)->get(),
-
-        'bookedSlotIds' => $bookedSlotIds,
-        'roomUsageBySlot' => $roomUsageBySlot,
-    ]);
-}
 
 
 
