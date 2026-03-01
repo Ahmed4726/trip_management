@@ -181,7 +181,7 @@ class BookingController extends Controller
 
         DB::beginTransaction();
 
-        // try {
+        try {
 
             // ------------------------------
             // STEP 1: RESOLVE OR CREATE SLOT
@@ -401,15 +401,15 @@ class BookingController extends Controller
                 ->route('admin.bookings.index')
                 ->with('success', 'Booking created successfully');
 
-        // } catch (\Throwable $e) {
+        } catch (\Throwable $e) {
 
-        //     DB::rollBack();
-        //     report($e);
+            DB::rollBack();
+            report($e);
 
-        //     return back()->withErrors([
-        //         'error' => 'Something went wrong while creating the booking.'
-        //     ])->withInput();
-        // }
+            return back()->withErrors([
+                'error' => 'Something went wrong while creating the booking.'
+            ])->withInput();
+        }
     }
 
 
