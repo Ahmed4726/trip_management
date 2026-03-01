@@ -77,6 +77,7 @@ class BookingController extends Controller
             // Process rooms for main boat
             foreach ($slot->boat->rooms ?? [] as $room) {
                 $roomId = $room->id;
+                // dd($roomUsage[$roomId]);
                 $roomUsageBySlot[$slot->id][$roomId] = [
                     'used' => $roomUsage[$roomId] ?? 0,
                     'guests' => [],
@@ -118,6 +119,7 @@ class BookingController extends Controller
             }
         }
 
+
         return view('admin.booking.create', [
             'slots' => $slots->toArray(),
             'agents' => Agent::orderBy('first_name')->get(),
@@ -145,6 +147,7 @@ class BookingController extends Controller
 
     public function store(Request $request)
     {
+        // dd($request->all());
         // ------------------------------
         // VALIDATION
         // ------------------------------
@@ -156,7 +159,20 @@ class BookingController extends Controller
             'price' => 'required|numeric',
             'currency' => 'required',
             'salesperson_id' => 'required',
-            'status' => 'required',
+            'booking_status' => 'required',
+
+            // Existing slot OR inline slot
+            'slot_id' => 'nullable|exists:slots,id',
+
+            // Inline slot fields (required if slot_id not present)
+            'slot_type' => 'required_without:slot_id',
+            'boats_allowed' => 'required_without:slot_id|array',
+            'region_id' => 'required_without:slot_id',
+            'departure_port_id' => 'required_without:slot_id',
+            'arrival_port_id' => 'required_without:slot_id',
+            'start_date' => 'required_without:slot_id|date',
+            'end_date' => 'required_without:slot_id|date|after_or_equal:start_date',
+            'duration_nights' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -165,31 +181,90 @@ class BookingController extends Controller
 
         DB::beginTransaction();
 
-        try {
+        // try {
 
             // ------------------------------
-            // STEP 1: RESOLVE SLOT
+            // STEP 1: RESOLVE OR CREATE SLOT
             // ------------------------------
+            if ($request->slot_id) {
 
+                // EXISTING SLOT
                 $slot = Slot::with(['boat.rooms', 'boats.rooms'])
                     ->lockForUpdate()
                     ->findOrFail($request->slot_id);
 
-                $slotType = $slot->slot_type ?? 'Open Trip';
+            } else {
 
-                // ❌ Private Charter → only ONE booking
-                if ($slotType === 'Private Charter'
-                    && Booking::where('slot_id', $slot->id)->exists()) {
+                // ============================
+                // INLINE SLOT CREATION
+                // ============================
+
+                $status = $request->slot_status ?? 'Available';
+
+                // Auto Blocked for Maintenance/Docking
+                if (in_array($request->slot_type, ['Maintenance', 'Docking'])) {
+                    $status = 'Blocked';
+                }
+
+                // Notes required if Blocked or On-Hold
+                if (in_array($status, ['Blocked', 'On-Hold']) && empty($request->notes)) {
                     DB::rollBack();
                     return back()->withErrors([
-                        'slot_id' => 'This Private Charter slot is already booked.'
+                        'notes' => 'Notes are required for this status.'
                     ])->withInput();
                 }
 
+                // ❌ BOAT + DATE COLLISION CHECK
+                if ($this->hasBoatDateCollision(
+                    $request->boats_allowed,
+                    $request->start_date,
+                    $request->end_date
+                )) {
+                    DB::rollBack();
+                    return back()->withErrors([
+                        'boats_allowed' =>
+                            'Collision detected: a selected vessel already has a slot between '
+                            . $request->start_date . ' and ' . $request->end_date
+                    ])->withInput();
+                }
 
+                // CREATE SLOT
+                $slot = Slot::create([
+                    'slot_type' => $request->slot_type,
+                    'status' => $status,
+                    'region_id' => $request->region_id,
+                    'departure_port_id' => $request->departure_port_id,
+                    'arrival_port_id' => $request->arrival_port_id,
+                    'start_date' => $request->start_date,
+                    'end_date' => $request->end_date,
+                    'notes' => $request->notes,
+                    'duration_nights' => $request->duration_nights,
+                    'company_id' => auth()->user()->company_id,
+                ]);
+
+                // Attach Boats
+                $slot->boats()->sync($request->boats_allowed);
+
+                $slot->load(['boats.rooms']);
+            }
+
+            $slotType = $slot->slot_type ?? 'Open Trip';
 
             // ------------------------------
-            // STEP 2: SLOT-LEVEL ROOM CAPACITY VALIDATION
+            // PRIVATE CHARTER CHECK
+            // ------------------------------
+            if (
+                $slotType === 'Private Charter' &&
+                Booking::where('slot_id', $slot->id)->exists()
+            ) {
+                DB::rollBack();
+                return back()->withErrors([
+                    'slot_id' => 'This Private Charter slot is already booked.'
+                ])->withInput();
+            }
+
+            // ------------------------------
+            // SLOT ROOM CAPACITY CHECK
             // ------------------------------
             $usedRoomCapacity =
                 BookingGuestRoom::whereIn(
@@ -210,9 +285,7 @@ class BookingController extends Controller
                 foreach ($request->guest_rooms as $roomId => $guestIds) {
 
                     $guestIds = array_filter((array) $guestIds);
-                    if (empty($guestIds)) {
-                        continue;
-                    }
+                    if (empty($guestIds)) continue;
 
                     if (!isset($rooms[$roomId])) {
                         DB::rollBack();
@@ -224,11 +297,18 @@ class BookingController extends Controller
                     $room = $rooms[$roomId];
                     $capacity = $room->capacity + $room->extra_beds;
                     $alreadyUsed = $usedRoomCapacity[$roomId] ?? 0;
+
+                    if (($alreadyUsed + count($guestIds)) > $capacity) {
+                        DB::rollBack();
+                        return back()->withErrors([
+                            'guest_rooms' => "Room capacity exceeded."
+                        ])->withInput();
+                    }
                 }
             }
 
             // ------------------------------
-            // STEP 4: COLLECT ALL GUEST IDS
+            // COLLECT GUEST IDS
             // ------------------------------
             $guestIds = collect($request->guest_rooms ?? [])
                 ->flatten()
@@ -245,6 +325,7 @@ class BookingController extends Controller
             }
 
             $leadGuest = Guest::find($guestIds[0]);
+
             if (!$leadGuest) {
                 DB::rollBack();
                 return back()->withErrors([
@@ -253,11 +334,11 @@ class BookingController extends Controller
             }
 
             // ------------------------------
-            // STEP 5: CREATE BOOKING
+            // CREATE BOOKING
             // ------------------------------
             $booking = Booking::create([
                 'slot_id' => $slot->id,
-                'boat_id' => $slot->boat_id,
+                'boat_id' => $slot->boats->first()->id ?? null,
                 'room_id' => $slotType === 'Private Charter'
                     ? null
                     : array_key_first($request->guest_rooms ?? []),
@@ -269,7 +350,7 @@ class BookingController extends Controller
                 'payment_policy_id' => $request->payment_policy_id,
                 'cancellation_policy_id' => $request->cancellation_policy_id,
                 'notes' => $request->notes,
-                'status' => $request->status,
+                'status' => $request->booking_status,
                 'price' => $request->price,
                 'currency' => $request->currency,
                 'salesperson_id' => $request->salesperson_id,
@@ -277,7 +358,7 @@ class BookingController extends Controller
             ]);
 
             // ------------------------------
-            // STEP 6: ATTACH ROOMS & GUESTS
+            // ATTACH ROOMS & GUESTS
             // ------------------------------
             if ($request->filled('guest_rooms')) {
 
@@ -299,20 +380,16 @@ class BookingController extends Controller
             }
 
             // ------------------------------
-            // STEP 7: ATTACH BOATS
+            // ATTACH BOATS TO BOOKING
             // ------------------------------
-            $boatsToAttach = $request->slot_id
-                ? ($slot->boats && $slot->boats->count()
-                    ? $slot->boats->pluck('id')->toArray()
-                    : [$slot->boat_id])
-                : ($request->boat_id ? [$request->boat_id] : []);
+            $boatsToAttach = $slot->boats->pluck('id')->toArray();
 
             if ($boatsToAttach) {
                 $booking->boats()->sync($boatsToAttach);
             }
 
             // ------------------------------
-            // STEP 8: SLOT STATUS
+            // UPDATE SLOT STATUS IF PRIVATE
             // ------------------------------
             if ($slotType === 'Private Charter') {
                 $slot->update(['status' => 'Booked']);
@@ -324,15 +401,15 @@ class BookingController extends Controller
                 ->route('admin.bookings.index')
                 ->with('success', 'Booking created successfully');
 
-        } catch (\Throwable $e) {
+        // } catch (\Throwable $e) {
 
-            DB::rollBack();
-            report($e);
+        //     DB::rollBack();
+        //     report($e);
 
-            return back()->withErrors([
-                'error' => 'Something went wrong while creating the booking.'
-            ])->withInput();
-        }
+        //     return back()->withErrors([
+        //         'error' => 'Something went wrong while creating the booking.'
+        //     ])->withInput();
+        // }
     }
 
 
@@ -512,5 +589,19 @@ class BookingController extends Controller
 
         $booking->delete();
         return back()->with('success', 'Booking deleted successfully.');
+    }
+
+    protected function hasBoatDateCollision(array $boatIds, string $startDate, string $endDate): bool
+    {
+        return Slot::whereIn('boat_id', $boatIds)
+            ->where(function($query) use ($startDate, $endDate) {
+                $query->whereBetween('start_date', [$startDate, $endDate])
+                    ->orWhereBetween('end_date', [$startDate, $endDate])
+                    ->orWhere(function($q) use ($startDate, $endDate) {
+                        $q->where('start_date', '<=', $startDate)
+                            ->where('end_date', '>=', $endDate);
+                    });
+            })
+            ->exists();
     }
 }

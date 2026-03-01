@@ -31,7 +31,7 @@
                     <div class="col-md-6 mb-3">
                         <label>Slot</label>
                             <select id="slotSelect" name="slot_id" class="form-control">
-                                <option value="1">-- Select Slot --</option>
+                                <option value="">-- Select Slot --</option>
 
                                 @foreach($slots as $slot)
                                     @php
@@ -97,7 +97,7 @@
                     <div class="row">
                     <div class="col-md-6 mb-3">
                         <label>Status</label>
-                        <select name="status" class="form-control" required>
+                        <select name="booking_status" class="form-control" required>
                             <option value="Pending">Pending</option>
                             <option value="DP Paid">DP Paid</option>
                             <option value="Full Paid">Full Paid</option>
@@ -108,28 +108,91 @@
                     </div>
 
                     {{-- Inline Slot Creation --}}
-                    <div id="inlineSlotWrapper" class="border p-3 mb-3 d-none">
-                        <h5>Inline Slot Creation</h5>
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label>Boat</label>
-                                <select name="boat_id" id="inlineBoatSelect" class="form-control">
-                                    <option value="">-- Select Boat --</option>
-                                    @foreach($boats as $boat)
-                                        <option value="{{ $boat->id }}">{{ $boat->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label>Start Date</label>
-                                <input type="date" name="start_date" id="inlineStartDate" class="form-control">
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label>End Date</label>
-                                <input type="date" name="end_date" id="inlineEndDate" class="form-control" readonly>
-                            </div>
+                   <div id="inlineSlotWrapper" class="border p-3 mb-3">
+                    <h5>Inline Slot Creation</h5>
+
+                    {{-- Slot Type + Status --}}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Slot Type</label>
+                            <select name="slot_type" class="form-control">
+                                @foreach(['Open Trip','Private Charter','Maintenance','Docking','Crossing'] as $type)
+                                    <option value="{{ $type }}">{{ $type }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label>Status</label>
+                            <select name="slot_status" class="form-control">
+                                @foreach(['Available','On-Hold','Blocked'] as $status)
+                                    <option value="{{ $status }}">{{ $status }}</option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
+
+                    {{-- Vessels + Region --}}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Vessels</label>
+                            <select name="boats_allowed[]" id="inlineBoatsAllowed" class="form-control" multiple>
+                                @foreach($boats as $boat)
+                                    <option value="{{ $boat->id }}">{{ $boat->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label>Region</label>
+                            <select name="region_id" class="form-control">
+                                @foreach($regions as $region)
+                                    <option value="{{ $region->id }}">{{ $region->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    {{-- Ports --}}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Departure Port</label>
+                            <select name="departure_port_id" class="form-control">
+                                @foreach($ports as $port)
+                                    <option value="{{ $port->id }}">{{ $port->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label>Arrival Port</label>
+                            <select name="arrival_port_id" class="form-control">
+                                @foreach($ports as $port)
+                                    <option value="{{ $port->id }}">{{ $port->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    {{-- Dates --}}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label>Start Date</label>
+                            <input type="date" name="start_date" id="inlineStartDate" class="form-control">
+                        </div>
+                        <div class="col-md-3">
+                            <label>Duration (Nights)</label>
+                            <input type="number" name="duration_nights" id="inlineDurationNights" class="form-control" min="0">
+                        </div>
+                        <div class="col-md-3">
+                            <label>End Date</label>
+                            <input type="date" name="end_date" id="inlineEndDate" class="form-control" readonly>
+                        </div>
+                    </div>
+
+                    {{-- Notes --}}
+                    <div class="mb-3">
+                        <label>Notes</label>
+                        <textarea name="notes" class="form-control"></textarea>
+                    </div>
+                </div>
 
                     {{-- Price / Currency --}}
                     <div class="row">
@@ -249,6 +312,8 @@ document.addEventListener('DOMContentLoaded', function(){
     const guests = @json($guests);
     const roomUsageBySlot = @json($roomUsageBySlot);
     const choicesInstances = []; // declare globally
+    const boatsWithRooms = @json($boats); // must include rooms relation
+
 
 
     const slotSelect = document.getElementById('slotSelect');
@@ -257,6 +322,213 @@ document.addEventListener('DOMContentLoaded', function(){
     const agentSelect = document.getElementById('agentSelect');
     const sourceSelect = document.getElementById('sourceSelect');
     const inlineSlotWrapper = document.getElementById('inlineSlotWrapper');
+    const inlineStart = document.getElementById('inlineStartDate');
+    const inlineDuration = document.getElementById('inlineDurationNights');
+    const inlineEnd = document.getElementById('inlineEndDate');
+    const vesselsSelect = document.getElementById('inlineBoatsAllowed');
+
+
+    function toggleInlineRequired(isActive) {
+
+    const inlineWrapper = document.getElementById('inlineSlotWrapper');
+    const fields = inlineWrapper.querySelectorAll('input, select, textarea');
+
+    fields.forEach(field => {
+        if (isActive) {
+            field.setAttribute('required', 'required');
+            field.disabled = false;
+        } else {
+            field.removeAttribute('required');
+            field.disabled = true;
+        }
+    });
+}
+
+
+
+
+function renderRoomsForInlineBoats(selectedBoatIds) {
+
+    roomWrapper.innerHTML = '';
+    roomMessage.style.display = 'none';
+
+    if (!selectedBoatIds.length) {
+        roomMessage.textContent = 'Select a vessel to see rooms.';
+        roomMessage.style.display = 'block';
+        return;
+    }
+
+    selectedBoatIds.forEach(boatId => {
+
+        const boat = boatsWithRooms.find(b => b.id == boatId);
+        if (!boat || !boat.rooms || !boat.rooms.length) return;
+
+        const boatHeader = document.createElement('div');
+        boatHeader.className = 'col-12 mb-2';
+        boatHeader.innerHTML = `<strong>Boat: ${boat.name}</strong>`;
+        roomWrapper.appendChild(boatHeader);
+
+        boat.rooms.forEach(room => {
+
+            const capacity = parseInt(room.capacity || 0) + parseInt(room.extra_beds || 0);
+
+            const div = document.createElement('div');
+            div.className = 'col-md-4';
+
+            div.innerHTML = `
+                <label class="card p-2 h-100">
+                    <strong>${room.room_name}</strong><br>
+                    <small class="text-muted">
+                        Remaining ${capacity} of ${capacity}
+                    </small>
+
+                    <select
+                        multiple
+                        class="form-control room-guests mt-2"
+                        name="guest_rooms[${room.id}][]"
+                        data-cap="${capacity}"
+                        ${capacity <= 0 ? 'disabled' : ''}
+                    ></select>
+
+                    <div class="assigned-guests mt-1 text-muted"></div>
+                    <div class="room-full text-danger mt-1"
+                         style="${capacity <= 0 ? 'display:block;' : 'display:none;'}">
+                        Room fully booked for this trip
+                    </div>
+                </label>
+            `;
+
+            roomWrapper.appendChild(div);
+
+            const select = div.querySelector('select.room-guests');
+            const fullMsg = div.querySelector('.room-full');
+            const smallText = div.querySelector('small');
+
+            // Populate guests
+            guests.forEach(g => {
+                const opt = document.createElement('option');
+                opt.value = g.id;
+                opt.text = ((g.first_name || '') + ' ' + (g.last_name || '')).trim() || g.name;
+                select.add(opt);
+            });
+
+            const choices = new Choices(select, {
+                removeItemButton: true,
+                searchEnabled: true,
+                shouldSort: false,
+                placeholder: true,
+                placeholderValue: 'Select guests'
+            });
+
+            choicesInstances.push(choices);
+
+         function updateRoomState() {
+
+    const selectedCount = select.selectedOptions.length;
+    const remaining = capacity - selectedCount;
+
+    smallText.textContent = `Remaining ${remaining} of ${capacity}`;
+
+    if (remaining <= 0) {
+        fullMsg.style.display = 'block';
+
+        // ❌ DO NOT disable select (otherwise it won’t submit)
+        // select.disabled = true;
+
+        // Instead, block adding new items
+        select.setAttribute('data-full', '1');
+    } else {
+        fullMsg.style.display = 'none';
+        select.removeAttribute('data-full');
+    }
+
+    // Render badges
+    const container = div.querySelector('.assigned-guests');
+    container.innerHTML = '';
+
+    Array.from(select.selectedOptions).forEach(opt => {
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-primary me-1 mb-1';
+        badge.style.cursor = 'pointer';
+        badge.textContent = opt.text + ' ×';
+
+        badge.onclick = () => {
+            Swal.fire({
+                title: 'Remove guest?',
+                text: opt.text,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Remove'
+            }).then(res => {
+                if (res.isConfirmed) {
+                    choices.removeActiveItemsByValue(opt.value);
+                    updateRoomState();
+                }
+            });
+        };
+
+        container.appendChild(badge);
+    });
+}
+
+       select.addEventListener('change', function () {
+
+    const selectedCount = select.selectedOptions.length;
+
+    if (selectedCount > capacity) {
+        choices.removeActiveItemsByValue(
+            select.selectedOptions[selectedCount - 1].value
+        );
+
+        Swal.fire({
+            icon: 'warning',
+            title: 'Room Full',
+            text: 'Room capacity exceeded.'
+        });
+
+        return;
+    }
+
+    updateRoomState();
+});
+
+            updateRoomState();
+
+        });
+
+    });
+}
+    /* Trigger when boat selection changes */
+    vesselsSelect.addEventListener('change', function () {
+
+        const selectedIds = Array.from(this.selectedOptions).map(o => o.value);
+        renderRoomsForInlineBoats(selectedIds);
+
+    });
+
+    const vesselsChoices = new Choices(vesselsSelect, {
+        removeItemButton: true,
+        searchEnabled: true,
+        shouldSort: false,
+        placeholder: true,
+        placeholderValue: 'Select vessels'
+    });
+
+    function calculateInlineEndDate() {
+        if (!inlineStart.value || !inlineDuration.value) return;
+
+        const startDate = new Date(inlineStart.value);
+        const nights = parseInt(inlineDuration.value);
+        const endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + nights);
+
+        inlineEnd.valueAsDate = endDate;
+    }
+
+    if (inlineStart && inlineDuration) {
+        inlineStart.addEventListener('change', calculateInlineEndDate);
+        inlineDuration.addEventListener('input', calculateInlineEndDate);
+    }
 
     /* -----------------------------
        SOURCE / AGENT TOGGLE
@@ -286,152 +558,152 @@ function renderRoomsByBoat(slot) {
     function addRooms(boat) {
         if (!boat.rooms || !boat.rooms.length) return;
 
-        const boatHeader = document.createElement('div');
-        boatHeader.className = 'col-12 mb-2';
-        boatHeader.innerHTML = `<strong>Boat: ${boat.name}</strong>`;
-        roomWrapper.appendChild(boatHeader);
+            const boatHeader = document.createElement('div');
+            boatHeader.className = 'col-12 mb-2';
+            boatHeader.innerHTML = `<strong>Boat: ${boat.name}</strong>`;
+            roomWrapper.appendChild(boatHeader);
 
-        boat.rooms.forEach(room => {
-            const cap = parseInt(room.capacity || 0) + parseInt(room.extra_beds || 0);
-            const usage = roomUsageBySlot?.[slot.id]?.[room.id] || {};
-            const used = usage.used || 0;
-            const assignedGuests = (usage.guests || []).map(id => parseInt(id, 10));
+            boat.rooms.forEach(room => {
+                const cap = parseInt(room.capacity || 0) + parseInt(room.extra_beds || 0);
+                const usage = roomUsageBySlot?.[slot.id]?.[room.id] || {};
+                const used = usage.used || 0;
+                const assignedGuests = (usage.guests || []).map(id => parseInt(id, 10));
 
-            // Adjust remaining seats by subtracting pre-assigned guests
-            let remaining = cap - assignedGuests.length;
-            remaining = remaining < 0 ? 0 : remaining;
+                // Adjust remaining seats by subtracting pre-assigned guests
+                let remaining = cap - assignedGuests.length;
+                remaining = remaining < 0 ? 0 : remaining;
 
-            const div = document.createElement('div');
-            div.className = 'col-md-4';
-            div.innerHTML = `
-                <label class="card p-2 h-100">
-                    <strong>${room.room_name}</strong><br>
-                    <small class="text-muted">
-                        ${remaining > 0 ? `Remaining ${remaining} of ${cap}` : 'Fully booked'}
-                    </small>
+                const div = document.createElement('div');
+                div.className = 'col-md-4';
+                div.innerHTML = `
+                    <label class="card p-2 h-100">
+                        <strong>${room.room_name}</strong><br>
+                        <small class="text-muted">
+                            ${remaining > 0 ? `Remaining ${remaining} of ${cap}` : 'Fully booked'}
+                        </small>
 
-                    <select
-                        multiple
-                        class="form-control room-guests mt-2"
-                        name="guest_rooms[${room.id}][]"
-                        data-cap="${cap}"
-                        data-remaining="${remaining}"
-                        ${(!isPrivate && remaining <= 0) ? 'disabled' : ''}
-                    ></select>
+                        <select
+                            multiple
+                            class="form-control room-guests mt-2"
+                            name="guest_rooms[${room.id}][]"
+                            data-cap="${cap}"
+                            data-remaining="${remaining}"
+                            ${(!isPrivate && remaining <= 0) ? 'disabled' : ''}
+                        ></select>
 
-                    <div class="assigned-guests mt-1 text-muted"></div>
-                    <div class="room-full text-danger mt-1" style="display:${remaining <= 0 ? 'block' : 'none'};">
-                        Room fully booked for this trip
-                    </div>
-                </label>
-            `;
-            roomWrapper.appendChild(div);
+                        <div class="assigned-guests mt-1 text-muted"></div>
+                        <div class="room-full text-danger mt-1" style="display:${remaining <= 0 ? 'block' : 'none'};">
+                            Room fully booked for this trip
+                        </div>
+                    </label>
+                `;
+                roomWrapper.appendChild(div);
 
-            const select = div.querySelector('select.room-guests');
-            const fullMsg = div.querySelector('.room-full');
+                const select = div.querySelector('select.room-guests');
+                const fullMsg = div.querySelector('.room-full');
 
-            // Add all guests to select, preselect already assigned ones
-            guests.forEach(g => {
-                const opt = document.createElement('option');
-                opt.value = g.id;
-                opt.text = ((g.first_name || '') + ' ' + (g.last_name || '')).trim() || g.name;
+                // Add all guests to select, preselect already assigned ones
+                guests.forEach(g => {
+                    const opt = document.createElement('option');
+                    opt.value = g.id;
+                    opt.text = ((g.first_name || '') + ' ' + (g.last_name || '')).trim() || g.name;
 
-                if (assignedGuests.includes(parseInt(g.id, 10))) {
-                    opt.selected = true;
-                }
-
-                select.add(opt);
-            });
-
-            // Initialize Choices.js
-            const choices = new Choices(select, {
-                removeItemButton: true,
-                searchEnabled: true,
-                shouldSort: false,
-                placeholder: true,
-                placeholderValue: 'Select guests'
-            });
-
-            if (!isPrivate && remaining <= 0) {
-                select.disabled = true;
-            }
-
-            choicesInstances.push(choices);
-
-            function renderAssignedGuests() {
-                const container = div.querySelector('.assigned-guests');
-                container.innerHTML = '';
-
-                Array.from(select.selectedOptions).forEach(opt => {
-                    const guestId = parseInt(opt.value, 10);
-                    const isPreAssigned = assignedGuests.includes(guestId);
-
-                    const badge = document.createElement('span');
-                    badge.className = 'badge ' + (isPreAssigned ? 'bg-secondary' : 'bg-primary') + ' me-1 mb-1';
-                    badge.style.cursor = 'pointer';
-                    badge.textContent = opt.text + ' ×';
-
-                    if (remaining > 0 || isPrivate) {
-                        badge.onclick = () => {
-                            Swal.fire({
-                                title: 'Remove guest?',
-                                text: opt.text,
-                                icon: 'warning',
-                                showCancelButton: true,
-                                confirmButtonText: 'Remove'
-                            }).then(res => {
-                                if (res.isConfirmed) {
-                                    choices.removeActiveItemsByValue(opt.value);
-                                    updateRoomState();
-                                }
-                            });
-                        };
+                    if (assignedGuests.includes(parseInt(g.id, 10))) {
+                        opt.selected = true;
                     }
 
-                    container.appendChild(badge);
+                    select.add(opt);
                 });
-            }
 
-            function updateRoomState() {
-                // Recalculate remaining seats based on current selected guests
-                const selectedCount = select.selectedOptions.length;
-                const currentRemaining = remaining - (selectedCount - assignedGuests.length);
+                // Initialize Choices.js
+                const choices = new Choices(select, {
+                    removeItemButton: true,
+                    searchEnabled: true,
+                    shouldSort: false,
+                    placeholder: true,
+                    placeholderValue: 'Select guests'
+                });
 
-                renderAssignedGuests();
-
-                if (!isPrivate && currentRemaining <= 0) {
-                    select.closest('label').querySelector('.choices').style.display = 'none';
-                    fullMsg.style.display = 'block';
-                } else {
-                    select.closest('label').querySelector('.choices').style.display = 'block';
-                    if (currentRemaining > 0) fullMsg.style.display = 'none';
+                if (!isPrivate && remaining <= 0) {
+                    select.disabled = true;
                 }
-            }
 
-            updateRoomState();
+                choicesInstances.push(choices);
 
-            select.addEventListener('change', () => {
-                const selectedCount = select.selectedOptions.length;
-                const currentRemaining = remaining - (selectedCount - assignedGuests.length);
+                function renderAssignedGuests() {
+                    const container = div.querySelector('.assigned-guests');
+                    container.innerHTML = '';
 
-                if (!isPrivate && currentRemaining < 0) {
-                    choices.removeActiveItemsByValue(
-                        select.selectedOptions[select.selectedOptions.length - 1].value
-                    );
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Room Full',
-                        text: 'This room has no remaining capacity.'
+                    Array.from(select.selectedOptions).forEach(opt => {
+                        const guestId = parseInt(opt.value, 10);
+                        const isPreAssigned = assignedGuests.includes(guestId);
+
+                        const badge = document.createElement('span');
+                        badge.className = 'badge ' + (isPreAssigned ? 'bg-secondary' : 'bg-primary') + ' me-1 mb-1';
+                        badge.style.cursor = 'pointer';
+                        badge.textContent = opt.text + ' ×';
+
+                        if (remaining > 0 || isPrivate) {
+                            badge.onclick = () => {
+                                Swal.fire({
+                                    title: 'Remove guest?',
+                                    text: opt.text,
+                                    icon: 'warning',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Remove'
+                                }).then(res => {
+                                    if (res.isConfirmed) {
+                                        choices.removeActiveItemsByValue(opt.value);
+                                        updateRoomState();
+                                    }
+                                });
+                            };
+                        }
+
+                        container.appendChild(badge);
                     });
                 }
-                updateRoomState();
-            });
-        });
-    }
 
-    if (slot.boat) addRooms(slot.boat);
-    if (slot.boats && slot.boats.length) slot.boats.forEach(addRooms);
-}
+                function updateRoomState() {
+                    // Recalculate remaining seats based on current selected guests
+                    const selectedCount = select.selectedOptions.length;
+                    const currentRemaining = remaining - (selectedCount - assignedGuests.length);
+
+                    renderAssignedGuests();
+
+                    if (!isPrivate && currentRemaining <= 0) {
+                        select.closest('label').querySelector('.choices').style.display = 'none';
+                        fullMsg.style.display = 'block';
+                    } else {
+                        select.closest('label').querySelector('.choices').style.display = 'block';
+                        if (currentRemaining > 0) fullMsg.style.display = 'none';
+                    }
+                }
+
+                updateRoomState();
+
+                select.addEventListener('change', () => {
+                    const selectedCount = select.selectedOptions.length;
+                    const currentRemaining = remaining - (selectedCount - assignedGuests.length);
+
+                    if (!isPrivate && currentRemaining < 0) {
+                        choices.removeActiveItemsByValue(
+                            select.selectedOptions[select.selectedOptions.length - 1].value
+                        );
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Room Full',
+                            text: 'This room has no remaining capacity.'
+                        });
+                    }
+                    updateRoomState();
+                });
+            });
+        }
+
+        if (slot.boat) addRooms(slot.boat);
+        if (slot.boats && slot.boats.length) slot.boats.forEach(addRooms);
+    }
 
 
 
@@ -441,19 +713,35 @@ function renderRoomsByBoat(slot) {
     /* -----------------------------
        SLOT CHANGE
     ------------------------------ */
-    slotSelect.addEventListener('change', function(){
-        const slot = slots.find(s => s.id == this.value);
+   slotSelect.addEventListener('change', function(){
 
-        if(!slot){
-            // inlineSlotWrapper.classList.remove('d-none');
-            roomWrapper.innerHTML = '';
-            roomMessage.style.display = 'block';
-            return;
-        }
+    const slot = slots.find(s => s.id == this.value);
+    const inlineFields = inlineSlotWrapper.querySelectorAll('input, select, textarea');
 
-        inlineSlotWrapper.classList.add('d-none');
-        renderRoomsByBoat(slot);
+    if (!slot) {
+        // ✅ INLINE MODE ACTIVE
+        inlineSlotWrapper.classList.remove('d-none');
+
+        inlineFields.forEach(field => {
+            field.disabled = false;
+            field.setAttribute('required', 'required');
+        });
+
+        roomWrapper.innerHTML = '';
+        roomMessage.style.display = 'block';
+        return;
+    }
+
+    // ✅ NORMAL SLOT MODE
+    inlineSlotWrapper.classList.add('d-none');
+
+    inlineFields.forEach(field => {
+        field.disabled = true;
+        field.removeAttribute('required');
     });
+
+    renderRoomsByBoat(slot);
+});
 
 
    // Add Guest via modal
