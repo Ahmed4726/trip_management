@@ -327,6 +327,8 @@ document.addEventListener('DOMContentLoaded', function(){
     const inlineEnd = document.getElementById('inlineEndDate');
     const vesselsSelect = document.getElementById('inlineBoatsAllowed');
 
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('inlineStartDate').setAttribute('min', today);
 
     function toggleInlineRequired(isActive) {
 
