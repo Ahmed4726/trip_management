@@ -135,7 +135,7 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <label>Vessels</label>
-                            <select name="boats_allowed[]" id="inlineBoatsAllowed" class="form-control" multiple>
+                            <select name="boats_allowed[]" id="inlineBoatsAllowed" class="form-control">
                                 @foreach($boats as $boat)
                                     <option value="{{ $boat->id }}">{{ $boat->name }}</option>
                                 @endforeach
