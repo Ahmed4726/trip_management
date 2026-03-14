@@ -270,7 +270,7 @@
                             <input type="number" name="price_usd" id="price_usd" class="form-control" readonly>
                         </div>
                     </div>
-                    
+
                     {{-- Deposit / Payment Section --}}
                     <div class="row mb-3">
                         <div class="col-md-4 mb-3">
@@ -545,66 +545,196 @@ document.addEventListener('DOMContentLoaded', function() {
     // -------------------------
     // RENDER ROOMS FOR SLOTS
     // -------------------------
-function renderRoomsBySlot(slot){
-    roomWrapper.innerHTML='';
+    function renderRoomsBySlot(slot){
+        roomWrapper.innerHTML='';
 
-    const isPrivate = slot.slot_type === 'Private Charter';
-    roomMessage.textContent = isPrivate
-        ? 'Private Charter: room assignment is optional.'
-        : 'Open Trip: assign any available rooms.';
-    roomMessage.style.display='block';
+        const isPrivate = slot.slot_type === 'Private Charter';
+        roomMessage.textContent = isPrivate
+            ? 'Private Charter: room assignment is optional.'
+            : 'Open Trip: assign any available rooms.';
+        roomMessage.style.display='block';
 
-    let guestAssignments={};
+        let guestAssignments={};
 
-    function addRooms(boat){
-        if(!boat.rooms || !boat.rooms.length) return;
-        const boatHeader=document.createElement('div');
-        boatHeader.className='col-12 mb-2';
-        boatHeader.innerHTML=`<strong>Boat: ${boat.name}</strong>`;
-        roomWrapper.appendChild(boatHeader);
+        function addRooms(boat){
+            if(!boat.rooms || !boat.rooms.length) return;
+            const boatHeader=document.createElement('div');
+            boatHeader.className='col-12 mb-2';
+            boatHeader.innerHTML=`<strong>Boat: ${boat.name}</strong>`;
+            roomWrapper.appendChild(boatHeader);
 
-        boat.rooms.forEach(room=>{
-            const cap = parseInt(room.capacity||0)+parseInt(room.extra_beds||0);
-            const usage = roomUsageBySlot?.[slot.id]?.[room.id] || {};
-            const assignedGuests = (usage.guests||[]).map(id=>parseInt(id));
-            guestAssignments[room.id] = [...assignedGuests];
+            boat.rooms.forEach(room=>{
+                const cap = parseInt(room.capacity||0)+parseInt(room.extra_beds||0);
+                const usage = roomUsageBySlot?.[slot.id]?.[room.id] || {};
+                const previousGuests = (usage.guests||[]).map(id=>parseInt(id));
+                guestAssignments[room.id] = [...previousGuests];
 
-            const div = document.createElement('div');
-            div.className='col-md-4 mb-3';
-            div.innerHTML = `
-                <label class="card p-2 h-100">
-                    <strong>${room.room_name}</strong>
-                    <small class="text-muted room-capacity mt-1"></small>
-                    <div class="room-dropzone mt-2"
-                        data-room="${room.id}"
-                        data-cap="${cap}"
-                        style="min-height:90px;border:2px dashed #ccc;border-radius:6px;padding:8px;">
-                    </div>
-                    <input type="hidden" class="room-input" name="guest_rooms[${room.id}]">
-                    <div class="room-full text-danger mt-1" style="display:none;">Room fully booked</div>
-                </label>
-            `;
-            roomWrapper.appendChild(div);
+                const div = document.createElement('div');
+                div.className='col-md-4 mb-3';
+                div.innerHTML = `
+                    <label class="card p-2 h-100">
+                        <strong>${room.room_name}</strong>
+                        <small class="text-muted room-capacity mt-1"></small>
+                        <div class="room-dropzone mt-2"
+                            data-room="${room.id}"
+                            data-cap="${cap}"
+                            style="min-height:90px;border:2px dashed #ccc;border-radius:6px;padding:8px;">
+                        </div>
+                        <input type="hidden" class="room-input" name="guest_rooms[${room.id}]">
+                        <div class="room-full text-danger mt-1" style="display:none;">Room fully booked</div>
+                    </label>
+                `;
+                roomWrapper.appendChild(div);
 
-            const dropzone = div.querySelector('.room-dropzone');
-            const hiddenInput = div.querySelector('.room-input');
-            const capacityText = div.querySelector('.room-capacity');
-            const fullMsg = div.querySelector('.room-full');
+                const dropzone = div.querySelector('.room-dropzone');
+                const hiddenInput = div.querySelector('.room-input');
+                const capacityText = div.querySelector('.room-capacity');
+                const fullMsg = div.querySelector('.room-full');
 
-            function renderGuests(){
-                dropzone.innerHTML='';
-                guestAssignments[room.id].forEach(id=>{
-                    const guest = guests.find(g=>g.id==id);
-                    if(!guest) return;
-                    const badge=document.createElement('span');
-                    badge.className='badge me-1 mb-1';
-                    badge.style.cursor='pointer';
-                    badge.style.background = usage.guests?.includes(id) ? '#6c757d' : '#0d6efd'; // grey for previous booking
-                    badge.textContent=(guest.first_name+' '+guest.last_name).trim()+' ×';
+                function renderGuests(){
+                    dropzone.innerHTML='';
+                    guestAssignments[room.id].forEach(id=>{
+                        const guest = guests.find(g=>g.id==id);
+                        if(!guest) return;
 
-                    if(!usage.guests?.includes(id)){
-                        // Only allow removal of guests added in this session
-                        badge.onclick=()=>{
+                        const isExisting = previousGuests.includes(id);
+
+                        const badge = document.createElement('span');
+                        badge.className='badge me-1 mb-1';
+                        badge.style.background = isExisting ? '#6c757d' : '#0d6efd';
+                        badge.style.cursor = isExisting ? 'not-allowed' : 'pointer';
+                        badge.textContent = (guest.first_name+' '+guest.last_name).trim() + (isExisting ? '' : ' ×');
+
+                        if(!isExisting){
+                            badge.onclick=()=>{
+                                Swal.fire({
+                                    title:'Remove guest?',
+                                    icon:'warning',
+                                    showCancelButton:true
+                                }).then(res=>{
+                                    if(!res.isConfirmed) return;
+                                    guestAssignments[room.id] = guestAssignments[room.id].filter(gid=>gid!==id);
+                                    tripGuests.push(guest);
+                                    renderGuestPool();
+                                    updateAllRooms();
+                                });
+                            };
+                        }
+
+                        dropzone.appendChild(badge);
+                    });
+
+                    // Only include newly added guests in hidden input
+                    hiddenInput.value = guestAssignments[room.id].filter(id=>!previousGuests.includes(id)).join(',');
+
+                    const used = guestAssignments[room.id].length;
+                    const remaining = cap-used;
+                    capacityText.textContent = remaining>0 ? `Remaining ${remaining} of ${cap}` : 'Fully booked';
+                    fullMsg.style.display = remaining<=0 ? 'block':'none';
+                }
+
+                dropzone.addEventListener('dragover', e=>{ e.preventDefault(); });
+                dropzone.addEventListener('drop', e=>{
+                    e.preventDefault();
+                    const guestId=parseInt(e.dataTransfer.getData('guestId'));
+                    if(!guestId) return;
+                    if(guestAssignments[room.id].includes(guestId)) return;
+
+                    if(previousGuests.length){
+                        Swal.fire({icon:'warning', title:'Room already booked', text:'Guests from previous booking occupy this room.'});
+                        return;
+                    }
+
+                    if(!isPrivate && guestAssignments[room.id].length >= cap){
+                        Swal.fire({icon:'warning', title:'Room Full'});
+                        return;
+                    }
+
+                    // Remove guest from other rooms only if added in this session
+                    Object.keys(guestAssignments).forEach(rid=>{
+                        if(!roomUsageBySlot?.[slot.id]?.[rid]) {
+                            guestAssignments[rid] = guestAssignments[rid].filter(id=>id!==guestId);
+                        }
+                    });
+
+                    guestAssignments[room.id].push(guestId);
+                    tripGuests = tripGuests.filter(g=>g.id!==guestId);
+                    renderGuestPool();
+                    updateAllRooms();
+                });
+
+                div.updateRoomState = renderGuests;
+                renderGuests();
+            });
+        }
+
+        function updateAllRooms(){
+            document.querySelectorAll('#roomWrapper .col-md-4').forEach(room=>{
+                if(room.updateRoomState) room.updateRoomState();
+            });
+        }
+
+        if(slot.boat) addRooms(slot.boat);
+        if(slot.boats) slot.boats.forEach(addRooms);
+        updateAllRooms();
+    }
+
+    // -------------------------
+    // INLINE BOAT ROOMS
+    // -------------------------
+    function renderRoomsForInlineBoats(selectedBoatIds){
+        roomWrapper.innerHTML='';
+        roomMessage.style.display='none';
+
+        if(!selectedBoatIds.length){
+            roomMessage.textContent='Select a vessel to see rooms.';
+            roomMessage.style.display='block';
+            return;
+        }
+
+        // Track guests assigned to inline rooms
+        let guestAssignments = {};
+
+        selectedBoatIds.forEach(boatId=>{
+            const boat = boatsWithRooms.find(b=>b.id==boatId);
+            if(!boat || !boat.rooms || !boat.rooms.length) return;
+
+            const boatHeader = document.createElement('div');
+            boatHeader.className='col-12 mb-2';
+            boatHeader.innerHTML=`<strong>Boat: ${boat.name}</strong>`;
+            roomWrapper.appendChild(boatHeader);
+
+            boat.rooms.forEach(room=>{
+                const capacity = parseInt(room.capacity||0)+parseInt(room.extra_beds||0);
+                guestAssignments[room.id] = [];
+
+                const div=document.createElement('div');
+                div.className='col-md-4 mb-3';
+                div.innerHTML = `
+                    <label class="card p-2 h-100">
+                        <strong>${room.room_name}</strong>
+                        <small class="text-muted room-capacity mt-1">Capacity ${capacity}</small>
+                        <div class="room-dropzone mt-2" data-room="${room.id}" data-cap="${capacity}" style="min-height:90px;border:2px dashed #ccc;border-radius:6px;padding:8px;"></div>
+                        <input type="hidden" name="guest_rooms[${room.id}]" class="room-input">
+                    </label>
+                `;
+                roomWrapper.appendChild(div);
+
+                const dropzone = div.querySelector('.room-dropzone');
+                const hiddenInput = div.querySelector('.room-input');
+                const capacityText = div.querySelector('.room-capacity');
+
+                // Render guests inside room
+                function renderGuests(){
+                    dropzone.innerHTML='';
+                    guestAssignments[room.id].forEach(id=>{
+                        const guest = guests.find(g=>g.id==id);
+                        if(!guest) return;
+                        const badge = document.createElement('span');
+                        badge.className='badge bg-primary me-1 mb-1';
+                        badge.style.cursor='pointer';
+                        badge.textContent=(guest.first_name+' '+guest.last_name).trim()+' ×';
+                        badge.onclick = ()=>{
                             Swal.fire({
                                 title:'Remove guest?',
                                 icon:'warning',
@@ -614,185 +744,81 @@ function renderRoomsBySlot(slot){
                                 guestAssignments[room.id] = guestAssignments[room.id].filter(gid=>gid!==id);
                                 tripGuests.push(guest);
                                 renderGuestPool();
-                                updateAllRooms();
+                                renderGuests();
                             });
                         };
-                    }
-
-                    dropzone.appendChild(badge);
-                });
-                hiddenInput.value = guestAssignments[room.id].join(',');
-                const used = guestAssignments[room.id].length;
-                const remaining = cap-used;
-                capacityText.textContent = remaining>0 ? `Remaining ${remaining} of ${cap}` : 'Fully booked';
-                fullMsg.style.display = remaining<=0 ? 'block':'none';
-            }
-
-            dropzone.addEventListener('dragover', e=>{ e.preventDefault(); });
-            dropzone.addEventListener('drop', e=>{
-                e.preventDefault();
-                const guestId=parseInt(e.dataTransfer.getData('guestId'));
-                if(!guestId) return;
-                if(guestAssignments[room.id].includes(guestId)) return;
-                if(!isPrivate && guestAssignments[room.id].length >= cap){
-                    Swal.fire({icon:'warning', title:'Room Full'});
-                    return;
-                }
-                // Remove guest from other rooms only if they are added in this session
-                Object.keys(guestAssignments).forEach(rid=>{
-                    if(!roomUsageBySlot?.[slot.id]?.[rid]) {
-                        guestAssignments[rid] = guestAssignments[rid].filter(id=>id!==guestId);
-                    }
-                });
-                guestAssignments[room.id].push(guestId);
-                tripGuests = tripGuests.filter(g=>g.id!==guestId);
-                renderGuestPool();
-                updateAllRooms();
-            });
-
-            div.updateRoomState = renderGuests;
-            renderGuests();
-        });
-    }
-
-    function updateAllRooms(){
-        document.querySelectorAll('#roomWrapper .col-md-4').forEach(room=>{
-            if(room.updateRoomState) room.updateRoomState();
-        });
-    }
-
-    if(slot.boat) addRooms(slot.boat);
-    if(slot.boats) slot.boats.forEach(addRooms);
-    updateAllRooms();
-}
-
-    // -------------------------
-    // INLINE BOAT ROOMS
-    // -------------------------
-function renderRoomsForInlineBoats(selectedBoatIds){
-    roomWrapper.innerHTML='';
-    roomMessage.style.display='none';
-
-    if(!selectedBoatIds.length){
-        roomMessage.textContent='Select a vessel to see rooms.';
-        roomMessage.style.display='block';
-        return;
-    }
-
-    // Track guests assigned to inline rooms
-    let guestAssignments = {};
-
-    selectedBoatIds.forEach(boatId=>{
-        const boat = boatsWithRooms.find(b=>b.id==boatId);
-        if(!boat || !boat.rooms || !boat.rooms.length) return;
-
-        const boatHeader = document.createElement('div');
-        boatHeader.className='col-12 mb-2';
-        boatHeader.innerHTML=`<strong>Boat: ${boat.name}</strong>`;
-        roomWrapper.appendChild(boatHeader);
-
-        boat.rooms.forEach(room=>{
-            const capacity = parseInt(room.capacity||0)+parseInt(room.extra_beds||0);
-            guestAssignments[room.id] = [];
-
-            const div=document.createElement('div');
-            div.className='col-md-4 mb-3';
-            div.innerHTML = `
-                <label class="card p-2 h-100">
-                    <strong>${room.room_name}</strong>
-                    <small class="text-muted room-capacity mt-1">Capacity ${capacity}</small>
-                    <div class="room-dropzone mt-2" data-room="${room.id}" data-cap="${capacity}" style="min-height:90px;border:2px dashed #ccc;border-radius:6px;padding:8px;"></div>
-                    <input type="hidden" name="guest_rooms[${room.id}]" class="room-input">
-                </label>
-            `;
-            roomWrapper.appendChild(div);
-
-            const dropzone = div.querySelector('.room-dropzone');
-            const hiddenInput = div.querySelector('.room-input');
-            const capacityText = div.querySelector('.room-capacity');
-
-            // Render guests inside room
-            function renderGuests(){
-                dropzone.innerHTML='';
-                guestAssignments[room.id].forEach(id=>{
-                    const guest = guests.find(g=>g.id==id);
-                    if(!guest) return;
-                    const badge = document.createElement('span');
-                    badge.className='badge bg-primary me-1 mb-1';
-                    badge.style.cursor='pointer';
-                    badge.textContent=(guest.first_name+' '+guest.last_name).trim()+' ×';
-                    badge.onclick = ()=>{
-                        Swal.fire({
-                            title:'Remove guest?',
-                            icon:'warning',
-                            showCancelButton:true
-                        }).then(res=>{
-                            if(!res.isConfirmed) return;
-                            guestAssignments[room.id] = guestAssignments[room.id].filter(gid=>gid!==id);
-                            tripGuests.push(guest);
-                            renderGuestPool();
-                            renderGuests();
-                        });
-                    };
-                    dropzone.appendChild(badge);
-                });
-                hiddenInput.value = guestAssignments[room.id].join(',');
-                const remaining = capacity - guestAssignments[room.id].length;
-                capacityText.textContent = remaining>0 ? `Remaining ${remaining} of ${capacity}` : 'Fully booked';
-            }
-
-            // Drag & Drop events
-            dropzone.addEventListener('dragover', e=> e.preventDefault());
-            dropzone.addEventListener('drop', e=>{
-                e.preventDefault();
-                const guestId = parseInt(e.dataTransfer.getData('guestId'));
-                if(!guestId) return;
-                if(guestAssignments[room.id].includes(guestId)) return;
-
-                if(guestAssignments[room.id].length >= capacity){
-                    Swal.fire({icon:'warning', title:'Room Full'});
-                    return;
+                        dropzone.appendChild(badge);
+                    });
+                    hiddenInput.value = guestAssignments[room.id].join(',');
+                    const remaining = capacity - guestAssignments[room.id].length;
+                    capacityText.textContent = remaining>0 ? `Remaining ${remaining} of ${capacity}` : 'Fully booked';
                 }
 
-                guestAssignments[room.id].push(guestId);
-                tripGuests = tripGuests.filter(g=>g.id!==guestId);
-                renderGuestPool();
+                // Drag & Drop events
+                dropzone.addEventListener('dragover', e=> e.preventDefault());
+                dropzone.addEventListener('drop', e=>{
+                    e.preventDefault();
+                    const guestId = parseInt(e.dataTransfer.getData('guestId'));
+                    if(!guestId) return;
+                    if(guestAssignments[room.id].includes(guestId)) return;
+
+                    if(guestAssignments[room.id].length >= capacity){
+                        Swal.fire({icon:'warning', title:'Room Full'});
+                        return;
+                    }
+
+                    guestAssignments[room.id].push(guestId);
+                    tripGuests = tripGuests.filter(g=>g.id!==guestId);
+                    renderGuestPool();
+                    renderGuests();
+                });
+
+                // Initial render
                 renderGuests();
             });
-
-            // Initial render
-            renderGuests();
         });
-    });
-}
+    }
 
+    // -------------------------
+    // ADD NEW GUEST VIA MODAL
+    // -------------------------
     $('#guestForm').on('submit', function (e) {
         e.preventDefault();
         const form = $(this);
+
         $.ajax({
             url: '{{ route("admin.guests.store") }}',
             method: 'POST',
             data: form.serialize(),
 
             success: function (guest) {
-                guests.push(guest);
-
-                choicesInstances.forEach(instance => {
-                    instance.setChoices(
-                        [
-                            {
-                                value: String(guest.id),
-                                label: guest.name,
-                                selected: false,
-                                disabled: false
-                            }
-                        ],
-                        'value',
-                        'label',
-                        false // append, do not replace
-                    );
+                // Add to guests array
+                guests.push({
+                    id: guest.id,
+                    first_name: guest.name.split(' ')[0] || guest.name, // take first word as first_name
+                    last_name: guest.name.split(' ').slice(1).join(' ') || '', // rest as last_name
+                    name: guest.name
                 });
 
+                // Add to guest selector dropdown (Choices)
+                guestChoices.setChoices([{
+                    value: guest.id,
+                    label: guest.name,
+                    selected: false,
+                    disabled: false
+                }], 'value', 'label', false); // append
+
+                // Add to trip guest pool immediately
+                if(!tripGuests.find(g => g.id == guest.id)){
+                    tripGuests.push({
+                        id: guest.id,
+                        first_name: guest.name.split(' ')[0] || guest.name,
+                        last_name: guest.name.split(' ').slice(1).join(' ') || ''
+                    });
+                    renderGuestPool();
+                }
+
+                // Close modal and reset form
                 $('#guestModal').modal('hide');
                 form[0].reset();
 
@@ -807,11 +833,9 @@ function renderRoomsForInlineBoats(selectedBoatIds){
 
             error: function (xhr) {
                 let msg = 'Failed to create guest';
-
                 if (xhr.responseJSON && xhr.responseJSON.errors) {
                     msg = Object.values(xhr.responseJSON.errors).flat().join('\n');
                 }
-
                 Swal.fire({
                     icon: 'error',
                     title: 'Error',
