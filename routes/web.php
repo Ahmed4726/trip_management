@@ -119,6 +119,8 @@ Route::post('guest/form/{token}', [GuestController::class, 'submit'])->name('gue
                     Route::get('bookings/{booking}/payments', [BookingPaymentsController::class,'index'])->name('bookings.payments.index');
                     Route::post('bookings/{booking}/payments', [BookingPaymentsController::class,'store'])->name('bookings.payments.store');
                     Route::get('bookings/payments/{payment}/invoice', [BookingPaymentsController::class,'invoice'])->name('bookings.payments.invoice');
+                    Route::get('bookings/payments/{payment}/download',[BookingPaymentsController::class,'downloadInvoice'])->name('bookings.payments.download');
+                    Route::delete('bookings/payments/{payment}',[BookingPaymentsController::class,'destroy'])->name('bookings.payments.delete');
                 });
 
                 Route::prefix('admin/slots/{slot}/documents')->name('admin.slots.documents.')->group(function () {

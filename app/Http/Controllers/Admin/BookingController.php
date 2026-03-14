@@ -390,6 +390,16 @@ BookingGuestRoom::whereIn(
                 'salesperson_id' => $request->salesperson_id,
             ]);
 
+            // Store payment when payment is made
+            if ($request->deposit_amount) {
+                $payment = $booking->payments()->create([
+                    'amount' => $request->deposit_amount,
+                    'paid_at' => now(),
+                    'payment_method' => 'Cash', // Default method, can be extended to accept from request
+                    'invoice_number' => 'INV-' . now()->format('YmdHis') . '-' . $booking->id,
+                ]);
+            }
+
             // ------------------------------
             // ATTACH ROOMS & GUESTS
             // ------------------------------
