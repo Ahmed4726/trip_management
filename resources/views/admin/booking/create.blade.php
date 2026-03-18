@@ -605,7 +605,7 @@ document.addEventListener('DOMContentLoaded', function() {
                             style="min-height:90px;border:2px dashed #ccc;border-radius:6px;padding:8px;">
                         </div>
                         <input type="hidden" class="room-input" name="guest_rooms[${room.id}]">
-                        <div class="room-full text-danger mt-1" style="display:none;">Room fully booked</div>
+                        <div class="room-full text-danger mt-1" style="display:none;"></div>
                     </label>
                 `;
                 roomWrapper.appendChild(div);
