@@ -30,9 +30,14 @@ class RoomController extends Controller
             'name' => 'required',
         ]);
 
-        Room::create($request->only(
-            'boat_id','name','deck','bed_type','extra_beds','capacity'
-        ));
+        Room::create([
+            'boat_id'    => $request->boat_id,
+            'room_name'  => $request->name,
+            'deck'       => $request->deck,
+            'bed_type'   => $request->bed_type,
+            'extra_beds' => $request->extra_beds,
+            'capacity'   => $request->capacity,
+        ]);
 
         Boat::where('id',$request->boat_id)
             ->increment('total_rooms');

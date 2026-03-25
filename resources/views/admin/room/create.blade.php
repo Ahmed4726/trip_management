@@ -46,6 +46,15 @@
             </div>
 
             <div class="mb-3">
+                <label class="form-label">Capacity</label>
+                <input type="number"
+                       name="capacity"
+                       class="form-control"
+                       value="0"
+                       min="0">
+            </div>
+
+            <div class="mb-3">
                 <label class="form-label">Extra Beds</label>
                 <input type="number"
                        name="extra_beds"
@@ -53,6 +62,8 @@
                        value="0"
                        min="0">
             </div>
+
+
 
             <button class="btn btn-success">Save</button>
             <a href="{{ route('admin.rooms.index',['boat_id'=>$boat->id]) }}"
