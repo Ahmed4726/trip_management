@@ -33,10 +33,10 @@
     <div class="row g-3 mb-4">
         @php
             $summary = [
-                ['title'=>'Total Price','value'=>$booking->price,'icon'=>'fa-dollar-sign','color'=>'text-primary'],
+                ['title'=>'Total Price','value'=>$booking->price_usd,'icon'=>'fa-dollar-sign','color'=>'text-primary'],
                 ['title'=>'Deposit','value'=>$booking->deposit_amount ?? 0,'icon'=>'fa-hand-holding-dollar','color'=>'text-warning','extra'=>'Due: '.($booking->deposit_due_date ? \Carbon\Carbon::parse($booking->deposit_due_date)->format('d-m-Y') : '-')],
                 ['title'=>'Paid','value'=>$booking->amount_paid,'icon'=>'fa-money-bill-wave','color'=>'text-success'],
-                ['title'=>'Balance Due','value'=>$booking->balance_due,'icon'=> $booking->balance_due <=0 ? 'fa-check-circle' : 'fa-exclamation-circle','color'=>$booking->balance_due <=0 ? 'text-success' : 'text-danger','progress'=>($booking->amount_paid / $booking->price)*100]
+                ['title'=>'Balance Due','value'=>$booking->balance_due,'icon'=> $booking->balance_due <=0 ? 'fa-check-circle' : 'fa-exclamation-circle','color'=>$booking->balance_due <=0 ? 'text-success' : 'text-danger','progress'=>($booking->amount_paid / $booking->price_usd)*100]
             ];
         @endphp
 
@@ -73,7 +73,7 @@
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Amount</label>
-                        <input type="number" name="amount" id="amount" class="form-control form-control-lg" step="0.01" placeholder="Enter amount" required>
+                        <input type="number" name="amount" id="amount" class="form-control form-control-lg" step="0.01" placeholder="Enter amount in USD" required>
                     </div>
                     <div class="col-md-4">
                         <label class="form-label fw-semibold">Paid At</label>

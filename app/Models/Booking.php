@@ -120,7 +120,7 @@ class Booking extends Model
 
     public function getBalanceDueAttribute()
     {
-        return $this->price - $this->amount_paid;
+        return $this->price_usd - $this->amount_paid;
     }
 
 }

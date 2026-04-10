@@ -71,9 +71,9 @@
     </table>
 
     <div class="totals">
+        <p><strong>Total Price: </strong> {{ number_format($booking->price_usd,2) }} USD</p>
         <p><strong>Total Paid: </strong> {{ number_format($booking->amount_paid,2) }} USD</p>
         <p><strong>Balance Due: </strong> {{ number_format($booking->balance_due,2) }} USD</p>
-        <p><strong>Total Price: </strong> {{ number_format($booking->price,2) }} USD</p>
     </div>
 </body>
 </html>
