@@ -119,6 +119,34 @@ class BookingController extends Controller
             }
         }
 
+        $currencyBySlot = [];
+
+        foreach ($slots as $slot) {
+
+            $booking = Booking::where('slot_id', $slot->id)
+                ->whereIn('status', ['Pending', 'DP Paid', 'Full Paid'])
+                ->latest()
+                ->first();
+
+            if ($booking && $booking->currency) {
+
+                // Case 1: already numeric (ID)
+                if (is_numeric($booking->currency)) {
+                    $currencyBySlot[$slot->id] = (int) $booking->currency;
+                }
+                // Case 2: stored as name or code
+                else {
+                    $currency = Currency::where('name', $booking->currency)
+                        ->orWhere('code', $booking->currency)
+                        ->first();
+
+                    if ($currency) {
+                        $currencyBySlot[$slot->id] = $currency->id;
+                    }
+                }
+            }
+        }
+
 
         return view('admin.booking.create', [
             'slots' => $slots->toArray(),
@@ -138,6 +166,7 @@ class BookingController extends Controller
 
             'bookedSlotIds' => $bookedSlotIds,
             'roomUsageBySlot' => $roomUsageBySlot,
+            'currencyBySlot' => $currencyBySlot,
         ]);
     }
 

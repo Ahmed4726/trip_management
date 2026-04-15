@@ -433,6 +433,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const guests = @json($guests);
     const roomUsageBySlot = @json($roomUsageBySlot);
     const boatsWithRooms = @json($boats); // include rooms relation
+    const currencyBySlot = @json($currencyBySlot);
 
     // -------------------------
     // ELEMENTS
@@ -565,6 +566,21 @@ document.addEventListener('DOMContentLoaded', function() {
         if(slot){
             toggleInlineFields(false);
             renderRoomsBySlot(slot);
+
+            // ✅ AUTO SELECT CURRENCY (DROPDOWN SAFE)
+            if(currencyBySlot[slotId]){
+
+                const currencyId = currencyBySlot[slotId];
+            // loop options and select
+                Array.from(currencySelect.options).forEach(option => {
+                    option.selected = option.value == currencyId;
+                });
+
+                // trigger change for USD calculation
+                currencySelect.dispatchEvent(new Event('change'));
+
+            }
+
         }else{
             toggleInlineFields(true);
             roomWrapper.innerHTML='';
