@@ -70,14 +70,14 @@
 
                 {{-- Pax (Total Guests) --}}
                 <td>
-    @php
-        $pax = collect($booking->guestRoomAssignments)->count();
-        if(!$pax) {
-            $pax = collect($booking->guests)->count() ?: 1;
-        }
-    @endphp
-    {{ $pax }}
-</td>
+                    @php
+                        $pax = collect($booking->guestRoomAssignments)->count();
+                        if(!$pax) {
+                            $pax = collect($booking->guests)->count() ?: 1;
+                        }
+                    @endphp
+                    {{ $pax }}
+                </td>
 
 
                 {{-- Status --}}

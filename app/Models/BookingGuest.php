@@ -32,9 +32,14 @@ class BookingGuest extends Model
         'check_out_date',
     ];
 
-    public function booking()
+    public function bookings()
     {
         return $this->belongsTo(Booking::class);
+    }
+
+    public function rooms()
+    {
+        return $this->belongsTo(Room::class, 'room_id');
     }
 
     public function guest()

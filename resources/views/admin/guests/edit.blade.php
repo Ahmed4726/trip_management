@@ -94,39 +94,6 @@ class="form-control">
 </div>
 </div>
 
-
-<div class="card mb-4">
-<div class="card-header">
-<strong>Health & Special Requirements</strong>
-</div>
-
-<div class="card-body">
-
-<div class="mb-3">
-<label>Dietary Requirements</label>
-<textarea name="dietary_requirements" class="form-control" rows="3">{{ $guest->dietary_requirements }}</textarea>
-</div>
-
-<div class="mb-3">
-<label>Allergies</label>
-<textarea name="allergies" class="form-control" rows="3">{{ $guest->allergies }}</textarea>
-</div>
-
-<div class="mb-3">
-<label>Equipment Sizes</label>
-<input type="text" name="equipment_sizes"
-value="{{ $guest->equipment_sizes }}"
-class="form-control">
-</div>
-
-<div class="mb-3">
-<label>Operational Notes</label>
-<textarea name="operational_notes" class="form-control" rows="3">{{ $guest->operational_notes }}</textarea>
-</div>
-
-</div>
-</div>
-
 <button class="btn btn-success">Update</button>
 <a href="{{ route('admin.guests.index') }}" class="btn btn-secondary">Cancel</a>
 

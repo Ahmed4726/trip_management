@@ -343,19 +343,39 @@ public function store(Request $request)
     // CREATE BOOKING GUESTS (CORE)
     // ------------------------------
     $bookingGuestsMap = [];
+    $guestIds = collect($guestIds)
+                ->flatMap(function ($id) {
+                    return explode(',', $id);
+                })
+                ->map(fn($id) => trim($id))
+                ->filter()
+                ->unique()
+                ->values()
+                ->toArray();
 
     foreach ($guestIds as $guestId) {
+
+        $assignedRoomId = null;
+
+        // FIND GUEST ROOM
+        foreach ($guestRooms as $roomId => $gIds) {
+
+            if (in_array($guestId, $gIds)) {
+                $assignedRoomId = $roomId;
+                break;
+            }
+        }
 
         $bookingGuest = BookingGuest::create([
             'booking_id' => $booking->id,
             'guest_id' => $guestId,
+            'room_id' => $assignedRoomId,
             'is_lead_guest' => $guestId == $request->lead_customer_id,
             'guest_status' => 'confirmed',
         ]);
 
         $bookingGuestsMap[$guestId] = $bookingGuest->id;
     }
-
     // ------------------------------
     // PAYMENT
     // ------------------------------
@@ -544,8 +564,9 @@ public function update(Request $request, Booking $booking)
         'price' => 'required|numeric',
         'currency' => 'required',
         'salesperson_id' => 'required',
-        'booking_status' => 'required',
+
         'slot_id' => 'nullable|exists:slots,id',
+
         'slot_type' => 'required_without:slot_id',
         'boats_allowed' => 'required_without:slot_id|array',
         'region_id' => 'required_without:slot_id',
@@ -560,50 +581,76 @@ public function update(Request $request, Booking $booking)
         return back()->withErrors($validator)->withInput();
     }
 
-    $guestRooms = [];
-    if ($request->guest_rooms) {
-        foreach ($request->guest_rooms as $roomId => $guestString) {
-            $ids = array_filter(explode(',', $guestString));
-            if ($ids) {
-                $guestRooms[$roomId] = $ids;
-            }
-        }
-    }
-
     DB::beginTransaction();
 
     try {
-        // ------------------------------
-        // RESOLVE OR CREATE SLOT
-        // ------------------------------
+
+        // ---------------------------------
+        // GUEST ROOMS
+        // ---------------------------------
+        $guestRooms = [];
+
+        if ($request->guest_rooms) {
+
+            foreach ($request->guest_rooms as $roomId => $guestString) {
+
+                $ids = array_filter(explode(',', $guestString));
+
+                if ($ids) {
+                    $guestRooms[$roomId] = $ids;
+                }
+            }
+        }
+
+        // ---------------------------------
+        // SLOT
+        // ---------------------------------
         if ($request->slot_id) {
-            $slot = Slot::with(['boat.rooms', 'boats.rooms'])
+
+            $slot = Slot::with(['boats.rooms'])
                 ->lockForUpdate()
                 ->findOrFail($request->slot_id);
+
         } else {
-            $status = $request->slot_status ?? 'Available';
-            if (in_array($request->slot_type, ['Maintenance', 'Docking'])) {
+
+            $slot = $booking->slot;
+
+            $status = $request->slot_status ?? $slot->status;
+
+            if (
+                in_array($request->slot_type, ['Maintenance', 'Docking']) &&
+                $status !== 'Blocked'
+            ) {
                 $status = 'Blocked';
             }
 
-            if (in_array($status, ['Blocked', 'On-Hold']) && empty($request->notes)) {
+            if (
+                in_array($status, ['Blocked', 'On-Hold']) &&
+                empty($request->notes)
+            ) {
                 DB::rollBack();
-                return back()->withErrors(['notes' => 'Notes are required for this status.'])->withInput();
+
+                return back()
+                    ->withErrors(['notes' => 'Notes are required'])
+                    ->withInput();
             }
 
             if ($this->hasBoatDateCollision(
                 $request->boats_allowed,
                 $request->start_date,
-                $request->end_date
+                $request->end_date,
+                $slot->id
             )) {
                 DB::rollBack();
-                return back()->withErrors([
-                    'boats_allowed' => 'Collision detected: a selected vessel already has a slot between '
-                        . $request->start_date . ' and ' . $request->end_date
-                ])->withInput();
+
+                return back()
+                    ->withErrors([
+                        'boats_allowed' => 'Boat date collision detected'
+                    ])
+                    ->withInput();
             }
 
-            $slot = Slot::create([
+            $slot->update([
                 'slot_type' => $request->slot_type,
                 'status' => $status,
                 'region_id' => $request->region_id,
@@ -613,50 +660,53 @@ public function update(Request $request, Booking $booking)
                 'end_date' => $request->end_date,
                 'notes' => $request->notes,
                 'duration_nights' => $request->duration_nights,
-                'company_id' => auth()->user()->company_id,
             ]);
 
             $slot->boats()->sync($request->boats_allowed);
+
             $slot->load(['boats.rooms']);
         }
 
-        $slotType = $slot->slot_type ?? 'Open Trip';
-
-        // ------------------------------
-        // PRIVATE CHARTER CHECK
-        // ------------------------------
-        if ($slotType === 'Private Charter' &&
-            Booking::where('slot_id', $slot->id)->where('id', '!=', $booking->id)->exists()) {
-            DB::rollBack();
-            return back()->withErrors([
-                'slot_id' => 'This Private Charter slot is already booked.'
-            ])->withInput();
-        }
-
-        // ------------------------------
-        // COLLECT GUEST IDS
-        // ------------------------------
+        // ---------------------------------
+        // GUEST IDS
+        // ---------------------------------
         $guestIds = collect($request->guest_rooms ?? [])
             ->flatten()
             ->merge($request->guests_without_room ?? [])
+            ->flatMap(function ($id) {
+                return explode(',', $id);
+            })
+            ->map(fn($id) => trim($id))
+            ->filter()
             ->unique()
             ->values()
             ->toArray();
 
         if (empty($guestIds)) {
+
             DB::rollBack();
-            return back()->withErrors(['guest_rooms' => 'At least one guest is required'])->withInput();
+
+            return back()
+                ->withErrors([
+                    'guest_rooms' => 'At least one guest is required'
+                ])
+                ->withInput();
         }
 
+        // ---------------------------------
+        // LEAD GUEST
+        // ---------------------------------
         $leadGuest = Guest::findOrFail($request->lead_customer_id);
+
         $currency = Currency::findOrFail($request->currency);
+
         $rate = (float) $currency->rate;
+
         $price = (float) $request->price;
 
-        // ------------------------------
-        // UPDATE BOOKING
-        // ------------------------------
-        $status = $request->booking_status;
+        // ---------------------------------
+        // STATUS
+        // ---------------------------------
         if ($request->deposit_amount >= $price) {
             $status = 'Full Paid';
         } elseif ($request->deposit_amount > 0) {
@@ -665,105 +715,116 @@ public function update(Request $request, Booking $booking)
             $status = 'Pending';
         }
 
-        $firstRoomId = null;
-
-        if (!empty($guestRooms)) {
-            // guestRooms keys are in "boatId_roomId" format
-            // extract the room ID from the first key
-            $firstKey = array_key_first($guestRooms); // e.g., "4_44"
-            $parts = explode('_', $firstKey);
-            $firstRoomId = (int) ($parts[1] ?? null); // the actual room ID as integer
-        }
-
+        // ---------------------------------
+        // UPDATE BOOKING
+        // ---------------------------------
         $booking->update([
             'slot_id' => $slot->id,
             'boat_id' => $slot->boats->first()->id ?? null,
-            'room_id' => $slotType === 'Private Charter' ? null : $firstRoomId,
+
             'guest_name' => $leadGuest->first_name . ' ' . $leadGuest->last_name,
+            'lead_guest_id' => $leadGuest->id,
+
             'guest_count' => count($guestIds),
+
             'source' => $request->source,
             'agent_id' => $request->agent_id,
-            'rate_plan_id' => $request->rate_plan_id,
-            'payment_policy_id' => $request->payment_policy_id,
-            'cancellation_policy_id' => $request->cancellation_policy_id,
-            'notes' => $request->notes,
+
             'status' => $status,
+
             'price' => $price,
             'currency' => $currency->name,
             'exchange_rate' => $rate,
             'exchange_rate_timestamp' => now(),
+
             'deposit_amount' => $request->deposit_amount,
-            'deposit_due_date' => $request->deposit_due_date,
-            'final_balance_due_date' => $request->final_balance_due_date,
             'price_usd' => round($price * $rate, 2),
+
             'salesperson_id' => $request->salesperson_id,
         ]);
 
-        // ------------------------------
-        // HANDLE PAYMENTS
-        // ------------------------------
-        if ($request->deposit_amount) {
-            $payment = $booking->payments()->first();
-            if ($payment) {
-                $payment->update([
-                    'amount' => $request->deposit_amount,
-                    'paid_at' => now(),
-                    'payment_method' => 'Cash',
-                    'invoice_number' => 'INV-' . now()->format('YmdHis') . '-' . $booking->id,
-                ]);
-            } else {
-                $booking->payments()->create([
-                    'amount' => $request->deposit_amount,
-                    'paid_at' => now(),
-                    'payment_method' => 'Cash',
-                    'invoice_number' => 'INV-' . now()->format('YmdHis') . '-' . $booking->id,
-                ]);
-            }
-        } else {
-            $booking->payments()->delete();
-        }
-
-        // ------------------------------
-        // ATTACH ROOMS & GUESTS
-        // ------------------------------
-        $roomIds = array_map(function($key) {
-            $parts = explode('_', $key);
-            return (int) ($parts[1] ?? null);
-        }, array_keys($guestRooms));
-
-        // Sync only valid room IDs
-        $booking->rooms()->sync($roomIds);
+        // ---------------------------------
+        // REMOVE OLD GUESTS
+        // ---------------------------------
         BookingGuestRoom::where('booking_id', $booking->id)->delete();
 
-        foreach ($guestRooms as $roomKey => $gIds) {
-            // Extract only the numeric room ID
+        BookingGuest::where('booking_id', $booking->id)->delete();
+
+        // ---------------------------------
+        // CREATE NEW BOOKING GUESTS
+        // ---------------------------------
+        $bookingGuestsMap = [];
+
+        foreach ($guestIds as $guestId) {
+
+    $assignedRoomId = null;
+
+    // FIND GUEST ROOM
+    foreach ($guestRooms as $roomKey => $gIds) {
+
+        if (in_array($guestId, $gIds)) {
+
+            // EXTRACT REAL ROOM ID
             $parts = explode('_', $roomKey);
-            $roomId = (int) ($parts[1] ?? null); // second part is the room ID
-            if (!$roomId) continue; // skip invalid
+
+            $assignedRoomId = $parts[1] ?? null;
+
+            break;
+        }
+    }
+
+    $bookingGuest = BookingGuest::create([
+        'booking_id' => $booking->id,
+        'guest_id' => $guestId,
+        'room_id' => $assignedRoomId,
+        'is_lead_guest' => $guestId == $request->lead_customer_id,
+        'guest_status' => 'confirmed',
+    ]);
+
+    $bookingGuestsMap[$guestId] = $bookingGuest->id;
+}
+        // ---------------------------------
+        // ROOM ASSIGNMENT
+        // ---------------------------------
+        $realRoomIds = [];
+
+        foreach ($guestRooms as $roomKey => $gIds) {
+
+            // EXTRACT REAL ROOM ID
+            $parts = explode('_', $roomKey);
+
+            $roomId = $parts[1] ?? null;
+
+            if (!$roomId) {
+                continue;
+            }
+
+            $realRoomIds[] = $roomId;
 
             foreach ($gIds as $guestId) {
+
                 BookingGuestRoom::create([
                     'booking_id' => $booking->id,
-                    'room_id' => $roomId, // now integer
+                    'room_id' => $roomId,
                     'guest_id' => $guestId,
+                    'booking_guest_id' => $bookingGuestsMap[$guestId] ?? null,
                 ]);
             }
         }
 
-        if (!empty($request->guests_without_room)) {
-            $booking->guests()->sync($request->guests_without_room);
-        }
+        $booking->rooms()->sync(array_unique($realRoomIds));
 
-        // ------------------------------
-        // ATTACH BOATS TO BOOKING
-        // ------------------------------
+        // ---------------------------------
+        // BOATS
+        // ---------------------------------
         $boatsToAttach = $slot->boats->pluck('id')->toArray();
+
         $booking->boats()->sync($boatsToAttach);
 
-        // ------------------------------
-        // UPDATE SLOT STATUS IF PRIVATE
-        // ------------------------------
-        if ($slotType === 'Private Charter') {
+        // ---------------------------------
+        // SLOT STATUS
+        // ---------------------------------
+        if ($slot->slot_type === 'Private Charter') {
             $slot->update(['status' => 'Booked']);
         }
 
@@ -773,13 +834,15 @@ public function update(Request $request, Booking $booking)
             ->route('admin.bookings.index')
             ->with('success', 'Booking updated successfully');
 
-    } catch (\Throwable $e) {
-        DB::rollBack();
-        report($e);
+    } catch (\Exception $e) {
 
-        return back()->withErrors([
-            'error' => 'Something went wrong while updating the booking.'
-        ])->withInput();
+        DB::rollBack();
+
+        return back()
+            ->withErrors([
+                'error' => $e->getMessage()
+            ])
+            ->withInput();
     }
 }
 

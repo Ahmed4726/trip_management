@@ -1,3 +1,6 @@
+<div class="d-flex justify-content-left mb-3">
+
+</div>
 @php
     $arrival = $arrival ?? null;
     $departure = $departure ?? null;
@@ -10,6 +13,12 @@
         @if($bookingGuest->is_lead_guest)
             <span class="badge bg-primary">Lead Guest</span>
         @endif
+
+        <a href="{{ route('admin.bookings.guests.pdf', [$booking->id, $bookingGuest->id]) }}"
+            target="_blank"
+            class="btn btn-danger btn-sm text-end">
+                PDF Preview
+            </a>
     </h4>
 
     <hr>
@@ -426,11 +435,17 @@
                 <div class="row">
                     <div class="col-md-6 mb-3">
                         <label>Room ID</label>
-                        <input class="form-control" type="text" name="room_id" placeholder="e.g., 101, Suite A" value="{{ optional($bookingGuest->housekeeping)->room_id }}">
+                        {{-- {{{ $bookingGuest->rooms->room_name }}} --}}
+                        <input class="form-control" type="text" name="room_id" placeholder="e.g., 101, Suite A" value="{{ optional($bookingGuest->rooms)->room_name }}" readonly>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label>Bed Setup Preference</label>
-                        <input class="form-control" type="text" name="bed_setup_preference" placeholder="e.g., Twin beds, King bed, Double bed" value="{{ optional($bookingGuest->housekeeping)->bed_setup_preference }}">
+                        <select class="form-control" name="bed_setup_preference">
+                            <option value="">Select</option>
+                            <option value="double" {{ optional($bookingGuest->housekeeping)->bed_setup_preference == 'double' ? 'selected' : '' }}>King bed</option>
+                            <option value="twin" {{ optional($bookingGuest->housekeeping)->bed_setup_preference == 'twin' ? 'selected' : '' }}>Two twin beds</option>
+                            <option value="other" {{ optional($bookingGuest->housekeeping)->bed_setup_preference == 'other' ? 'selected' : '' }}>Other</option>
+                        </select>
                     </div>
                     <div class="col-md-6 mb-3">
                         <label>Pillow Preference</label>

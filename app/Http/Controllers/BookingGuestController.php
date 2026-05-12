@@ -7,6 +7,7 @@ use App\Models\BookingGuest;
 use App\Models\BookingTravelDetail;
 use App\Models\GuestDocument;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class BookingGuestController extends Controller
 {
@@ -210,5 +211,28 @@ public function saveDocument(Request $request, Booking $booking, BookingGuest $b
     ]);
 
     return back()->with('success', 'Document uploaded successfully');
+}
+
+public function guestPdf(Booking $booking, BookingGuest $bookingGuest)
+{
+    $bookingGuest->load([
+        'guest',
+        'travelDetails',
+        'medical',
+        'foodPreference',
+        'drinkPreference',
+        'housekeeping',
+        'serviceNote',
+        'diving',
+        'surfing',
+        'documents',
+        'rooms',
+    ]);
+
+    $pdf = PDF::loadView('admin.booking.pdf.guest_details', compact('booking', 'bookingGuest'));
+
+    return $pdf->stream(
+        'guest-details-'.$bookingGuest->id.'.pdf'
+    );
 }
 }

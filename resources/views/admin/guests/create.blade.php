@@ -80,35 +80,6 @@
 </div>
 
 
-<div class="card mb-4">
-<div class="card-header">
-<strong>Health & Special Requirements</strong>
-</div>
-
-<div class="card-body">
-
-<div class="mb-3">
-<label>Dietary Requirements</label>
-<textarea name="dietary_requirements" class="form-control" rows="3"></textarea>
-</div>
-
-<div class="mb-3">
-<label>Allergies</label>
-<textarea name="allergies" class="form-control" rows="3"></textarea>
-</div>
-
-<div class="mb-3">
-<label>Equipment Sizes</label>
-<input type="text" name="equipment_sizes" class="form-control">
-</div>
-
-<div class="mb-3">
-<label>Operational Notes</label>
-<textarea name="operational_notes" class="form-control" rows="3"></textarea>
-</div>
-
-</div>
-</div>
 
 <button class="btn btn-success">Save</button>
 <a href="{{ route('admin.guests.index') }}" class="btn btn-secondary">Cancel</a>

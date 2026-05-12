@@ -178,6 +178,7 @@ Route::post('guest/form/{token}', [GuestController::class, 'submit'])->name('gue
                 Route::post('/guests/{bookingGuest}/diving', [BookingGuestController::class, 'saveDiving']);
                 Route::post('/guests/{bookingGuest}/surfing', [BookingGuestController::class, 'saveSurfing']);
                 Route::post('/guests/{bookingGuest}/documents', [BookingGuestController::class, 'saveDocument']);
+                Route::get('/guests/{bookingGuest}/pdf',[BookingGuestController::class, 'guestPdf'])->name('admin.bookings.guests.pdf');
             });
             /*
             |--------------------------------------------------------------------------

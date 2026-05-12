@@ -1,255 +1,218 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>Crew Guest Sheet</title>
+<meta charset="utf-8">
+<title>Crew Guest Sheet</title>
 
-    <style>
-        body {
-            font-family: DejaVu Sans, sans-serif;
-            font-size: 14px;
-            margin: 0;
-            color: #000;
-        }
-/* PAGE MARGINS (IMPORTANT) */
-        @page {
-            margin: 0px 25px 80px 25px; /* top = header space, bottom = footer space */
-        }
-        .container {
-            padding: 20px 25px;
-        }
+<style>
+body {
+    font-family: DejaVu Sans, sans-serif;
+    font-size: 13px;
+    color: #222;
+}
 
-        /* HEADER (ONLY FIRST PAGE) */
-        .header-image {
-            width: 100%;
-            height: 140px;
-        }
+/* PAGE */
+@page {
+    margin: 0px 30px 70px 30px;
+}
 
-        .header-image img {
-            width: 100%;
-            height: 140px;
-            object-fit: cover;
-        }
+/* HEADER */
+.header {
+    text-align: center;
+    margin-bottom: 15px;
+}
 
-        .title-area {
-            text-align: center;
-            margin-top: 10px;
-        }
+.header img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+}
 
-        .title {
-            font-size: 22px;
-            font-weight: bold;
-        }
+.title {
+    font-size: 20px;
+    font-weight: bold;
+    margin-top: 10px;
+}
 
-        .subtitle {
-            font-size: 13px;
-            margin-top: 4px;
-        }
+.subtitle {
+    font-size: 12px;
+    color: #666;
+}
 
-        .divider {
-            border-top: 2px solid #000;
-            margin: 12px 0 18px;
-        }
+/* BOAT INFO */
+.boat-box {
+    text-align: center;
+    margin: 15px 0;
+    font-size: 13px;
+}
 
-        /* SECTIONS */
-        .section {
-            margin-top: 20px;
-        }
+.divider {
+    border-top: 2px solid #000;
+    margin: 10px 0 20px;
+}
 
-        .section-title {
-            font-weight: bold;
-            font-size: 15px;
-            border-bottom: 1px solid #000;
-            padding-bottom: 4px;
-            margin-bottom: 10px;
-            text-transform: uppercase;
-        }
+/* GUEST CARD */
+.guest-card {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 14px;
+    margin-bottom: 20px;
+    page-break-inside: avoid;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
+/* HEADER */
+.guest-header {
+    font-size: 15px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+}
 
-        th, td {
-            border: 1px solid #000;
-            padding: 8px;
-            font-size: 13px;
-        }
+/* GRID */
+.grid {
+    width: 100%;
+    border-collapse: collapse;
+}
 
-        th {
-            background: #f0f0f0;
-            text-align: center;
-        }
+.grid td {
+    padding: 6px 4px;
+    vertical-align: top;
+}
 
-        .row-table td {
-            width: 50%;
-            vertical-align: top;
-            padding: 12px;
-        }
+.label {
+    font-weight: bold;
+    color: #555;
+    width: 30%;
+}
 
-        .line {
-            border-bottom: 1px solid #000;
-            display: inline-block;
-            width: 100%;
-            height: 18px;
-        }
+.value {
+    width: 70%;
+}
 
-        .box {
-            border: 1px solid #000;
-            padding: 12px;
-        }
+/* SECTION TITLE */
+.section-title {
+    font-size: 13px;
+    font-weight: bold;
+    margin-top: 12px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 3px;
+}
 
-        /* PAGE BREAK */
-        .page-break {
-            page-break-before: always;
-        }
+/* FOOTER */
+.footer {
+    position: fixed;
+    bottom: -50px;
+    text-align: center;
+}
 
-        .boat-info {
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-    
-
-    /* ================= FOOTER (REPEATS) ================= */
-        .footer {
-            position: fixed;
-            bottom: -60px;
-            left: 0;
-            right: 0;
-           
-        }
-
-        .footer img {
-            height: 45px;
-        }
-  
-    </style>
+.footer img {
+    height: 40px;
+}
+</style>
 </head>
 
 <body>
-<!-- ================= FOOTER ================= -->
+
+<!-- FOOTER -->
 <div class="footer">
     <img src="{{ public_path('images/logo.png') }}">
 </div>
-<div class="container">
 
-    <!-- ================= HEADER (FIRST PAGE ONLY) ================= -->
-    <div class="header-image">
-        <img src="{{ public_path('images/header.jpg') }}">
-    </div>
-
-    <div class="title-area">
-        <div class="title">- Cruise Departure Guest Sheet -</div>
-        <div class="subtitle">
-            Please fill in carefully the details to prepare your departure smoothly
-        </div>
-    </div>
-
-    <div class="divider"></div>
-
-    <!-- BOAT INFO -->
-    <div class="boat-info">
-        <strong>{{ $slot->boat->name }}/{{ $slot->slot_type }}/{{ $slot->boat->region }}</strong><br>
-
-        <strong>{{ $slot->start_date->format('d-m-Y') }} → {{ $slot->end_date->format('d-m-Y') }}</strong>
-    </div>
-      <div class="boat-info">
-       Number of Guests: <br>
-       Sales: 
-    </div>
-
-    <!-- GUEST TABLE -->
-    <div class="section">
-        <div class="section-title">Guest Details</div>
-
-        <table>
-            <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Room(s)</th>
-                    <th>Diet</th>
-                    <th>Allergies</th>
-                    <th>Equipment</th>
-                    <th>Notes</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($bookings as $booking)
-                    @foreach($booking->guests()->get() as $guest)
-                    <tr>
-                        <td>{{ $guest->name ?? '-' }}</td>
-                        <td>{{ $guest->rooms_list ?? '-' }}</td>
-                        <td>{{ $guest->dietary_requirements ?? '-' }}</td>
-                        <td>{{ $guest->allergies ?? '-' }}</td>
-                        <td>{{ $guest->equipment_sizes ?? '-' }}</td>
-                        <td>{{ $guest->operational_notes ?? '-' }}</td>
-                    </tr>
-                    @endforeach
-                @endforeach
-            </tbody>
-        </table>
-    </div>
-
-    <!-- ================= FORCE NEW PAGE ================= -->
-    <div class="page-break"></div>
-
-    <!-- TRAVEL + CONTACT (STARTS NEW PAGE) -->
-    <div class="section">
-        <table class="row-table">
-            <tr>
-                <td>
-                    <div class="section-title">Travel Information</div>
-
-                    <strong>Arrival Details</strong><br><br>
-                    Pickup Time/Date: <span class="line"></span><br><br>
-                    Hotel/Airport: <span class="line"></span><br><br>
-                    Flight Number: <span class="line"></span><br><br>
-
-                    <strong>Departure Details</strong><br><br>
-                    Pickup Time/Date: <span class="line"></span><br><br>
-                    Hotel/Airport: <span class="line"></span><br><br>
-                    Flight Number: <span class="line"></span>
-                </td>
-
-                <td>
-                    <div class="section-title">Contact / Emergency</div>
-
-                    Name: <span class="line"></span><br><br>
-                    Phone: <span class="line"></span><br><br>
-                    Email: <span class="line"></span><br><br>
-                    Emergency Contact: <span class="line"></span>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <!-- FOOD + DRINK -->
-    <div class="section">
-        <table class="row-table">
-            <tr>
-                <td>
-                    <div class="section-title">Food Preferences</div>
-                    <div class="line" style="height:60px;"></div>
-                </td>
-
-                <td>
-                    <div class="section-title">Drink Preferences</div>
-                    <div class="line" style="height:60px;"></div>
-                </td>
-            </tr>
-        </table>
-    </div>
-
-    <!-- EXTRA -->
-    <div class="section box">
-        <div class="section-title">Extra Services</div>
-        <div class="line" style="height:60px;"></div>
-    </div>
-
-  
-
+<!-- HEADER -->
+<div class="header">
+    <img src="{{ public_path('images/header.jpg') }}">
+    <div class="title">Cruise Guest Manifest</div>
+    <div class="subtitle">Confidential Crew Document</div>
 </div>
+
+<div class="divider"></div>
+
+<!-- BOAT INFO -->
+<div class="boat-box">
+    <strong>{{ $slot->boats->first()->name }}</strong> |
+    {{ $slot->slot_type }} |
+    {{ $slot->boats->first()->region }} <br>
+
+    {{ $slot->start_date->format('d M Y') }} → {{ $slot->end_date->format('d M Y') }} <br>
+
+    Total Guests:
+    {{ $slot->bookings->sum(fn($b) => $b->bookingGuests->count()) }}
+</div>
+
+<div class="divider"></div>
+
+<!-- GUESTS -->
+@foreach($slot->bookings as $booking)
+    @foreach($booking->bookingGuests as $bookingGuest)
+
+        <div class="guest-card">
+
+            <!-- NAME -->
+            <div class="guest-header">
+                {{ $bookingGuest->guest->name ?? 'Guest' }}
+            </div>
+
+            <!-- BASIC INFO -->
+            <table class="grid">
+                <tr>
+                    <td class="label">Room</td>
+                    <td class="value">{{ $bookingGuest->rooms->room_name ?? '-' }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Diet</td>
+                    <td class="value">{{ optional($bookingGuest->foodPreference)->dietary_type ?? '-' }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Allergies</td>
+                    <td class="value">{{ optional($bookingGuest->medical)->food_allergy_details ?? '-' }}</td>
+                </tr>
+            </table>
+
+            <!-- ACTIVITIES -->
+            <div class="section-title">Activities</div>
+            <table class="grid">
+                <tr>
+                    <td class="label">Diving</td>
+                    <td class="value">{{ optional($bookingGuest->diving)->experience ?? '-' }}</td>
+                </tr>
+                <tr>
+                    <td class="label">Surfing</td>
+                    <td class="value">{{ optional($bookingGuest->surfing)->level ?? '-' }}</td>
+                </tr>
+            </table>
+
+            <!-- TRAVEL -->
+            <div class="section-title">Travel</div>
+            @foreach($bookingGuest->travelDetails as $travel)
+                <table class="grid">
+                    <tr>
+                        <td class="label">Type</td>
+                        <td class="value">{{ $travel->travel_type }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Date</td>
+                        <td class="value">{{ $travel->date }}</td>
+                    </tr>
+                    <tr>
+                        <td class="label">Location</td>
+                        <td class="value">{{ $travel->location_address ?? '-' }}</td>
+                    </tr>
+                </table>
+                <br>
+            @endforeach
+
+            <!-- NOTES -->
+            <div class="section-title">Crew Notes</div>
+            <div>
+                {{ optional($bookingGuest->serviceNote)->notes ?? '-' }}
+            </div>
+
+        </div>
+
+    @endforeach
+@endforeach
 
 </body>
 </html>
