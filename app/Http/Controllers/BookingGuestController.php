@@ -48,7 +48,7 @@ class BookingGuestController extends Controller
     }
 
     // ================= PROFILE =================
-    public function updateProfile(Request $request, BookingGuest $bookingGuest)
+    public function updateProfile(Request $request, Booking $booking, BookingGuest $bookingGuest)
     {
         $request->validate([
             'first_name' => 'required|string|max:255',
