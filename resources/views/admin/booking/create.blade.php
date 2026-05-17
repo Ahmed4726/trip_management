@@ -401,7 +401,7 @@
             <div class="mb-3"><label>Date of Birth</label><input type="date" name="dob" class="form-control" required></div>
             <div class="mb-3"><label>Email</label><input type="email" name="email" class="form-control"></div>
             <div class="mb-3"><label>Passport</label><input type="text" name="passport" class="form-control"></div>
-            <div class="mb-3"><label>Phone</label><input type="text" name="phone" class="form-control"></div>
+            <div class="mb-3"><label>Phone</label><input type="number" name="phone" class="form-control"></div>
             <div class="mb-3"><label>Address</label><input type="text" name="address" class="form-control"></div>
             <input type="hidden" name="company_id" value="{{ auth()->user()->company_id }}">
             </div>
